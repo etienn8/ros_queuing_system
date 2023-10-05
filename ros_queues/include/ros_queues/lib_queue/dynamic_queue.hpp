@@ -3,6 +3,7 @@
 #include <deque>
 #include <mutex>
 
+
 #include "ros_queues/lib_queue/I_dynamic_queue.hpp"
 #include "ros_queues/lib_queue/element_with_converted_size.hpp"
 
@@ -94,23 +95,39 @@ class DynamicQueue: public IDynamicQueue<deque<TQueueElementType>>
 };
 
 
-/*template<typename TQueueElementType>
-class DynamicConvertedQueue: public IDynamicQueue<ProtectedDeque<ElementWithConvertedSize<TQueueElementType>>>
+template<typename TQueueElementType>
+class DynamicConvertedQueue: public IDynamicQueue<deque<ElementWithConvertedSize<TQueueElementType>>>
 {
     public:
-        DynamicConvertedQueue(unsigned int max_queue_size): IDynamicQueue<ElementWithConvertedSize<TQueueElementType>>(max_queue_size) {};
+        DynamicConvertedQueue(unsigned int max_queue_size,
+            void (*conversionFunction)(deque<TQueueElementType>&, deque<ElementWithConvertedSize<TQueueElementType>>&))
+            : IDynamicQueue<deque<ElementWithConvertedSize<TQueueElementType>>>(max_queue_size), generateConvertedQueue(conversionFunction) {};
 
-        virtual int getMemSize() override {return this->internal_queue_.size()*sizeof(TQueueElementType);};
-        
-        int getConvertedQueueSize()
+        virtual int getSize()
         {
-            static_cast<int> 
+            lock_guard<mutex> lock(queue_manipulation_mutex_);
+            return this->internal_queue_.size();
+        } 
+
+        virtual int getMemSize() override 
+        {
+            lock_guard<mutex> lock(queue_manipulation_mutex_);
+            return this->internal_queue_.size()*sizeof(TQueueElementType);
+        };
+
+        virtual int getConvertedSize()
+        {
+            lock_guard<mutex> lock(queue_manipulation_mutex_);
+            return converted_queue_size_;
         }
 
         virtual int evaluate() override
         {
             const int arrival = arrival_prediction();
             const int departure = transmission_prediction();
+            
+            // Protect access to queue
+            lock_guard<mutex> lock(queue_manipulation_mutex_);
             const int current_size = this->internal_queue_.size();
 
             // Queue dynamic
@@ -123,74 +140,76 @@ class DynamicConvertedQueue: public IDynamicQueue<ProtectedDeque<ElementWithConv
             
             return new_size;
         }
-        
-        virtual bool update(ProtectedDeque<TQueueElementType> arriving_elements, const unsigned int departure) override
+
+        bool update(deque<ElementWithConvertedSize<TQueueElementType>> arriving_elements, const unsigned int departure) override
         {
-            //Transmit data of queue
+            lock_guard<mutex> lock(queue_manipulation_mutex_);
+
             deque<TQueueElementType> queue_to_transmit;
-            for(int i =0; i<departure; ++i)
+            bool overflowed = false;
+
+            // Inner scope block for the mutex
             {
-                if(this->internal_queue_.empty())
+                // Protect access to queue
+                lock_guard<mutex> lock(queue_manipulation_mutex_);
+
+                for(int i =0; i<departure; ++i)
                 {
-                    break;
+                    if(this->internal_queue_.empty())
+                    {
+                        break;
+                    }
+                    
+                    converted_queue_size_ -= this->internal_queue_.front().converted_size_;
+                    queue_to_transmit.push_back(this->internal_queue_.front().element_);
+                    this->internal_queue_.pop_front();
                 }
-                queue_to_transmit.push_back(this->internal_queue_.front());
-                this->internal_queue_.pop();
+                //Receiving data
+                while(!arriving_elements.empty())
+                {
+                    if (this->internal_queue_.size() >= this->max_queue_size_)
+                    {
+                        overflowed = true;
+                        break;
+                    }
+                    converted_queue_size_ += arriving_elements.front().converted_size_;
+                    this->internal_queue_.push_back(arriving_elements.front());
+                    arriving_elements.pop_front();
+                }
             }
+
             //TODO: Add transmission error handling
             transmit(queue_to_transmit);
-            
-            bool overflowed = false;
-            //Receiving data
-            while(!arriving_elements.empty())
-            {
-                if (this->internal_queue_.size() >= this->max_queue_size_)
-                {
-                    overflowed = true;
-                    break;
-                }
 
-                this->internal_queue_.push(arriving_elements.front());
-                arriving_elements.pop();
-            }
             return !overflowed;
         }
 
         bool update(deque<TQueueElementType> arriving_elements, const unsigned int departure)
         {
-            //Transmit data of queue
-            deque<TQueueElementType> queue_to_transmit;
-            for(int i =0; i<departure; ++i)
-            {
-                if(this->internal_queue_.empty())
-                {
-                    break;
-                }
-                queue_to_transmit.push_back(this->internal_queue_.front());
-                this->internal_queue_.pop();
-            }
-            //TODO: Add transmission error handling
-            transmit(queue_to_transmit);
-            
-            bool overflowed = false;
-            //Receiving data
-            while(!arriving_elements.empty())
-            {
-                if (this->internal_queue_.size() >= this->max_queue_size_)
-                {
-                    overflowed = true;
-                    break;
-                }
+             deque<ElementWithConvertedSize<TQueueElementType>> wrapped_arriving_elements;
 
-                this->internal_queue_.push(arriving_elements.front());
-                arriving_elements.pop_front();
+            // Verify if given conversion function exist
+            if(generateConvertedQueue != nullptr)
+            {
+                generateConvertedQueue(arriving_elements, wrapped_arriving_elements);
             }
-            return !overflowed;
+            else
+            {
+                return 0;
+            }
+
+            return update(wrapped_arriving_elements, departure);;
         }
 
         virtual bool transmit(deque<TQueueElementType> &queue_to_transmit) {return 1;};
 
     protected:
+        int converted_queue_size_ = 0;
+
+        void (*generateConvertedQueue)(deque<TQueueElementType>&, deque<ElementWithConvertedSize<TQueueElementType>>&);
+        
         virtual int arrival_prediction() override {return 0;};
         virtual int transmission_prediction() override {return 0;};
-};*/
+        
+        mutex queue_manipulation_mutex_;
+};
