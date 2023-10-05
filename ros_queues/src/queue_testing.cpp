@@ -1,13 +1,14 @@
 #include <iostream>
-#include <queue>
+#include <deque>
 #include "ros_queues/lib_queue/dynamic_virtual_queue.hpp"
 #include "ros_queues/lib_queue/dynamic_queue.hpp"
 
 using namespace std;
-using std::queue;
 
 int main()
 {
+    string debug_string;
+
     InConVirtualQueue vq1(100);
     cout<<"Inequality constraint virtual queue"<<endl;
     cout<<"Queue size"<<vq1.getSize()<<endl;
@@ -29,23 +30,12 @@ int main()
     cout<<"New arrival of 0 and departure of 20.  New size: "<<vq2.getSize()<<endl<<endl;
 
     // Real data queues
-    queue<int> queue_to_insert;
-    queue_to_insert.push(1);
-    queue_to_insert.push(2);
-    queue_to_insert.push(4);
-    queue_to_insert.push(30);
+    deque<int> queue_to_insert = {1,2,4,30};
     cout<<"Inserting queue created with size"<< queue_to_insert.size()<<endl;
 
-    queue<int> big_queue;
-    big_queue.push(1);
-    big_queue.push(2);
-    big_queue.push(4);
-    big_queue.push(30);
-    big_queue.push(30);
-    big_queue.push(30);
-    big_queue.push(30);
+    deque<int> big_queue ={1,2,4,30,30,30,30};
 
-    queue<int> empty_queue;
+    deque<int> empty_queue;
 
     DynamicQueue<int> q1(6);
     cout<<"Dynamic queue"<<endl;

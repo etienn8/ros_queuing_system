@@ -1,15 +1,17 @@
 #pragma once
 
-#include <queue>
+#include <deque>
 #include "ros_queues/lib_queue/I_dynamic_queue.hpp"
+#include "ros_queues/lib_queue/protected_deque.hpp"
+#include "ros_queues/lib_queue/element_with_converted_size.hpp"
 
-using std::queue;
+using std::deque;
 
 template<typename TQueueElementType>
-class DynamicQueue: public IDynamicQueue<queue<TQueueElementType>>
+class DynamicQueue: public IDynamicQueue<ProtectedDeque<TQueueElementType>>
 {
     public:
-        DynamicQueue(unsigned int max_queue_size): IDynamicQueue<queue<TQueueElementType>>(max_queue_size) {};
+        DynamicQueue(unsigned int max_queue_size): IDynamicQueue<ProtectedDeque<TQueueElementType>>(max_queue_size) {};
 
         virtual int getMemSize() override {return this->internal_queue_.size()*sizeof(TQueueElementType);};
 
@@ -30,17 +32,17 @@ class DynamicQueue: public IDynamicQueue<queue<TQueueElementType>>
             return new_size;
         }
         
-        virtual bool update(queue<TQueueElementType> arriving_elements, const unsigned int departure) override
+        virtual bool update(ProtectedDeque<TQueueElementType> arriving_elements, const unsigned int departure) override
         {
             //Transmit data of queue
-            queue<TQueueElementType> queue_to_transmit;
+            deque<TQueueElementType> queue_to_transmit;
             for(int i =0; i<departure; ++i)
             {
                 if(this->internal_queue_.empty())
                 {
                     break;
                 }
-                queue_to_transmit.push(this->internal_queue_.front());
+                queue_to_transmit.push_back(this->internal_queue_.front());
                 this->internal_queue_.pop();
             }
             //TODO: Add transmission error handling
@@ -62,38 +64,18 @@ class DynamicQueue: public IDynamicQueue<queue<TQueueElementType>>
             return !overflowed;
         }
 
-        virtual bool transmit(queue<TQueueElementType> &queue_to_transmit) {return 1;};
-
-    protected:
-        virtual int arrival_prediction() override {return 0;};
-        virtual int transmission_prediction() override {return 0;};
-};
-
-
-/*template<typename TQueueElementType,typename TMememoryTranslatedType>
-class DynamicTranslatedQueue: public IDynamicQueue<queue<TQueueElementType>>
-{
-    public:
-        DynamicTranslatedQueue(unsigned int max_queue_size): IDynamicQueue(max_queue_size) {};
-
-        virtual int getMemSize() override {return sizeof(TQueueElementType)*internal_queue_.size()};
-        int getTranslatedSize() const;
-        
-        
-        virtual int evaluate() override;
-        
-        virtual bool update(queue<TQueueElementType> arriving_elements, const unsigned int departure) override
+        bool update(deque<TQueueElementType> arriving_elements, const unsigned int departure)
         {
             //Transmit data of queue
-            queue<TMememoryTranslatedType> queue_to_transmit;
+            deque<TQueueElementType> queue_to_transmit;
             for(int i =0; i<departure; ++i)
             {
-                if(internal_queue_.empty())
+                if(this->internal_queue_.empty())
                 {
                     break;
                 }
-                queue_to_transmit.push(internal_queue_.front());
-                internal_queue_.pop();
+                queue_to_transmit.push_back(this->internal_queue_.front());
+                this->internal_queue_.pop();
             }
             //TODO: Add transmission error handling
             transmit(queue_to_transmit);
@@ -102,20 +84,123 @@ class DynamicTranslatedQueue: public IDynamicQueue<queue<TQueueElementType>>
             //Receiving data
             while(!arriving_elements.empty())
             {
-                if (internal_queue_.size() <= max_queue_size_)
+                if (this->internal_queue_.size() >= this->max_queue_size_)
                 {
                     overflowed = true;
                     break;
                 }
-                internal_queue_.push(arriving_elements.front());
+
+                this->internal_queue_.push(arriving_elements.front());
+                arriving_elements.pop_front();
+            }
+            return !overflowed;
+        }
+
+        virtual bool transmit(deque<TQueueElementType> &queue_to_transmit) {return 1;};
+
+    protected:
+        virtual int arrival_prediction() override {return 0;};
+        virtual int transmission_prediction() override {return 0;};
+};
+
+
+/*template<typename TQueueElementType>
+class DynamicConvertedQueue: public IDynamicQueue<ProtectedDeque<ElementWithConvertedSize<TQueueElementType>>>
+{
+    public:
+        DynamicConvertedQueue(unsigned int max_queue_size): IDynamicQueue<ElementWithConvertedSize<TQueueElementType>>(max_queue_size) {};
+
+        virtual int getMemSize() override {return this->internal_queue_.size()*sizeof(TQueueElementType);};
+        
+        int getConvertedQueueSize()
+        {
+            static_cast<int> 
+        }
+
+        virtual int evaluate() override
+        {
+            const int arrival = arrival_prediction();
+            const int departure = transmission_prediction();
+            const int current_size = this->internal_queue_.size();
+
+            // Queue dynamic
+            int new_size = (current_size > departure) ? current_size - departure + arrival : arrival; 
+
+            if (current_size > this->max_queue_size_)
+            {
+                new_size = this->max_queue_size_;
+            }
+            
+            return new_size;
+        }
+        
+        virtual bool update(ProtectedDeque<TQueueElementType> arriving_elements, const unsigned int departure) override
+        {
+            //Transmit data of queue
+            deque<TQueueElementType> queue_to_transmit;
+            for(int i =0; i<departure; ++i)
+            {
+                if(this->internal_queue_.empty())
+                {
+                    break;
+                }
+                queue_to_transmit.push_back(this->internal_queue_.front());
+                this->internal_queue_.pop();
+            }
+            //TODO: Add transmission error handling
+            transmit(queue_to_transmit);
+            
+            bool overflowed = false;
+            //Receiving data
+            while(!arriving_elements.empty())
+            {
+                if (this->internal_queue_.size() >= this->max_queue_size_)
+                {
+                    overflowed = true;
+                    break;
+                }
+
+                this->internal_queue_.push(arriving_elements.front());
                 arriving_elements.pop();
             }
             return !overflowed;
         }
 
-        virtual bool transmit(queue<TQueueElementType> &queue_to_transmit);
+        bool update(deque<TQueueElementType> arriving_elements, const unsigned int departure)
+        {
+            //Transmit data of queue
+            deque<TQueueElementType> queue_to_transmit;
+            for(int i =0; i<departure; ++i)
+            {
+                if(this->internal_queue_.empty())
+                {
+                    break;
+                }
+                queue_to_transmit.push_back(this->internal_queue_.front());
+                this->internal_queue_.pop();
+            }
+            //TODO: Add transmission error handling
+            transmit(queue_to_transmit);
+            
+            bool overflowed = false;
+            //Receiving data
+            while(!arriving_elements.empty())
+            {
+                if (this->internal_queue_.size() >= this->max_queue_size_)
+                {
+                    overflowed = true;
+                    break;
+                }
+
+                this->internal_queue_.push(arriving_elements.front());
+                arriving_elements.pop_front();
+            }
+            return !overflowed;
+        }
+
+        virtual bool transmit(deque<TQueueElementType> &queue_to_transmit) {return 1;};
 
     protected:
-        virtual int arrival_prediction() override;
-        virtual int transmission_prediction() override;
+        virtual int arrival_prediction() override {return 0;};
+        virtual int transmission_prediction() override {return 0;};
 };*/

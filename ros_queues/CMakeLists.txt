@@ -125,6 +125,7 @@ include_directories(
  add_library(${QUEUE_LIB_NAME}
    src/${QUEUE_LIB_NAME}/dynamic_queue.cpp
    src/${QUEUE_LIB_NAME}/dynamic_virtual_queue.cpp
+   src/${QUEUE_LIB_NAME}/virtual_queue.cpp
   )
 
 ## Add cmake target dependencies of the library
