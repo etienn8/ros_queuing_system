@@ -12,7 +12,6 @@ class IVirtualQueue
         virtual void setSize(const int& new_size)=0;
     protected:
         int queue_size_ = 0;
-        std::mutex queue_manipulation_mutex_;
 };
 
 class VirtualQueue: public IVirtualQueue

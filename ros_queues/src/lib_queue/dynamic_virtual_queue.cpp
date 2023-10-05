@@ -1,7 +1,14 @@
 #include "ros_queues/lib_queue/dynamic_virtual_queue.hpp"
 
+int InConVirtualQueue::getSize()
+{
+    std::lock_guard<std::mutex> lock(queue_manipulation_mutex_);
+    return internal_queue_.size();
+}
+
 int InConVirtualQueue::getMemSize()
 {
+    std::lock_guard<std::mutex> lock(queue_manipulation_mutex_);
     return sizeof(internal_queue_.size());
 }
 
@@ -9,6 +16,10 @@ int InConVirtualQueue::evaluate()
 {
     const int arrival = arrival_prediction();
     const int departure = transmission_prediction();
+
+    //Protect access to queue
+    std::lock_guard<std::mutex> lock(queue_manipulation_mutex_);
+
     const int current_size = internal_queue_.size();
 
     // Queue dynamic
@@ -25,6 +36,10 @@ int InConVirtualQueue::evaluate()
 bool InConVirtualQueue::update(VirtualQueue arriving_elements, const unsigned int departure)
 {   
     const int arrival = arriving_elements.size();
+
+    // Protect access to queue
+    std::lock_guard<std::mutex> lock(queue_manipulation_mutex_);
+
     const int current_size = internal_queue_.size();
 
     // Queue dynamic
@@ -44,6 +59,8 @@ bool InConVirtualQueue::update(VirtualQueue arriving_elements, const unsigned in
 
 bool InConVirtualQueue::udpate(const int arrival, const unsigned int departure)
 {
+    std::lock_guard<std::mutex> lock(queue_manipulation_mutex_);
+
     const int current_size = internal_queue_.size();
 
     // Queue dynamic
@@ -72,8 +89,15 @@ int InConVirtualQueue::transmission_prediction()
 }
 
 
+int EqConVirtualQueue::getSize()
+{
+    std::lock_guard<std::mutex> lock(queue_manipulation_mutex_);
+    return internal_queue_.size();
+}
+
 int EqConVirtualQueue::getMemSize()
 {
+    std::lock_guard<std::mutex> lock(queue_manipulation_mutex_);
     return sizeof(internal_queue_.size());
 }
 
@@ -81,6 +105,8 @@ int EqConVirtualQueue::evaluate()
 {
     const int arrival = arrival_prediction();
     const int departure = transmission_prediction();
+
+    std::lock_guard<std::mutex> lock(queue_manipulation_mutex_);
     const int current_size = internal_queue_.size();
 
     // Dynamics of a virtual queue that constrain a  time average value at zero
@@ -101,6 +127,8 @@ int EqConVirtualQueue::evaluate()
 bool EqConVirtualQueue::update(NVirtualQueue arriving_elements, const unsigned int departure)
 {
     const int arrival =  arriving_elements.size();
+
+    std::lock_guard<std::mutex> lock(queue_manipulation_mutex_);
     const int current_size = internal_queue_.size();
 
     // Dynamics of a virtual queue that constrain a  time average value at zero
@@ -124,6 +152,7 @@ bool EqConVirtualQueue::update(NVirtualQueue arriving_elements, const unsigned i
 
 bool EqConVirtualQueue::udpate(const int arrival, const unsigned int departure)
 {   
+    std::lock_guard<std::mutex> lock(queue_manipulation_mutex_);
     const int current_size = internal_queue_.size();
 
     // Dynamics of a virtual queue that constrain a  time average value at zero

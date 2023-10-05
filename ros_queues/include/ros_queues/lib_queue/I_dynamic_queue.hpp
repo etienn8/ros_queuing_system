@@ -6,7 +6,7 @@ class IDynamicQueue
     public:
         IDynamicQueue(unsigned int max_queue_size):max_queue_size_(max_queue_size){};
 
-        int getSize(){return internal_queue_.size();};
+        virtual int getSize(){return internal_queue_.size();};
         virtual int getMemSize()=0;
 
         virtual int evaluate()=0;
