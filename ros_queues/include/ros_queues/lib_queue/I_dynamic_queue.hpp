@@ -1,5 +1,10 @@
 #pragma once
 
+
+/**
+ * @brief Interface class that wraps a queue with interface to interact with it. 
+ * @tparam TQueueType Type of the element in the queue.
+ */
 template<typename TQueueType>
 class IDynamicQueue
 {
