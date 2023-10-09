@@ -10,7 +10,7 @@ jobs:
   build-native:
     runs-on: ubuntu-20.04
     container:
-      image: noetic-ros-base
+      image: ros:noetic-ros-base
     steps:
       - name: Update packages
         run: apt-get update
