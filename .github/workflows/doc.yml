@@ -16,7 +16,8 @@ jobs:
         run: apt-get update
 
       - name: Install catkin tool and rosdoc_lite
-        run: apt-get install python3-catkin-tools
+        run: |
+          apt-get install python3-catkin-tools
           apt install ros-noetic-rosdoc-lite
 
       - name: Create catkin_ws
