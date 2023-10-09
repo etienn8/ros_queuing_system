@@ -30,7 +30,7 @@ jobs:
 
       - name: Generate Documentation
         run: |
-          source ./devel/setup.sh
+          . /opt/ros/noetic/setup.bash
           rosdoc_lite ./src/ros_queuing_system/ros_queues -o ./doc/ros_queues
         working-directory: 'catkin_ws'
 
