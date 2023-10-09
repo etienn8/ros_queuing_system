@@ -32,6 +32,7 @@ jobs:
         run: |
          catkin init
          catkin build
+        working-directory: 'catkin_ws'
 
       - name: Generate Documentation
         run: |
