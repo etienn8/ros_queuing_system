@@ -1,0 +1,49 @@
+name: Publish Documentation
+
+on:
+    push:
+      branches: [ master ]
+
+jobs:
+  build-native:
+    runs-on: ubuntu-20.04
+    container:
+      image: noetic-ros-base
+    steps:
+      - name: Update packages
+        run: apt-get update
+
+      - name: Install catkin tool and rosdoc_lite
+        run: apt-get install python3-catkin-tools
+          apt install ros-noetic-rosdoc-lite
+
+      - name: Create catkin_ws
+        run: |
+          mkdir -p catkin_ws/src
+          cd catkin_ws
+          catkin build
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          path: 'src/ros_queuing_system'
+
+      - name: Generate Documentation
+        run: |
+          . ./devel/setup.sh
+          rosdoc_lite ./src/ros_queuing_system/ros_queues -o ./doc/ros_queues
+        working-directory: 'catkin_ws'
+
+      - name: Prepare Publish Step
+        run: |
+          apt-get install -y rsync
+
+      - name: Publish Documentation
+        uses: JamesIves/github-pages-deploy-action@3.7.1
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: gh-pages
+          FOLDER: catkin_ws/doc
+          TARGET_FOLDER: docs
+          CLEAN: true
+          SINGLE_COMMIT: true
