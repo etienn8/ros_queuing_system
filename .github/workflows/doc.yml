@@ -16,14 +16,12 @@ jobs:
         run: apt-get update
 
       - name: Install catkin tool and rosdoc_lite
-        run: apt-get -q -y install python3-catkin-tools ros-noetic-rosdoc-lite
+        run: apt-get -q -y install ros-noetic-rosdoc-lite
 
       - name: Create catkin_ws
         run: |
           mkdir -p catkin_ws/src
           cd catkin_ws
-          catkin init
-          catkin build
 
       - name: Checkout repository
         uses: actions/checkout@v4
