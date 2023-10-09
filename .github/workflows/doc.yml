@@ -1,7 +1,7 @@
 name: Publish Documentation
 
 on:
-    push:
+    pull_request:
       branches: [ main ]
     workflow_dispatch:
     
@@ -16,9 +16,7 @@ jobs:
         run: apt-get update
 
       - name: Install catkin tool and rosdoc_lite
-        run: |
-          apt-get install python3-catkin-tools
-          apt install ros-noetic-rosdoc-lite
+        run: apt-get -q -y install python3-catkin-tools ros-noetic-rosdoc-lite
 
       - name: Create catkin_ws
         run: |
