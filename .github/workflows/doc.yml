@@ -28,32 +28,15 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: 'catkin_ws/src/ros_queuing_system'
-
-      
-      - name: Log repo
-        run: |
-          pwd
-          ls -l
-          ls src/ -l
       
       - name: Build packages
         run: |
          . /opt/ros/noetic/setup.bash
-         ls -l
-         ls src/ -l
          catkin init
-         ls -l
-         ls src/ -l
          catkin build
-         ls -l devel/
-
         working-directory: 'catkin_ws'
         shell: bash
         
-      - name: Log repo 2
-        run: |
-          ls -l
-          ls src/ -l
           
       - name: Generate Documentation
         run: |
