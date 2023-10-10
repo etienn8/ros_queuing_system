@@ -37,10 +37,10 @@ jobs:
          . ./devel/setup.bash
         working-directory: 'catkin_ws'
         shell: bash
+        
       - name: Generate Documentation
         run: rosdoc_lite ./src/ros_queuing_system/ros_queues -o ./doc/ros_queues
         working-directory: 'catkin_ws'
-        shell: bash
 
       - name: Prepare Publish Step
         run: |
