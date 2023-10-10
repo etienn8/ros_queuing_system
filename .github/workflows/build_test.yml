@@ -1,0 +1,39 @@
+name: Publish Documentation
+
+on:
+    pull_request:
+      branches: [ main ]
+    workflow_dispatch:
+    
+
+jobs:
+  build-native:
+    runs-on: ubuntu-20.04
+    container:
+      image: ros:noetic-ros-base
+    steps:
+      - name: Update packages
+        run: apt-get update
+
+      - name: Install catkin tool and rosdoc_lite
+        run: apt-get -q -y install python3-catkin-tools
+
+      - name: Create catkin_ws
+        run: |
+          mkdir -p catkin_ws/src
+          cd catkin_ws
+          pwd
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          path: 'catkin_ws/src/ros_queuing_system'
+      
+      - name: Build packages
+        run: |
+         . /opt/ros/noetic/setup.bash
+         catkin init
+         catkin build
+        working-directory: 'catkin_ws'
+        shell: bash
+        
