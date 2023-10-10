@@ -201,10 +201,10 @@ add_executable(queue_testing src/queue_testing.cpp)
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_ros_queues.cpp)
-# if(TARGET ${PROJECT_NAME}-test)
-#   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
-# endif()
+catkin_add_gtest(virtual_queues_test test/virtual_queues_test.cpp)
+if(TARGET virtual_queues_test)
+  target_link_libraries(virtual_queues_test ${QUEUE_LIB_NAME})
+endif()
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
