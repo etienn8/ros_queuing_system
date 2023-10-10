@@ -25,7 +25,7 @@ jobs:
           pwd
 
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v2
         with:
           path: 'catkin_ws/src/ros_queuing_system'
       
