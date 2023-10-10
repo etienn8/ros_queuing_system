@@ -35,6 +35,7 @@ jobs:
          catkin init
          catkin build
         working-directory: 'catkin_ws'
+        shell: bash
 
       - name: Generate Documentation
         run: |
