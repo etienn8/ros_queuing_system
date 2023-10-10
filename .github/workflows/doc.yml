@@ -22,6 +22,7 @@ jobs:
         run: |
           mkdir -p catkin_ws/src
           cd catkin_ws
+          pwd
 
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -30,6 +31,7 @@ jobs:
       
       - name: Build packages
         run: |
+         pwd
          catkin init
          catkin build
         working-directory: 'catkin_ws'
