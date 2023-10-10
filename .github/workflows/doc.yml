@@ -41,6 +41,7 @@ jobs:
       - name: Generate Documentation
         run: |
           source ./devel/setup.bash
+          ls -l ./src/ros_queuing_system/ros_queues
           rosdoc_lite ./src/ros_queuing_system/ros_queues -o ./doc/ros_queues
         working-directory: 'catkin_ws'
         shell: bash
