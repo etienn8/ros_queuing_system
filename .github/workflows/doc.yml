@@ -27,7 +27,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          path: 'src/ros_queuing_system'
+          path: 'catkin_ws/src/ros_queuing_system'
 
       
       - name: Log repo
