@@ -51,7 +51,7 @@ jobs:
           apt-get install -y rsync
 
       - name: Publish Documentation
-        uses: JamesIves/github-pages-deploy-action@releases/v4-init
+        uses: JamesIves/github-pages-deploy-action@releases/v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           branch: gh-pages
