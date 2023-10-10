@@ -34,13 +34,11 @@ jobs:
          . /opt/ros/noetic/setup.bash
          catkin init
          catkin build
+         . ./devel/setup.bash
         working-directory: 'catkin_ws'
         shell: bash
-
       - name: Generate Documentation
-        run: |
-          . ./devel/setup.bash
-          rosdoc_lite ./src/ros_queuing_system/ros_queues -o ./doc/ros_queues
+        run: rosdoc_lite ./src/ros_queuing_system/ros_queues -o ./doc/ros_queues
         working-directory: 'catkin_ws'
         shell: bash
 
