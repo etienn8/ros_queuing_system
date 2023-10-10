@@ -53,9 +53,9 @@ jobs:
       - name: Publish Documentation
         uses: JamesIves/github-pages-deploy-action@releases/v4-init
         with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BRANCH: gh-pages
-          FOLDER: catkin_ws/doc
-          TARGET_FOLDER: docs
-          CLEAN: true
-          SINGLE_COMMIT: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: gh-pages
+          folder: catkin_ws/doc
+          target-folder: docs
+          clean: true
+          single-commit: true
