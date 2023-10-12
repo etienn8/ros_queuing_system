@@ -53,7 +53,7 @@ class DynamicQueue: public IDynamicQueue<deque<TQueueElementType>>
         {
             if(departure < 0)
             {
-                throw invalid_argument("Tried remove a negative number of elements from the queue.");
+                throw invalid_argument("Tried to remove a negative number of elements from the queue.");
             }
             
             deque<TQueueElementType> queue_to_transmit;
@@ -152,7 +152,7 @@ class DynamicConvertedQueue: public IDynamicQueue<deque<ElementWithConvertedSize
         {
             if(departure < 0)
             {
-                throw invalid_argument("Tried remove a negative number of elements from the queue.");
+                throw invalid_argument("Tried to remove a negative number of elements from the queue.");
             }
             lock_guard<mutex> lock(queue_manipulation_mutex_);
 
