@@ -1,4 +1,7 @@
+#include <stdexcept>
 #include "ros_queues/lib_queue/virtual_queue.hpp"
+
+using std::invalid_argument;
 
 inline int VirtualQueue::size()
 {
@@ -12,11 +15,20 @@ inline bool VirtualQueue::empty()
 
 inline void VirtualQueue::push(const int& nb_element)
 {
+    if(nb_element < 0)
+    {
+        throw invalid_argument("Tried to push a negative number of elements in a virtual queue");
+    }
     queue_size_ += nb_element;
 }
 
 void VirtualQueue::pop(const int& nb_element)
 {
+    if(nb_element < 0)
+    {
+        throw invalid_argument("Tried to pop a negative number of elements in a virtual queue");
+    }
+
     if (nb_element > queue_size_)
     {
         queue_size_ = 0;
@@ -29,6 +41,10 @@ void VirtualQueue::pop(const int& nb_element)
 
 inline void VirtualQueue::setSize(const int& new_size)
 {
+    if(new_size < 0)
+    {
+        throw invalid_argument("Tried to set the size of the queue to a negative value.");
+    }
     queue_size_ = new_size;
 }
 
@@ -45,11 +61,19 @@ inline bool NVirtualQueue::empty()
 
 inline void NVirtualQueue::push(const int& nb_element)
 {
+    if(nb_element < 0)
+    {
+        throw invalid_argument("Tried to push a negative number of elements in a virtual queue");
+    }
     queue_size_ += nb_element;
 }
 
 inline void NVirtualQueue::pop(const int& nb_element)
 {
+    if(nb_element < 0)
+    {
+        throw invalid_argument("Tried to pop a negative number of elements in a virtual queue");
+    }
     queue_size_ -= nb_element;
 }
 

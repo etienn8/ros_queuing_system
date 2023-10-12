@@ -2,18 +2,20 @@
 
 #include <deque>
 #include <mutex>
+#include <stdexcept>
 
 
 #include "ros_queues/lib_queue/I_dynamic_queue.hpp"
 #include "ros_queues/lib_queue/element_with_converted_size.hpp"
 
 using namespace std;
+using std::invalid_argument;
 
 template<typename TQueueElementType>
 class DynamicQueue: public IDynamicQueue<deque<TQueueElementType>>
 {
     public:
-        DynamicQueue(unsigned int max_queue_size): IDynamicQueue<deque<TQueueElementType>>(max_queue_size) {};
+        DynamicQueue(int max_queue_size): IDynamicQueue<deque<TQueueElementType>>(max_queue_size) {};
 
         virtual int getSize()
         {
@@ -47,8 +49,13 @@ class DynamicQueue: public IDynamicQueue<deque<TQueueElementType>>
             return new_size;
         }
 
-        bool update(deque<TQueueElementType> arriving_elements, const unsigned int departure)
+        bool update(deque<TQueueElementType> arriving_elements, const int departure)
         {
+            if(departure < 0)
+            {
+                throw invalid_argument("Tried remove a negative number of elements from the queue.");
+            }
+            
             deque<TQueueElementType> queue_to_transmit;
             bool overflowed = false;
 
@@ -99,7 +106,7 @@ template<typename TQueueElementType>
 class DynamicConvertedQueue: public IDynamicQueue<deque<ElementWithConvertedSize<TQueueElementType>>>
 {
     public:
-        DynamicConvertedQueue(unsigned int max_queue_size,
+        DynamicConvertedQueue(int max_queue_size,
             void (*conversionFunction)(deque<TQueueElementType>&, deque<ElementWithConvertedSize<TQueueElementType>>&))
             : IDynamicQueue<deque<ElementWithConvertedSize<TQueueElementType>>>(max_queue_size), generateConvertedQueue(conversionFunction) {};
 
@@ -141,8 +148,12 @@ class DynamicConvertedQueue: public IDynamicQueue<deque<ElementWithConvertedSize
             return new_size;
         }
 
-        bool update(deque<ElementWithConvertedSize<TQueueElementType>> arriving_elements, const unsigned int departure) override
+        bool update(deque<ElementWithConvertedSize<TQueueElementType>> arriving_elements, const int departure) override
         {
+            if(departure < 0)
+            {
+                throw invalid_argument("Tried remove a negative number of elements from the queue.");
+            }
             lock_guard<mutex> lock(queue_manipulation_mutex_);
 
             deque<TQueueElementType> queue_to_transmit;
@@ -184,7 +195,7 @@ class DynamicConvertedQueue: public IDynamicQueue<deque<ElementWithConvertedSize
             return !overflowed;
         }
 
-        bool update(deque<TQueueElementType> arriving_elements, const unsigned int departure)
+        bool update(deque<TQueueElementType> arriving_elements, const int departure)
         {
              deque<ElementWithConvertedSize<TQueueElementType>> wrapped_arriving_elements;
 

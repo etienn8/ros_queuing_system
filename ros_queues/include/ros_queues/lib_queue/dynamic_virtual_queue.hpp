@@ -8,14 +8,13 @@
 class InConVirtualQueue: public IDynamicQueue<VirtualQueue>
 {
     public:
-        InConVirtualQueue(unsigned int max_queue_size): IDynamicQueue(max_queue_size) {};
+        InConVirtualQueue(int max_queue_size): IDynamicQueue(max_queue_size) {};
         virtual int getSize() override;
         virtual int getMemSize() override;
         virtual int evaluate() override;
         
-        virtual bool update(VirtualQueue arriving_elements, const unsigned int departure) override;
-        bool udpate(const int arrival, const unsigned int departure);
-    
+        virtual bool update(VirtualQueue arriving_elements, const int departure) override;
+        virtual bool update(const int arrival, const int departure);
     protected:
         virtual int arrival_prediction() override;
         virtual int transmission_prediction() override;
@@ -25,13 +24,13 @@ class InConVirtualQueue: public IDynamicQueue<VirtualQueue>
 class EqConVirtualQueue: public IDynamicQueue<NVirtualQueue>
 {
     public:
-        EqConVirtualQueue(unsigned int max_queue_size): IDynamicQueue(max_queue_size) {};
+        EqConVirtualQueue(int max_queue_size): IDynamicQueue(max_queue_size) {};
         virtual int getSize() override;
         virtual int getMemSize() override;
         virtual int evaluate() override;
         
-        virtual bool update(NVirtualQueue arriving_elements, const unsigned int departure) override;
-        bool udpate(const int arrival, const unsigned int departure);
+        virtual bool update(NVirtualQueue arriving_elements, const int departure) override;
+        virtual bool update(const int arrival, const int departure);
     
     protected:
         virtual int arrival_prediction() override;

@@ -28,24 +28,30 @@ int main()
 {
     string debug_string;
 
+
+    VirtualQueue vq0;
+    vq0.setSize(3);
+
     InConVirtualQueue vq1(100);
     cout<<"Inequality constraint virtual queue"<<endl;
     cout<<"Queue size"<<vq1.getSize()<<endl;
-    vq1.udpate(4,3);
+    vq1.update(4,3);
     cout<<"New arrival of 4 and departure of 3. New size: "<<vq1.getSize()<<endl;
-    vq1.udpate(4,3);
+    vq1.update(4,3);
     cout<<"New arrival of 4 and departure of 3.  New size: "<<vq1.getSize()<<endl;
-    vq1.udpate(0,20);
+    vq1.update(0,20);
     cout<<"New arrival of 0 and departure of 20.  New size: "<<vq1.getSize()<<endl<<endl;
-    
+    vq1.update(vq0,0);
+    cout<<"New arrival of 3 and departure of 0.  New size: "<<vq1.getSize()<<endl<<endl;
+
     EqConVirtualQueue vq2(100);
     cout<<"Equality constraint virtual queue"<<endl;
     cout<<"Queue size"<<vq2.getSize()<<endl;
-    vq2.udpate(4,3);
+    vq2.update(4,3);
     cout<<"New arrival of 4 and departure of 3. New size: "<<vq2.getSize()<<endl;
-    vq2.udpate(4,3);
+    vq2.update(4,3);
     cout<<"New arrival of 4 and departure of 3.  New size: "<<vq2.getSize()<<endl;
-    vq2.udpate(0,20);
+    vq2.update(0,20);
     cout<<"New arrival of 0 and departure of 20.  New size: "<<vq2.getSize()<<endl<<endl;
 
     // Real data queues
@@ -112,5 +118,15 @@ int main()
     q3.update(big_pos_queue,0);
     cout<<"Queue size: "<<q3.getSize()<<" and Queue converted size: "<<q3.getConvertedSize()<<endl;
     
+    InConVirtualQueue vq20(10);
+
+    VirtualQueue vq_arrival;
+    vq_arrival.setSize(5);
+
+    vq20.update(4,3);
+    vq20.update(4,3);
+
+    vq20.update(vq_arrival, 2);
+
     return 0;
 }
