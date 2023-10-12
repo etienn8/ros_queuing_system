@@ -1,10 +1,9 @@
-#include <deque>
 #include <stdexcept>
 
 #include <gtest/gtest.h>
 
 #include "ros_queues/lib_queue/dynamic_virtual_queue.hpp"
-#include "ros_queues/lib_queue/dynamic_queue.hpp"
+#include "ros_queues/lib_queue/virtual_queue.hpp"
 
 #include "ros_queues/lib_queue/queue_exception.hpp"
 
