@@ -36,4 +36,9 @@ jobs:
          catkin build
         working-directory: 'catkin_ws'
         shell: bash
+
+      - name: Run tests
+        run: catkin test
+        working-directory: 'catkin_ws'
+          
         

@@ -1,4 +1,9 @@
+#include <stdexcept>
+
 #include "ros_queues/lib_queue/dynamic_virtual_queue.hpp"
+#include "ros_queues/lib_queue/queue_exception.hpp"
+
+using std::invalid_argument;
 
 int InConVirtualQueue::getSize()
 {
@@ -6,16 +11,19 @@ int InConVirtualQueue::getSize()
     return internal_queue_.size();
 }
 
-int InConVirtualQueue::getMemSize()
-{
-    std::lock_guard<std::mutex> lock(queue_manipulation_mutex_);
-    return sizeof(internal_queue_.size());
-}
-
 int InConVirtualQueue::evaluate()
 {
     const int arrival = arrival_prediction();
     const int departure = transmission_prediction();
+
+    if (arrival < 0)
+    {
+        throw NegativeArrivalPredictionException("");
+    }
+    if (departure < 0)
+    {
+        throw NegativeDeparturePredictionException("");
+    }
 
     //Protect access to queue
     std::lock_guard<std::mutex> lock(queue_manipulation_mutex_);
@@ -33,9 +41,14 @@ int InConVirtualQueue::evaluate()
     return new_size;
 }
 
-bool InConVirtualQueue::update(VirtualQueue arriving_elements, const unsigned int departure)
+bool InConVirtualQueue::update(VirtualQueue arriving_elements, const int departure)
 {   
     const int arrival = arriving_elements.size();
+    
+    if(departure < 0)
+    {
+        throw invalid_argument("Tried to remove a negative number of elements from the queue.");
+    }
 
     // Protect access to queue
     std::lock_guard<std::mutex> lock(queue_manipulation_mutex_);
@@ -57,8 +70,18 @@ bool InConVirtualQueue::update(VirtualQueue arriving_elements, const unsigned in
     return !overflowed;
 }
 
-bool InConVirtualQueue::udpate(const int arrival, const unsigned int departure)
+bool InConVirtualQueue::update(const int arrival, const int departure)
 {
+    if(departure < 0)
+    {
+        throw invalid_argument("Tried to remove a negative number of elements from the queue.");
+    }
+
+    if(arrival < 0)
+    {
+        throw invalid_argument("Tried to add a negative number of elements from the queue.");
+    }
+
     std::lock_guard<std::mutex> lock(queue_manipulation_mutex_);
 
     const int current_size = internal_queue_.size();
@@ -95,16 +118,19 @@ int EqConVirtualQueue::getSize()
     return internal_queue_.size();
 }
 
-int EqConVirtualQueue::getMemSize()
-{
-    std::lock_guard<std::mutex> lock(queue_manipulation_mutex_);
-    return sizeof(internal_queue_.size());
-}
-
 int EqConVirtualQueue::evaluate()
 {
     const int arrival = arrival_prediction();
     const int departure = transmission_prediction();
+
+    if (arrival < 0)
+    {
+        throw NegativeArrivalPredictionException("");
+    }
+    if (departure < 0)
+    {
+        throw NegativeDeparturePredictionException("");
+    }
 
     std::lock_guard<std::mutex> lock(queue_manipulation_mutex_);
     const int current_size = internal_queue_.size();
@@ -124,10 +150,15 @@ int EqConVirtualQueue::evaluate()
     return new_size;
 }
 
-bool EqConVirtualQueue::update(NVirtualQueue arriving_elements, const unsigned int departure)
+bool EqConVirtualQueue::update(NVirtualQueue arriving_elements, const int departure)
 {
     const int arrival =  arriving_elements.size();
 
+    if(departure < 0)
+    {
+        throw invalid_argument("Tried to remove a negative number of elements from the queue.");
+    }
+    
     std::lock_guard<std::mutex> lock(queue_manipulation_mutex_);
     const int current_size = internal_queue_.size();
 
@@ -150,8 +181,18 @@ bool EqConVirtualQueue::update(NVirtualQueue arriving_elements, const unsigned i
     return !overflowed;
 }
 
-bool EqConVirtualQueue::udpate(const int arrival, const unsigned int departure)
+bool EqConVirtualQueue::update(const int arrival, const int departure)
 {   
+    if(departure < 0)
+    {
+        throw invalid_argument("Tried to remove a negative number of elements from the queue.");
+    }
+
+    if(arrival < 0)
+    {
+        throw invalid_argument("Tried to add a negative number of elements from the queue.");
+    }
+
     std::lock_guard<std::mutex> lock(queue_manipulation_mutex_);
     const int current_size = internal_queue_.size();
 
