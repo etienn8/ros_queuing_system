@@ -23,3 +23,10 @@ class NegativeDeparturePredictionException: public std::out_of_range
                 return "Departure prediction gave an negative integer while it expects a positive integer.";
         }
 };
+
+class BadConversionException: public std::logic_error
+{
+    public:
+        BadConversionException(const std::string& arg):logic_error(arg) {};
+        ~BadConversionException() noexcept {};
+};

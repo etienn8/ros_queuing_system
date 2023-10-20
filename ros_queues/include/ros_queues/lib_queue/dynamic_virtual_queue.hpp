@@ -10,7 +10,6 @@ class InConVirtualQueue: public IDynamicQueue<VirtualQueue>
     public:
         InConVirtualQueue(int max_queue_size): IDynamicQueue(max_queue_size) {};
         virtual int getSize() override;
-        virtual int getMemSize() override;
         virtual int evaluate() override;
         
         virtual bool update(VirtualQueue arriving_elements, const int departure) override;
@@ -26,7 +25,6 @@ class EqConVirtualQueue: public IDynamicQueue<NVirtualQueue>
     public:
         EqConVirtualQueue(int max_queue_size): IDynamicQueue(max_queue_size) {};
         virtual int getSize() override;
-        virtual int getMemSize() override;
         virtual int evaluate() override;
         
         virtual bool update(NVirtualQueue arriving_elements, const int departure) override;

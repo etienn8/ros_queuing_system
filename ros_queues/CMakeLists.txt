@@ -206,5 +206,10 @@ if(TARGET virtual_queues_test)
   target_link_libraries(virtual_queues_test ${QUEUE_LIB_NAME})
 endif()
 
+catkin_add_gtest(dynamic_queues_test test/dynamic_queues_test.cpp)
+if(TARGET dynamic_queues_test)
+  target_link_libraries(dynamic_queues_test ${QUEUE_LIB_NAME})
+endif()
+
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)

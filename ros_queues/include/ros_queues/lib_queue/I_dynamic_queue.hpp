@@ -22,7 +22,6 @@ class IDynamicQueue
         };
 
         virtual int getSize(){return internal_queue_.size();};
-        virtual int getMemSize()=0;
 
         virtual int evaluate()=0;
         

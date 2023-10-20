@@ -197,14 +197,6 @@ TEST(InConVirutalQueueDynamicTest, predictionTest)
     EXPECT_THROW(vq.evaluate(), NegativeDeparturePredictionException);
 }
 
-TEST(InConVirutalQueueDynamicTest, memorySizeTest)
-{
-    const int QUEUE_MAX_SIZE = 10;
-    InConVirtualQueue vq(QUEUE_MAX_SIZE);
-
-    EXPECT_EQ(vq.getMemSize(), sizeof(int));
-}
-
 // Test for the equality constraint virtual queue
 TEST(EqConVirtualQueueDynamicTest, manipultationTest)
 {
@@ -288,14 +280,6 @@ TEST(EqConVirtualQueueDynamicTest, predictionTest)
     vq.predicted_arrival_ = 0;
     vq.predicted_transmission_ = -1;
     EXPECT_THROW(vq.evaluate(), NegativeDeparturePredictionException);
-}
-
-TEST(EqConVirtualQueueDynamicTest, memorySizeTest)
-{
-    const int QUEUE_MAX_SIZE = 10;
-    EqConVirtualQueue vq(QUEUE_MAX_SIZE);
-
-    EXPECT_EQ(vq.getMemSize(), sizeof(int));
 }
 
 // Run all the tests that were declared with TEST()

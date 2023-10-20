@@ -11,12 +11,6 @@ int InConVirtualQueue::getSize()
     return internal_queue_.size();
 }
 
-int InConVirtualQueue::getMemSize()
-{
-    std::lock_guard<std::mutex> lock(queue_manipulation_mutex_);
-    return sizeof(internal_queue_.size());
-}
-
 int InConVirtualQueue::evaluate()
 {
     const int arrival = arrival_prediction();
@@ -122,12 +116,6 @@ int EqConVirtualQueue::getSize()
 {
     std::lock_guard<std::mutex> lock(queue_manipulation_mutex_);
     return internal_queue_.size();
-}
-
-int EqConVirtualQueue::getMemSize()
-{
-    std::lock_guard<std::mutex> lock(queue_manipulation_mutex_);
-    return sizeof(internal_queue_.size());
 }
 
 int EqConVirtualQueue::evaluate()
