@@ -267,10 +267,10 @@ TEST(DynamicConvertedQueueTest, predictionTest)
 
     // Initialize arrival rate and transmission
     q.predicted_arrival_ = 128;
-    q.predicted_transmission_ = 64; 
+    q.predicted_transmission_ = 1; 
 
     // Evaluate queue and verify its content and size
-    EXPECT_EQ(q.evaluate(), 205);
+    EXPECT_EQ(q.evaluate(), 226);
     // Real size should not have change after the evaluation
     EXPECT_EQ(q.getSize(), 141);
 
@@ -282,13 +282,13 @@ TEST(DynamicConvertedQueueTest, predictionTest)
 
     // Verify the lower bound of evaluation
     q.predicted_arrival_ = 0;
-    q.predicted_transmission_ = 512;
+    q.predicted_transmission_ = 4;
 
     EXPECT_EQ(q.evaluate(), 0);
 
     // Verify illegal predicted values
     q.predicted_arrival_ = -1;
-    q.predicted_transmission_ = 10;
+    q.predicted_transmission_ = 0;
     EXPECT_THROW(q.evaluate(), NegativeArrivalPredictionException);
 
     q.predicted_arrival_ = 0;

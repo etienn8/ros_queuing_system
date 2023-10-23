@@ -1,5 +1,9 @@
 #pragma once
 
+/**
+ * @brief Container class that wraps an element with a user-defined size.
+ * @tparam TQueueType Type of element with which a converted size will be linked to.
+ */
 template<typename TQueueElementType>
 class ElementWithConvertedSize
 {

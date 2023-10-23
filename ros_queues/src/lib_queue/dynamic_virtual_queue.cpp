@@ -41,11 +41,11 @@ int InConVirtualQueue::evaluate()
     return new_size;
 }
 
-bool InConVirtualQueue::update(VirtualQueue arriving_elements, const int departure)
+bool InConVirtualQueue::update(VirtualQueue arriving_elements, const int nb_departing_elements)
 {   
     const int arrival = arriving_elements.size();
     
-    if(departure < 0)
+    if(nb_departing_elements < 0)
     {
         throw invalid_argument("Tried to remove a negative number of elements from the queue.");
     }
@@ -56,7 +56,7 @@ bool InConVirtualQueue::update(VirtualQueue arriving_elements, const int departu
     const int current_size = internal_queue_.size();
 
     // Queue dynamic
-    int new_size = (current_size > departure) ? current_size - departure + arrival : arrival; 
+    int new_size = (current_size > nb_departing_elements) ? current_size - nb_departing_elements + arrival : arrival; 
 
     bool overflowed = false;
     if (new_size > max_queue_size_)
@@ -70,14 +70,14 @@ bool InConVirtualQueue::update(VirtualQueue arriving_elements, const int departu
     return !overflowed;
 }
 
-bool InConVirtualQueue::update(const int arrival, const int departure)
+bool InConVirtualQueue::update(const int nb_arriving_elements, const int nb_departing_elements)
 {
-    if(departure < 0)
+    if(nb_departing_elements < 0)
     {
         throw invalid_argument("Tried to remove a negative number of elements from the queue.");
     }
 
-    if(arrival < 0)
+    if(nb_arriving_elements < 0)
     {
         throw invalid_argument("Tried to add a negative number of elements from the queue.");
     }
@@ -87,7 +87,7 @@ bool InConVirtualQueue::update(const int arrival, const int departure)
     const int current_size = internal_queue_.size();
 
     // Queue dynamic
-    int new_size = (current_size > departure) ? current_size - departure + arrival : arrival; 
+    int new_size = (current_size > nb_departing_elements) ? current_size - nb_departing_elements + nb_arriving_elements : nb_arriving_elements; 
 
     bool overflowed = false;
     if (new_size > max_queue_size_)
@@ -150,11 +150,11 @@ int EqConVirtualQueue::evaluate()
     return new_size;
 }
 
-bool EqConVirtualQueue::update(NVirtualQueue arriving_elements, const int departure)
+bool EqConVirtualQueue::update(NVirtualQueue arriving_elements, const int nb_departing_elements)
 {
     const int arrival =  arriving_elements.size();
 
-    if(departure < 0)
+    if(nb_departing_elements < 0)
     {
         throw invalid_argument("Tried to remove a negative number of elements from the queue.");
     }
@@ -163,7 +163,7 @@ bool EqConVirtualQueue::update(NVirtualQueue arriving_elements, const int depart
     const int current_size = internal_queue_.size();
 
     // Dynamics of a virtual queue that constrain a  time average value at zero
-    int new_size = current_size - departure + arrival; 
+    int new_size = current_size - nb_departing_elements + arrival; 
 
     bool overflowed = false;
     if (new_size > max_queue_size_)
@@ -181,14 +181,14 @@ bool EqConVirtualQueue::update(NVirtualQueue arriving_elements, const int depart
     return !overflowed;
 }
 
-bool EqConVirtualQueue::update(const int arrival, const int departure)
+bool EqConVirtualQueue::update(const int nb_arriving_elements, const int nb_departing_elements)
 {   
-    if(departure < 0)
+    if(nb_departing_elements < 0)
     {
         throw invalid_argument("Tried to remove a negative number of elements from the queue.");
     }
 
-    if(arrival < 0)
+    if(nb_arriving_elements < 0)
     {
         throw invalid_argument("Tried to add a negative number of elements from the queue.");
     }
@@ -197,7 +197,7 @@ bool EqConVirtualQueue::update(const int arrival, const int departure)
     const int current_size = internal_queue_.size();
 
     // Dynamics of a virtual queue that constrain a  time average value at zero
-    int new_size = current_size - departure + arrival; 
+    int new_size = current_size - nb_departing_elements + nb_arriving_elements; 
 
     bool overflowed = false;
     if (new_size > max_queue_size_)
