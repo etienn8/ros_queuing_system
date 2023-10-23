@@ -2,6 +2,9 @@
 #include <stdexcept>
 #include <string>
 
+/**
+ * @brief Exception thrown when a arrival prediction gives an negative value which should neven happen.
+ */
 class NegativeArrivalPredictionException: public std::out_of_range
 {
     public:
@@ -13,6 +16,9 @@ class NegativeArrivalPredictionException: public std::out_of_range
         }
 };
 
+/**
+ * @brief Exception thrown when a transmission prediction gives an negative value which should neven happen.
+ */
 class NegativeDeparturePredictionException: public std::out_of_range
 {
     public:
@@ -24,6 +30,9 @@ class NegativeDeparturePredictionException: public std::out_of_range
         }
 };
 
+/**
+ * @brief Exception thrown whenever a logic error occurs that is linked to the user-defined conversion function of an element into another size format.
+ */
 class BadConversionException: public std::logic_error
 {
     public:

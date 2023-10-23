@@ -248,9 +248,9 @@ class DynamicConvertedQueue: public IDynamicQueue<deque<ElementWithConvertedSize
          * @throw Throws an BadConversionException if the converted size of an element is 0 or negative.  
          * @return Boolean of it the queue overflowed while adding elements.
          */
-        bool update(deque<ElementWithConvertedSize<TQueueElementType>> arriving_elements, const int departure) override
+        bool update(deque<ElementWithConvertedSize<TQueueElementType>> arriving_elements, const int nb_departing_elements) override
         {
-            if(departure < 0)
+            if(nb_departing_elements < 0)
             {
                 throw invalid_argument("Tried to remove a negative number of elements from the queue.");
             }
@@ -263,7 +263,7 @@ class DynamicConvertedQueue: public IDynamicQueue<deque<ElementWithConvertedSize
                 // Protect access to queue
                 lock_guard<mutex> lock(queue_manipulation_mutex_);
 
-                for(int i =0; i<departure; ++i)
+                for(int i =0; i<nb_departing_elements; ++i)
                 {
                     if(this->internal_queue_.empty())
                     {
@@ -315,7 +315,7 @@ class DynamicConvertedQueue: public IDynamicQueue<deque<ElementWithConvertedSize
          * @throw Throws an BadConversionException if the converted size of an element is 0 or negative, the conversion function doesn't produce a queue of equal size as the queue of incoming data, or the conversion function points toward a null function. 
          * @return Boolean of it the queue overflowed while adding elements.
          */
-        bool update(deque<TQueueElementType> arriving_elements, const int departure)
+        bool update(deque<TQueueElementType> arriving_elements, const int nb_departing_elements)
         {
             deque<ElementWithConvertedSize<TQueueElementType>> wrapped_arriving_elements;
             const int arriving_elements_size = arriving_elements.size();
@@ -335,7 +335,7 @@ class DynamicConvertedQueue: public IDynamicQueue<deque<ElementWithConvertedSize
                 throw BadConversionException("The conversion function pointer is null.");
             }
 
-            return update(wrapped_arriving_elements, departure);
+            return update(wrapped_arriving_elements, nb_departing_elements);
         }
 
         /**
