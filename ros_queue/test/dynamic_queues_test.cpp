@@ -3,9 +3,9 @@
 
 #include <gtest/gtest.h>
 
-#include "ros_queues/lib_queue/dynamic_queue.hpp"
-#include "ros_queues/lib_queue/queue_exception.hpp"
-#include "ros_queues/test/dynamic_queues_test.hpp"
+#include "ros_queue/lib_queue/dynamic_queue.hpp"
+#include "ros_queue/lib_queue/queue_exception.hpp"
+#include "ros_queue/test/dynamic_queues_test.hpp"
 
 using std::list;
 using std::deque;

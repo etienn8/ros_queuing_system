@@ -2,8 +2,8 @@
 
 #include <mutex>
 
-#include "ros_queues/lib_queue/I_dynamic_queue.hpp"
-#include "ros_queues/lib_queue/virtual_queue.hpp"
+#include "ros_queue/lib_queue/I_dynamic_queue.hpp"
+#include "ros_queue/lib_queue/virtual_queue.hpp"
 
 
 /**
@@ -87,7 +87,7 @@ class EqConVirtualQueue: public IDynamicQueue<NVirtualQueue>
          * @return Predicted size of the queue after evaluation.
          */
         virtual int evaluate() override;
-        
+
         /**
          * @brief Updates the queue by adding the arriving_elements and by removing the specifiy number of departing elements while respecting the maximum queue size.
          * @param arriving_elements Virtual queue to append to the internal virtual queue.
@@ -96,7 +96,7 @@ class EqConVirtualQueue: public IDynamicQueue<NVirtualQueue>
          * @return Boolean of it the queue overflowed while adding elements.
          */
         virtual bool update(NVirtualQueue arriving_elements, const int nb_departing_elements) override;
-        
+
         /**
          * @brief Updates the queue by adding the arriving_elements and by removing the specifiy number of departing elements while respecting the maximum queue size.
          * @param nb_arriving_elements Number of elements to add to queue.

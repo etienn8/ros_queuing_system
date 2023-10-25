@@ -2,10 +2,10 @@
 
 #include <gtest/gtest.h>
 
-#include "ros_queues/lib_queue/dynamic_virtual_queue.hpp"
-#include "ros_queues/lib_queue/virtual_queue.hpp"
+#include "ros_queue/lib_queue/dynamic_virtual_queue.hpp"
+#include "ros_queue/lib_queue/virtual_queue.hpp"
 
-#include "ros_queues/lib_queue/queue_exception.hpp"
+#include "ros_queue/lib_queue/queue_exception.hpp"
 
 
 using std::invalid_argument;

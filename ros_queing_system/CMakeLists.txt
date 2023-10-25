@@ -8,7 +8,7 @@ project(ros_queing_system)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  ros_queues
+  ros_queue
 )
 catkin_metapackage()
 

@@ -4,9 +4,9 @@
 #include <mutex>
 #include <stdexcept>
 
-#include "ros_queues/lib_queue/I_dynamic_queue.hpp"
-#include "ros_queues/lib_queue/element_with_converted_size.hpp"
-#include "ros_queues/lib_queue/queue_exception.hpp"
+#include "ros_queue/lib_queue/I_dynamic_queue.hpp"
+#include "ros_queue/lib_queue/element_with_converted_size.hpp"
+#include "ros_queue/lib_queue/queue_exception.hpp"
 
 using namespace std;
 
@@ -149,7 +149,7 @@ class DynamicQueue: public IDynamicQueue<deque<TQueueElementType>>
          */
         virtual int transmission_prediction() override {return 0;};
 
-         /**
+        /**
          * @brief Mutex to protect access to the internal queue.
          */
         mutex queue_manipulation_mutex_;
