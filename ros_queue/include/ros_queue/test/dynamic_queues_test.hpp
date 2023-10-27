@@ -4,7 +4,7 @@
 #include <list>
 #include <string>
 
-#include "ros_queues/lib_queue/dynamic_queue.hpp"
+#include "ros_queue/lib_queue/dynamic_queue.hpp"
 
 using namespace std;
 
@@ -50,6 +50,25 @@ class DynamicQueueMockedTransmission: public DynamicQueue<TQueueElementType>
     }
 };
 
+template<typename TQueueElementType, typename TStates> 
+class SpecialisedDynamicQueueMockedPrediction: public DynamicQueue<TQueueElementType, TStates>
+{
+    public:
+        SpecialisedDynamicQueueMockedPrediction(int max_queue_size): DynamicQueue<TQueueElementType, TStates>(max_queue_size) {};
+
+    protected:
+        virtual int arrival_prediction(TStates& states) override
+        {
+            return states+1;
+        };
+
+        virtual int transmission_prediction(TStates& states) override
+        {
+            return states;
+        };
+};
+
+
 template<typename TQueueElementType> 
 class DynamicConvertedQueueMockedPrediction: public DynamicConvertedQueue<TQueueElementType>
 {
@@ -70,6 +89,26 @@ class DynamicConvertedQueueMockedPrediction: public DynamicConvertedQueue<TQueue
         virtual int transmission_prediction() override
         {
             return predicted_transmission_;
+        };
+};
+
+template<typename TQueueElementType, typename TStates> 
+class SpecializedDynamicConvertedQueueMockedPrediction: public DynamicConvertedQueue<TQueueElementType, TStates>
+{
+    public:
+        SpecializedDynamicConvertedQueueMockedPrediction(int max_queue_size, void (*conversionFunction)(deque<TQueueElementType>&,
+                                                deque<ElementWithConvertedSize<TQueueElementType>>&)):
+                                                DynamicConvertedQueue<TQueueElementType, TStates>(max_queue_size,conversionFunction) {};
+
+    protected:
+        virtual int arrival_prediction(TStates& states) override
+        {
+            return states+1;
+        };
+
+        virtual int transmission_prediction(TStates& states) override
+        {
+            return states;
         };
 };
 

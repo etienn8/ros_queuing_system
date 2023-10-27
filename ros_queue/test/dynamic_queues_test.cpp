@@ -4,6 +4,7 @@
 #include <gtest/gtest.h>
 
 #include "ros_queue/lib_queue/dynamic_queue.hpp"
+#include "ros_queue/lib_queue/dynamic_converted_queue.hpp"
 #include "ros_queue/lib_queue/queue_exception.hpp"
 #include "ros_queue/test/dynamic_queues_test.hpp"
 
@@ -161,6 +162,19 @@ TEST(DynamicQueueTest, predictionTest)
     EXPECT_THROW(q.evaluate(), NegativeDeparturePredictionException);
 }
 
+TEST(DynamicQueueTest, specializedPredictionTest)
+{
+    const int queue_max_size = 10;
+
+    // Initialize queue with an evaluation that takes an in at the input
+    SpecialisedDynamicQueueMockedPrediction<int, int> q(10);
+    deque<int> arrival_queue = {1, 2, 3, 4, 5};
+    q.update(arrival_queue, 0);
+
+    // Evaluate queue and verify its content and size. This implementation predicts an arrival of 4+1 and transmission of 4.
+    EXPECT_EQ(q.evaluate(4), 6);
+}
+
 TEST(DynamicQueueTest, transmissionTest)
 {
     // Create a mock to receive data
@@ -294,6 +308,20 @@ TEST(DynamicConvertedQueueTest, predictionTest)
     q.predicted_arrival_ = 0;
     q.predicted_transmission_ = -1;
     EXPECT_THROW(q.evaluate(), NegativeDeparturePredictionException);
+}
+
+TEST(DynamicConvertedQueueTest, specializedPredictionTest)
+{
+    const int queue_max_size = 512;
+
+    // Initialize queue with an evaluation that takes an in at the input
+    SpecializedDynamicConvertedQueueMockedPrediction<Trajectory, int> q(queue_max_size, traj_to_byte_conversion);
+    deque<Trajectory> arrival_queue = {Trajectory("frame_0", point_list_0), Trajectory("frame_1", point_list_1), Trajectory("frame_2", point_list_0)};
+    q.update(arrival_queue, 0);
+    q.update(arrival_queue, 0);
+
+    // Evaluate queue and verify its content and size. This implementation predicts an arrival of 4+1 and transmission of 4.
+    EXPECT_EQ(q.evaluate(4), 103);
 }
 
 TEST(DynamicConvertedQueueTest, transmissionTest)
