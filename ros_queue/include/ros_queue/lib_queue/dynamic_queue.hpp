@@ -35,6 +35,7 @@ class DynamicQueue: public IDynamicQueue<deque<TQueueElementType>, TStates>
         /**
          * @brief Evaluate the size of the queue based on the real size of the queue and predicted arrival and departure rate.
          * @details It evaluates the size of the queue based on it's actual size and predicted arrival and departure rate. Those prediction are evaluated based on the methods IDynamicQueue::arrival_prediction and IDynamicQueue::transmission_prediction.
+         * @param states Argument with a type given by a template parameter that is passed to the prediction function so the user can give data to the prediction. 
          * @throw Throws a NegativeArrivalPredictionException if the IDynamicQueue::arrival_prediction predicts an negative number of incoming elements which sould never logicaly happen.
          * @throw Throws a NegativeDeparturePredictionException if the IDynamicQueue::transmission_prediction predicts an negative number of departing elements which sould never logicaly happen.
          * @return Predicted size of the queue after evaluation.
@@ -140,12 +141,14 @@ class DynamicQueue: public IDynamicQueue<deque<TQueueElementType>, TStates>
 
         /**
          * @brief Method used in the evaluation process to predict what will be the arrival. Override this method to define a specific arrival prediction behavior.
+         * @param states Argument passed by the evaluation process and has a type decided by the template. Allows derived class to use data(states) passed by the application level.
          * @return Returns the size of the estimated arrival queue.
          */
         virtual int arrival_prediction(const TStates& states) override {return 0;};
 
         /**
          * @brief Method used in the evaluation process to predict how many elements is predicted to depart. Override this method to define a specific transmission prediction behavior.
+         * @param states Argument passed by the evaluation process and has a type decided by the template. Allows derived class to use data(states) passed by the application level.
          * @return Returns the size of the queue that could be transmitted.
          */
         virtual int transmission_prediction(const TStates& states) override {return 0;};

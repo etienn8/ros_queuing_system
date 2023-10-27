@@ -34,6 +34,7 @@ class IDynamicQueue
 
         /**
          * @brief Evaluate the size of the queue based on the real size of the queue and predicted arrival and departure rate.
+         * @param states Argument with a type given by a template parameter that is passed to the prediction function so the user can give data to the prediction. 
          * @details It evaluates the size of the queue based on it's actual size and predicted arrival and departure rate. Those prediction are evaluated based on the methods IDynamicQueue::arrival_prediction and IDynamicQueue::transmission_prediction.
          * @return Predicted size of the queue after evaluation.
          */
@@ -66,12 +67,14 @@ class IDynamicQueue
 
         /**
          * @brief Method to override that predicts the size of incoming elements.
+         * @param states Argument passed by the evaluation process and has a type decided by the template. Allows derived class to use data(states) passed by the application level.
          * @return Return an integer that predicts how many element would be added to the queue.
          */
         virtual int arrival_prediction(const TStates& states)=0;
 
         /**
          * @brief Method to override that predicts the number of elements that could leave the queue.
+         * @param states Argument passed by the evaluation process and has a type decided by the template. Allows derived class to use data(states) passed by the application level.
          * @return Return an integer that predicts how many element would be removed from the queue.
          */
         virtual int transmission_prediction(const TStates& states)=0;

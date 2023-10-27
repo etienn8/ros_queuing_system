@@ -46,6 +46,7 @@ class DynamicConvertedQueue: public IDynamicQueue<deque<ElementWithConvertedSize
         /**
          * @brief Evaluate the size of the queue based on the converted size of the queue and predicted arrival and departure rate (in internal queue size instead of converted size).
          * @details It evaluates the size of the queue based on it's actual converted size and predicted arrival and departure rate. Those prediction are evaluated based on the methods IDynamicQueue::arrival_prediction and IDynamicQueue::transmission_prediction.
+         * @param states Argument with a type given by a template parameter that is passed to the prediction function so the user can give data to the prediction. 
          * @throw Throws a NegativeArrivalPredictionException if the IDynamicQueue::arrival_prediction predicts an negative number of incoming elements which sould never logicaly happen.
          * @throw Throws a NegativeDeparturePredictionException if the IDynamicQueue::transmission_prediction predicts an negative number of departing elements which sould never logicaly happen.
          * @return Predicted converted size of the queue after evaluation.
@@ -233,12 +234,14 @@ class DynamicConvertedQueue: public IDynamicQueue<deque<ElementWithConvertedSize
         
         /**
          * @brief Method used in the evaluation process to predict what will be the arrival size. Override this method to define a specific arrival prediction behavior.
+         * @param states Argument passed by the evaluation process and has a type decided by the template. Allows derived class to use data(states) passed by the application level.
          * @return Returns the converted size of the estimated arrival queue.
          */
         virtual int arrival_prediction(const TStates& states) override {return 0;};
 
         /**
          * @brief Method used in the evaluation process to predict what will be the transmission size. Override this method to define a specific transmission prediction behavior.
+         * @param states Argument passed by the evaluation process and has a type decided by the template. Allows derived class to use data(states) passed by the application level.
          * @return Returns the size of the queue that could be transmitted in internal queue size (not converted).
          */
         virtual int transmission_prediction(const TStates& states) override {return 0;};
