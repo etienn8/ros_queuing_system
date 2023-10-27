@@ -1,10 +1,13 @@
 #pragma once
 
 #include <mutex>
+#include <stdexcept>
 
 #include "ros_queue/lib_queue/I_dynamic_queue.hpp"
 #include "ros_queue/lib_queue/virtual_queue.hpp"
+#include "ros_queue/lib_queue/queue_exception.hpp"
 
+using std::invalid_argument;
 
 /**
  * @brief Virtual queue with interfaces to affect its dynamic. Implemented like virtual queues used with inequality constraint where their size can't go below 0. 
@@ -12,13 +15,17 @@
 class InConVirtualQueue: public IDynamicQueue<VirtualQueue>
 {
     public:
-        InConVirtualQueue(int max_queue_size): IDynamicQueue(max_queue_size) {};
+        InConVirtualQueue(int max_queue_size): IDynamicQueue<VirtualQueue>(max_queue_size) {};
         
         /**
          * @brief Get the size of the internal queue.
          * @return Return the size of the internal queue.
          */
-        virtual int getSize() override;
+        virtual int getSize() override
+        {
+            std::lock_guard<std::mutex> lock(queue_manipulation_mutex_);
+            return this->internal_queue_.size();
+        };
 
         /**
          * @brief Evaluate the size of the queue based on the real size of the queue and predicted arrival and departure rate.
@@ -27,7 +34,35 @@ class InConVirtualQueue: public IDynamicQueue<VirtualQueue>
          * @throw Throws a NegativeDeparturePredictionException if the IDynamicQueue::transmission_prediction predicts an negative number of departing elements which sould never logicaly happen.
          * @return Predicted size of the queue after evaluation.
          */
-        virtual int evaluate() override;
+        virtual int evaluate() override
+        {
+            const int arrival = arrival_prediction();
+            const int departure = transmission_prediction();
+
+            if (arrival < 0)
+            {
+                throw NegativeArrivalPredictionException("");
+            }
+            if (departure < 0)
+            {
+                throw NegativeDeparturePredictionException("");
+            }
+
+            //Protect access to queue
+            std::lock_guard<std::mutex> lock(queue_manipulation_mutex_);
+
+            const int current_size = this->internal_queue_.size();
+
+            // Queue dynamic
+            int new_size = (current_size > departure) ? current_size - departure + arrival : arrival; 
+
+            if (new_size > this->max_queue_size_)
+            {
+                new_size = this->max_queue_size_;
+            }
+            
+            return new_size;
+        };
         
         /**
          * @brief Updates the queue by adding the arriving_elements and by removing the specifiy number of departing elements while respecting the maximum queue size.
@@ -36,7 +71,34 @@ class InConVirtualQueue: public IDynamicQueue<VirtualQueue>
          * @throw Throws an invalid_argument exception if the departure arguement is negative since it can't transmit negative number of elements.
          * @return Boolean of it the queue overflowed while adding elements.
          */
-        virtual bool update(VirtualQueue arriving_elements, const int nb_departing_elements) override;
+        virtual bool update(VirtualQueue arriving_elements, const int nb_departing_elements) override
+        {
+            const int arrival = arriving_elements.size();
+            
+            if(nb_departing_elements < 0)
+            {
+                throw invalid_argument("Tried to remove a negative number of elements from the queue.");
+            }
+
+            // Protect access to queue
+            std::lock_guard<std::mutex> lock(queue_manipulation_mutex_);
+
+            const int current_size = this->internal_queue_.size();
+
+            // Queue dynamic
+            int new_size = (current_size > nb_departing_elements) ? current_size - nb_departing_elements + arrival : arrival; 
+
+            bool overflowed = false;
+            if (new_size > this->max_queue_size_)
+            {
+                new_size = this->max_queue_size_;
+                overflowed = true;
+            }
+
+            this->internal_queue_.setSize(new_size);
+
+            return !overflowed;
+        };
         
         /**
          * @brief Updates the queue by adding the arriving_elements and by removing the specifiy number of departing elements while respecting the maximum queue size.
@@ -45,26 +107,55 @@ class InConVirtualQueue: public IDynamicQueue<VirtualQueue>
          * @throw Throws an invalid_argument exception if the departure arguement is negative since it can't transmit negative number of elements.
          * @return Boolean of it the queue overflowed while adding elements.
          */
-        virtual bool update(const int nb_arriving_elements, const int nb_departing_elements);
+        virtual bool update(const int nb_arriving_elements, const int nb_departing_elements)
+        {
+            if(nb_departing_elements < 0)
+            {
+                throw invalid_argument("Tried to remove a negative number of elements from the queue.");
+            }
+
+            if(nb_arriving_elements < 0)
+            {
+                throw invalid_argument("Tried to add a negative number of elements from the queue.");
+            }
+
+            std::lock_guard<std::mutex> lock(queue_manipulation_mutex_);
+
+            const int current_size = this->internal_queue_.size();
+
+            // Queue dynamic
+            int new_size = (current_size > nb_departing_elements) ? current_size - nb_departing_elements + nb_arriving_elements : nb_arriving_elements; 
+
+            bool overflowed = false;
+            if (new_size > this->max_queue_size_)
+            {
+                new_size = this->max_queue_size_;
+                overflowed = true;
+            }
+
+            this->internal_queue_.setSize(new_size);
+            return !overflowed;
+        };
 
     protected:
         /**
          * @brief Method used in the evaluation process to predict what will be the arrival size. Override this method to define a specific arrival prediction behavior.
          * @return Returns the number of elements that could be added to the queue.
          */
-        virtual int arrival_prediction() override;
+        virtual int arrival_prediction() override {return 0;};
 
         /**
          * @brief Method used in the evaluation process to predict what will be the departure size. Override this method to define a specific transmission prediction behavior.
          * @return Returns the number of elements that could be removed from the queue.
          */
-        virtual int transmission_prediction() override;
+        virtual int transmission_prediction() override {return 0;};
 
         /**
          * @brief Mutex to protect access to the internal queue.
          */
         std::mutex queue_manipulation_mutex_;
 };
+
 
 /**
  * @brief Virtual queue with interfaces to affect its dynamic. Implemented like virtual queues used with equality constraint where their size can go below 0. 
@@ -77,7 +168,11 @@ class EqConVirtualQueue: public IDynamicQueue<NVirtualQueue>
          * @brief Get the size of the internal queue.
          * @return Return the size of the internal queue.
          */
-        virtual int getSize() override;
+        virtual int getSize() override
+        {
+            std::lock_guard<std::mutex> lock(queue_manipulation_mutex_);
+            return this->internal_queue_.size();
+        };
 
         /**
          * @brief Evaluate the size of the queue based on the real size of the queue and predicted arrival and departure rate.
@@ -86,7 +181,37 @@ class EqConVirtualQueue: public IDynamicQueue<NVirtualQueue>
          * @throw Throws a NegativeDeparturePredictionException if the IDynamicQueue::transmission_prediction predicts an negative number of departing elements which sould never logicaly happen.
          * @return Predicted size of the queue after evaluation.
          */
-        virtual int evaluate() override;
+        virtual int evaluate() override
+        {
+            const int arrival = arrival_prediction();
+            const int departure = transmission_prediction();
+
+            if (arrival < 0)
+            {
+                throw NegativeArrivalPredictionException("");
+            }
+            if (departure < 0)
+            {
+                throw NegativeDeparturePredictionException("");
+            }
+
+            std::lock_guard<std::mutex> lock(queue_manipulation_mutex_);
+            const int current_size = this->internal_queue_.size();
+
+            // Dynamics of a virtual queue that constrain a  time average value at zero
+            int new_size = current_size - departure + arrival; 
+
+            if (new_size > this->max_queue_size_)
+            {
+                new_size = this->max_queue_size_;
+            }
+            else if (new_size < -this->max_queue_size_)
+            {
+                new_size = -this->max_queue_size_;
+            }
+            
+            return new_size;
+        };
 
         /**
          * @brief Updates the queue by adding the arriving_elements and by removing the specifiy number of departing elements while respecting the maximum queue size.
@@ -95,7 +220,37 @@ class EqConVirtualQueue: public IDynamicQueue<NVirtualQueue>
          * @throw Throws an invalid_argument exception if the departure arguement is negative since it can't transmit negative number of elements.
          * @return Boolean of it the queue overflowed while adding elements.
          */
-        virtual bool update(NVirtualQueue arriving_elements, const int nb_departing_elements) override;
+        virtual bool update(NVirtualQueue arriving_elements, const int nb_departing_elements) override
+        {
+            const int arrival = arrival_prediction();
+            const int departure = transmission_prediction();
+
+            if (arrival < 0)
+            {
+                throw NegativeArrivalPredictionException("");
+            }
+            if (departure < 0)
+            {
+                throw NegativeDeparturePredictionException("");
+            }
+
+            std::lock_guard<std::mutex> lock(queue_manipulation_mutex_);
+            const int current_size = this->internal_queue_.size();
+
+            // Dynamics of a virtual queue that constrain a  time average value at zero
+            int new_size = current_size - departure + arrival; 
+
+            if (new_size > this->max_queue_size_)
+            {
+                new_size = this->max_queue_size_;
+            }
+            else if (new_size < -this->max_queue_size_)
+            {
+                new_size = -this->max_queue_size_;
+            }
+            
+            return new_size;
+        };
 
         /**
          * @brief Updates the queue by adding the arriving_elements and by removing the specifiy number of departing elements while respecting the maximum queue size.
@@ -104,20 +259,52 @@ class EqConVirtualQueue: public IDynamicQueue<NVirtualQueue>
          * @throw Throws an invalid_argument exception if the departure arguement is negative since it can't transmit negative number of elements.
          * @return Boolean of it the queue overflowed while adding elements.
          */
-        virtual bool update(const int nb_arriving_elements, const int nb_departing_elements);
+        virtual bool update(const int nb_arriving_elements, const int nb_departing_elements)
+        {
+            if(nb_departing_elements < 0)
+            {
+                throw invalid_argument("Tried to remove a negative number of elements from the queue.");
+            }
+
+            if(nb_arriving_elements < 0)
+            {
+                throw invalid_argument("Tried to add a negative number of elements from the queue.");
+            }
+
+            std::lock_guard<std::mutex> lock(queue_manipulation_mutex_);
+            const int current_size = this->internal_queue_.size();
+
+            // Dynamics of a virtual queue that constrain a  time average value at zero
+            int new_size = current_size - nb_departing_elements + nb_arriving_elements; 
+
+            bool overflowed = false;
+            if (new_size > this->max_queue_size_)
+            {
+                new_size = this->max_queue_size_;
+                overflowed = true;
+            }
+            else if (new_size < -this->max_queue_size_)
+            {
+                new_size = -this->max_queue_size_;
+                overflowed = true;
+            }
+
+            this->internal_queue_.setSize(new_size);
+            return !overflowed;
+        };
 
     protected:
         /**
          * @brief Method used in the evaluation process to predict what will be the arrival size. Override this method to define a specific arrival prediction behavior.
          * @return Returns the number of elements that could be added to the queue.
          */
-        virtual int arrival_prediction() override;
+        virtual int arrival_prediction() override {return 0;};
 
         /**
          * @brief Method used in the evaluation process to predict what will be the departure size. Override this method to define a specific transmission prediction behavior.
          * @return Returns the number of elements that could be removed from the queue.
          */
-        virtual int transmission_prediction() override;
+        virtual int transmission_prediction() override {return 0;};
 
         /**
          * @brief Mutex to protect access to the internal queue.
