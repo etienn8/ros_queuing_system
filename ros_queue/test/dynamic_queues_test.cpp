@@ -6,7 +6,7 @@
 #include "ros_queue/lib_queue/dynamic_queue.hpp"
 #include "ros_queue/lib_queue/dynamic_converted_queue.hpp"
 #include "ros_queue/lib_queue/queue_exception.hpp"
-#include "ros_queue/test/dynamic_queues_test.hpp"
+#include "include/dynamic_queues_test.hpp"
 
 using std::list;
 using std::deque;
