@@ -39,7 +39,7 @@ class DynamicQueue: public IDynamicQueue<deque<TQueueElementType>, TStates>
          * @throw Throws a NegativeDeparturePredictionException if the IDynamicQueue::transmission_prediction predicts an negative number of departing elements which sould never logicaly happen.
          * @return Predicted size of the queue after evaluation.
          */
-        virtual int evaluate(TStates states) override
+        virtual int evaluate(const TStates& states) override
         {
             const int arrival = arrival_prediction(states);
             const int departure = transmission_prediction(states);
@@ -142,13 +142,13 @@ class DynamicQueue: public IDynamicQueue<deque<TQueueElementType>, TStates>
          * @brief Method used in the evaluation process to predict what will be the arrival. Override this method to define a specific arrival prediction behavior.
          * @return Returns the size of the estimated arrival queue.
          */
-        virtual int arrival_prediction(TStates& states) override {return 0;};
+        virtual int arrival_prediction(const TStates& states) override {return 0;};
 
         /**
          * @brief Method used in the evaluation process to predict how many elements is predicted to depart. Override this method to define a specific transmission prediction behavior.
          * @return Returns the size of the queue that could be transmitted.
          */
-        virtual int transmission_prediction(TStates& states) override {return 0;};
+        virtual int transmission_prediction(const TStates& states) override {return 0;};
 
         /**
          * @brief Mutex to protect access to the internal queue.

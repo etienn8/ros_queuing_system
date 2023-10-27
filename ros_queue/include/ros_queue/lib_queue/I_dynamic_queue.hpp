@@ -37,7 +37,7 @@ class IDynamicQueue
          * @details It evaluates the size of the queue based on it's actual size and predicted arrival and departure rate. Those prediction are evaluated based on the methods IDynamicQueue::arrival_prediction and IDynamicQueue::transmission_prediction.
          * @return Predicted size of the queue after evaluation.
          */
-        virtual int evaluate(TStates states)=0;
+        virtual int evaluate(const TStates& states)=0;
         
         /**
          * @brief Updates the queue by adding the arriving_elements and by removind the specifiy number of departing elements while respecting the maximum queue size.
@@ -68,13 +68,13 @@ class IDynamicQueue
          * @brief Method to override that predicts the size of incoming elements.
          * @return Return an integer that predicts how many element would be added to the queue.
          */
-        virtual int arrival_prediction(TStates& states)=0;
+        virtual int arrival_prediction(const TStates& states)=0;
 
         /**
          * @brief Method to override that predicts the number of elements that could leave the queue.
          * @return Return an integer that predicts how many element would be removed from the queue.
          */
-        virtual int transmission_prediction(TStates& states)=0;
+        virtual int transmission_prediction(const TStates& states)=0;
 };
 
 /**

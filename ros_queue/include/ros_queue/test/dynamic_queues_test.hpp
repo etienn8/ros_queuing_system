@@ -51,18 +51,18 @@ class DynamicQueueMockedTransmission: public DynamicQueue<TQueueElementType>
 };
 
 template<typename TQueueElementType, typename TStates> 
-class SpecialisedDynamicQueueMockedPrediction: public DynamicQueue<TQueueElementType, TStates>
+class SpecializedDynamicQueueMockedPrediction: public DynamicQueue<TQueueElementType, TStates>
 {
     public:
-        SpecialisedDynamicQueueMockedPrediction(int max_queue_size): DynamicQueue<TQueueElementType, TStates>(max_queue_size) {};
+        SpecializedDynamicQueueMockedPrediction(int max_queue_size): DynamicQueue<TQueueElementType, TStates>(max_queue_size) {};
 
     protected:
-        virtual int arrival_prediction(TStates& states) override
+        virtual int arrival_prediction(const TStates& states) override
         {
             return states+1;
         };
 
-        virtual int transmission_prediction(TStates& states) override
+        virtual int transmission_prediction(const TStates& states) override
         {
             return states;
         };
@@ -101,12 +101,12 @@ class SpecializedDynamicConvertedQueueMockedPrediction: public DynamicConvertedQ
                                                 DynamicConvertedQueue<TQueueElementType, TStates>(max_queue_size,conversionFunction) {};
 
     protected:
-        virtual int arrival_prediction(TStates& states) override
+        virtual int arrival_prediction(const TStates& states) override
         {
             return states+1;
         };
 
-        virtual int transmission_prediction(TStates& states) override
+        virtual int transmission_prediction(const TStates& states) override
         {
             return states;
         };

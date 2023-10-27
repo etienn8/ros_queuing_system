@@ -167,12 +167,13 @@ TEST(DynamicQueueTest, specializedPredictionTest)
     const int queue_max_size = 10;
 
     // Initialize queue with an evaluation that takes an in at the input
-    SpecialisedDynamicQueueMockedPrediction<int, int> q(10);
+    SpecializedDynamicQueueMockedPrediction<int, int> q(10);
     deque<int> arrival_queue = {1, 2, 3, 4, 5};
     q.update(arrival_queue, 0);
 
+    int state = 4;
     // Evaluate queue and verify its content and size. This implementation predicts an arrival of 4+1 and transmission of 4.
-    EXPECT_EQ(q.evaluate(4), 6);
+    EXPECT_EQ(q.evaluate(state), 6);
 }
 
 TEST(DynamicQueueTest, transmissionTest)
@@ -320,8 +321,9 @@ TEST(DynamicConvertedQueueTest, specializedPredictionTest)
     q.update(arrival_queue, 0);
     q.update(arrival_queue, 0);
 
+    int state = 4;
     // Evaluate queue and verify its content and size. This implementation predicts an arrival of 4+1 and transmission of 4.
-    EXPECT_EQ(q.evaluate(4), 103);
+    EXPECT_EQ(q.evaluate(state), 103);
 }
 
 TEST(DynamicConvertedQueueTest, transmissionTest)

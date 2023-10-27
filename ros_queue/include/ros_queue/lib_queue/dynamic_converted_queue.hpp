@@ -50,7 +50,7 @@ class DynamicConvertedQueue: public IDynamicQueue<deque<ElementWithConvertedSize
          * @throw Throws a NegativeDeparturePredictionException if the IDynamicQueue::transmission_prediction predicts an negative number of departing elements which sould never logicaly happen.
          * @return Predicted converted size of the queue after evaluation.
          */
-        virtual int evaluate(TStates states) override
+        virtual int evaluate(const TStates& states) override
         {
             const int converted_arrival = arrival_prediction(states);
             const int departure = transmission_prediction(states);
@@ -235,13 +235,13 @@ class DynamicConvertedQueue: public IDynamicQueue<deque<ElementWithConvertedSize
          * @brief Method used in the evaluation process to predict what will be the arrival size. Override this method to define a specific arrival prediction behavior.
          * @return Returns the converted size of the estimated arrival queue.
          */
-        virtual int arrival_prediction(TStates& states) override {return 0;};
+        virtual int arrival_prediction(const TStates& states) override {return 0;};
 
         /**
          * @brief Method used in the evaluation process to predict what will be the transmission size. Override this method to define a specific transmission prediction behavior.
          * @return Returns the size of the queue that could be transmitted in internal queue size (not converted).
          */
-        virtual int transmission_prediction(TStates& states) override {return 0;};
+        virtual int transmission_prediction(const TStates& states) override {return 0;};
 
         /**
          * @brief Mutex to protect access to the internal queue.
