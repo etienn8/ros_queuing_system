@@ -9,19 +9,18 @@
 #include "ros_queue/lib_queue/queue_exception.hpp"
 
 /**
- * @brief Deque of a specified type with interfaces to affect its dynamic where the size of the queues is the sum of the converted size (computed from a user-defined function) of each of its element.
+ * @brief Deque of a specified type with interfaces to affect its dynamic where the size of the queues is the sum of the converted size (computed from a conversion method to be overloaded) of each of its element.
  * @details Wraps a std::deque with interfaces to manipulate and evaluate it. 
  * Also contains a mutex to protect the queue from race conditions. The conversion is added to store elements of one type but to give the flexibility to define how big the element is or to put the queue in a format closer to the units used by the transmission process.  
  * @tparam TQueueElementType Type of the elements in the deque.
- * @tparam TStates Type of the argument of the evaluate function that is passed to the pridictions methods.
+ * @tparam TStates Type of the argument of the evaluate function that is passed to the predictions methods.
  */
 template<typename TQueueElementType, typename TStates=void>
 class DynamicConvertedQueue: public IDynamicQueue<deque<ElementWithConvertedSize<TQueueElementType>>, TStates>
 {
     public:
-        DynamicConvertedQueue(int max_queue_size,
-            void (*conversionFunction)(deque<TQueueElementType>&, deque<ElementWithConvertedSize<TQueueElementType>>&))
-            : IDynamicQueue<deque<ElementWithConvertedSize<TQueueElementType>>, TStates>(max_queue_size), generateConvertedQueue(conversionFunction) {};
+        DynamicConvertedQueue(int max_queue_size)
+            : IDynamicQueue<deque<ElementWithConvertedSize<TQueueElementType>>, TStates>(max_queue_size) {};
 
         /**
          * @brief Get the size of the converted size of the queue.
@@ -174,19 +173,11 @@ class DynamicConvertedQueue: public IDynamicQueue<deque<ElementWithConvertedSize
             deque<ElementWithConvertedSize<TQueueElementType>> wrapped_arriving_elements;
             const int arriving_elements_size = arriving_elements.size();
 
-            // Verify if given conversion function exist
-            if(generateConvertedQueue != nullptr)
+            generateConvertedQueue(arriving_elements, wrapped_arriving_elements);
+            
+            if (arriving_elements_size != wrapped_arriving_elements.size())
             {
-                generateConvertedQueue(arriving_elements, wrapped_arriving_elements);
-                
-                if (arriving_elements_size != wrapped_arriving_elements.size())
-                {
-                    throw BadConversionException("The size of the arriving elements and the wrapped queue are different. Likely due to a bad conversion function.");
-                }
-            }
-            else
-            {
-                throw BadConversionException("The conversion function pointer is null.");
+                throw BadConversionException("The size of the arriving elements and the wrapped queue are different. Likely due to a bad conversion function.");
             }
 
             return update(wrapped_arriving_elements, nb_departing_elements);
@@ -223,14 +214,26 @@ class DynamicConvertedQueue: public IDynamicQueue<deque<ElementWithConvertedSize
         int converted_queue_size_ = 0;
 
         /**
-         * @brief User-defined function given by reference in the constructor that converts a queue in a another queue where each element is stored with a specific cost choseen by the user. See the details to see implementation tips.
-         * @details To work properly and prevent BadConversionException during runtime, follow those requirements: Do not give a pointer to a function that as a lifetime shorter than this queue object, the wrapped queue should be the same size as the input queue size and elements should have non-zero positive converted size.
-         * @param deque<TQueueElementType>& Reference of a deque of elements that needs to be converted
-         * @param deque<ElementWithConvertedSize<TQueueElementType>>& Reference that serves as an output of the wrapped queue with cost affiliated to each elements. 
+         * @brief Method that could be overriden to convert a queue in a another queue where each element is stored with a specific cost choseen by the user. See the details to see implementation tips.
+         * @details To work properly and prevent BadConversionException during runtime, follow those requirements: The wrapped queue should be the 
+         * same size as the input queue size and elements should have non-zero positive converted size. This default implementation returns a converted 
+         * cost of one for each element. 
+         * @param arriving_queue Reference of a deque of elements that needs to be converted
+         * @param converted_dequeue Reference that serves as an output of the wrapped queue with a cost affiliated to each element. 
          * @throw Might not throw any exception directly, but DynamicConvertedQueue::update() might throw BadConversionException during runtime because of a bad behavior of this user-defined function.
          * @return Boolean of it the queue overflowed while adding elements.
          */
-        void (*generateConvertedQueue)(deque<TQueueElementType>&, deque<ElementWithConvertedSize<TQueueElementType>>&);
+        virtual void generateConvertedQueue(deque<TQueueElementType>& arriving_queue, deque<ElementWithConvertedSize<TQueueElementType>>& converted_queue)
+        {
+            // Default implementation of a converted size of 1 per Element.
+            for(typename deque<TQueueElementType>::iterator it = arriving_queue.begin(); it != arriving_queue.end(); ++it)
+            {
+                int converted_size = 1;
+
+                ElementWithConvertedSize<TQueueElementType> convertedElement(*it, converted_size);
+                converted_queue.push_back(convertedElement);
+            }
+        }
         
         /**
          * @brief Method used in the evaluation process to predict what will be the arrival size. Override this method to define a specific arrival prediction behavior.
@@ -252,19 +255,12 @@ class DynamicConvertedQueue: public IDynamicQueue<deque<ElementWithConvertedSize
         mutex queue_manipulation_mutex_;
 };
 
-/**
- * @brief Deque of a specified type with interfaces to affect its dynamic where the size of the queues is the sum of the converted size (computed from a user-defined function) of each of its element.
- * @details Wraps a std::deque with interfaces to manipulate and evaluate it. 
- * Also contains a mutex to protect the queue from race conditions. The conversion is added to store elements of one type but to give the flexibility to define how big the element is or to put the queue in a format closer to the units used by the transmission process.  
- * @tparam TQueueElementType Type of the elements in the deque.
- */
 template<typename TQueueElementType>
 class DynamicConvertedQueue<TQueueElementType, void>: public IDynamicQueue<deque<ElementWithConvertedSize<TQueueElementType>>>
 {
     public:
-        DynamicConvertedQueue(int max_queue_size,
-            void (*conversionFunction)(deque<TQueueElementType>&, deque<ElementWithConvertedSize<TQueueElementType>>&))
-            : IDynamicQueue<deque<ElementWithConvertedSize<TQueueElementType>>>(max_queue_size), generateConvertedQueue(conversionFunction) {};
+        DynamicConvertedQueue(int max_queue_size)
+            : IDynamicQueue<deque<ElementWithConvertedSize<TQueueElementType>>>(max_queue_size){};
 
         /**
          * @brief Get the size of the converted size of the queue.
@@ -416,19 +412,11 @@ class DynamicConvertedQueue<TQueueElementType, void>: public IDynamicQueue<deque
             deque<ElementWithConvertedSize<TQueueElementType>> wrapped_arriving_elements;
             const int arriving_elements_size = arriving_elements.size();
 
-            // Verify if given conversion function exist
-            if(generateConvertedQueue != nullptr)
+            generateConvertedQueue(arriving_elements, wrapped_arriving_elements);
+            
+            if (arriving_elements_size != wrapped_arriving_elements.size())
             {
-                generateConvertedQueue(arriving_elements, wrapped_arriving_elements);
-                
-                if (arriving_elements_size != wrapped_arriving_elements.size())
-                {
-                    throw BadConversionException("The size of the arriving elements and the wrapped queue are different. Likely due to a bad conversion function.");
-                }
-            }
-            else
-            {
-                throw BadConversionException("The conversion function pointer is null.");
+                throw BadConversionException("The size of the arriving elements and the wrapped queue are different. Likely due to a bad conversion function.");
             }
 
             return update(wrapped_arriving_elements, nb_departing_elements);
@@ -465,14 +453,26 @@ class DynamicConvertedQueue<TQueueElementType, void>: public IDynamicQueue<deque
         int converted_queue_size_ = 0;
 
         /**
-         * @brief User-defined function given by reference in the constructor that converts a queue in a another queue where each element is stored with a specific cost choseen by the user. See the details to see implementation tips.
-         * @details To work properly and prevent BadConversionException during runtime, follow those requirements: Do not give a pointer to a function that as a lifetime shorter than this queue object, the wrapped queue should be the same size as the input queue size and elements should have non-zero positive converted size.
-         * @param deque<TQueueElementType>& Reference of a deque of elements that needs to be converted
-         * @param deque<ElementWithConvertedSize<TQueueElementType>>& Reference that serves as an output of the wrapped queue with cost affiliated to each elements. 
+         * @brief Method that could be overriden to convert a queue in a another queue where each element is stored with a specific cost choseen by the user. See the details to see implementation tips.
+         * @details To work properly and prevent BadConversionException during runtime, follow those requirements: The wrapped queue should be the 
+         * same size as the input queue size and elements should have non-zero positive converted size. This default implementation returns a converted 
+         * cost of one for each element. 
+         * @param arriving_queue Reference of a deque of elements that needs to be converted
+         * @param converted_dequeue Reference that serves as an output of the wrapped queue with a cost affiliated to each element. 
          * @throw Might not throw any exception directly, but DynamicConvertedQueue::update() might throw BadConversionException during runtime because of a bad behavior of this user-defined function.
          * @return Boolean of it the queue overflowed while adding elements.
          */
-        void (*generateConvertedQueue)(deque<TQueueElementType>&, deque<ElementWithConvertedSize<TQueueElementType>>&);
+        virtual void generateConvertedQueue(deque<TQueueElementType>& arriving_queue, deque<ElementWithConvertedSize<TQueueElementType>>& converted_queue)
+        {
+            // Default implementation of a converted size of 1 per Element.
+            for(typename deque<TQueueElementType>::iterator it = arriving_queue.begin(); it != arriving_queue.end(); ++it)
+            {
+                int converted_size = 1;
+
+                ElementWithConvertedSize<TQueueElementType> convertedElement(*it, converted_size);
+                converted_queue.push_back(convertedElement);
+            }
+        }
         
         /**
          * @brief Method used in the evaluation process to predict what will be the arrival size. Override this method to define a specific arrival prediction behavior.

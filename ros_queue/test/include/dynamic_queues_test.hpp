@@ -5,6 +5,8 @@
 #include <string>
 
 #include "ros_queue/lib_queue/dynamic_queue.hpp"
+#include "ros_queue/lib_queue/dynamic_converted_queue.hpp"
+
 
 using namespace std;
 
@@ -68,14 +70,57 @@ class SpecializedDynamicQueueMockedPrediction: public DynamicQueue<TQueueElement
         };
 };
 
+template<typename TQueueElementType, typename TStates=void> 
+class DynamicConvertedQueueWithFPtr : public DynamicConvertedQueue<TQueueElementType, TStates>
+{
+        public:
+        DynamicConvertedQueueWithFPtr(int max_queue_size, void (*conversionFunction)(deque<TQueueElementType>&,
+                                                deque<ElementWithConvertedSize<TQueueElementType>>&)):
+                                                DynamicConvertedQueue<TQueueElementType, TStates>(max_queue_size), generateConvertedQueueMock_(conversionFunction) {};
+
+    protected:
+
+        virtual void generateConvertedQueue(deque<TQueueElementType>& arriving_queue, deque<ElementWithConvertedSize<TQueueElementType>>& converted_dequeue) override
+        {
+            if (generateConvertedQueueMock_)
+            {
+                generateConvertedQueueMock_(arriving_queue, converted_dequeue);
+            }
+        }
+    private:
+        void (*generateConvertedQueueMock_)(deque<TQueueElementType>&, deque<ElementWithConvertedSize<TQueueElementType>>&);
+};
 
 template<typename TQueueElementType> 
-class DynamicConvertedQueueMockedPrediction: public DynamicConvertedQueue<TQueueElementType>
+class DynamicConvertedQueueWithFPtr<TQueueElementType, void>: public DynamicConvertedQueue<TQueueElementType>
+{
+        public:
+        DynamicConvertedQueueWithFPtr(int max_queue_size, void (*conversionFunction)(deque<TQueueElementType>&,
+                                                deque<ElementWithConvertedSize<TQueueElementType>>&)):
+                                                DynamicConvertedQueue<TQueueElementType>(max_queue_size), 
+                                                generateConvertedQueueMock_(conversionFunction){};
+
+        void (*generateConvertedQueueMock_)(deque<TQueueElementType>&, deque<ElementWithConvertedSize<TQueueElementType>>&);
+
+    protected:
+
+        virtual void generateConvertedQueue(deque<TQueueElementType>& arriving_queue, deque<ElementWithConvertedSize<TQueueElementType>>& converted_queue) override
+        {
+            if (generateConvertedQueueMock_)
+            {
+                generateConvertedQueueMock_(arriving_queue, converted_queue);
+            }
+        }
+};
+
+
+template<typename TQueueElementType> 
+class DynamicConvertedQueueMockedPrediction: public DynamicConvertedQueueWithFPtr<TQueueElementType>
 {
     public:
         DynamicConvertedQueueMockedPrediction(int max_queue_size, void (*conversionFunction)(deque<TQueueElementType>&,
                                                 deque<ElementWithConvertedSize<TQueueElementType>>&)):
-                                                DynamicConvertedQueue<TQueueElementType>(max_queue_size,conversionFunction) {};
+                                                DynamicConvertedQueueWithFPtr<TQueueElementType>(max_queue_size,conversionFunction) {};
 
         int predicted_arrival_ = 0;
         int predicted_transmission_ = 0;
@@ -93,12 +138,12 @@ class DynamicConvertedQueueMockedPrediction: public DynamicConvertedQueue<TQueue
 };
 
 template<typename TQueueElementType, typename TStates> 
-class SpecializedDynamicConvertedQueueMockedPrediction: public DynamicConvertedQueue<TQueueElementType, TStates>
+class SpecializedDynamicConvertedQueueMockedPrediction: public DynamicConvertedQueueWithFPtr<TQueueElementType, TStates>
 {
     public:
         SpecializedDynamicConvertedQueueMockedPrediction(int max_queue_size, void (*conversionFunction)(deque<TQueueElementType>&,
                                                 deque<ElementWithConvertedSize<TQueueElementType>>&)):
-                                                DynamicConvertedQueue<TQueueElementType, TStates>(max_queue_size,conversionFunction) {};
+                                                DynamicConvertedQueueWithFPtr<TQueueElementType, TStates>(max_queue_size,conversionFunction) {};
 
     protected:
         virtual int arrival_prediction(const TStates& states) override
@@ -113,12 +158,12 @@ class SpecializedDynamicConvertedQueueMockedPrediction: public DynamicConvertedQ
 };
 
 template<typename TQueueElementType> 
-class DynamicConvertedQueueMockedTransmission: public DynamicConvertedQueue<TQueueElementType>
+class DynamicConvertedQueueMockedTransmission: public DynamicConvertedQueueWithFPtr<TQueueElementType>
 {
     public:
         DynamicConvertedQueueMockedTransmission(int max_queue_size, void (*conversionFunction)(deque<TQueueElementType>&,
                                                 deque<ElementWithConvertedSize<TQueueElementType>>&)):
-                                                DynamicConvertedQueue<TQueueElementType>(max_queue_size,conversionFunction) {};
+                                                DynamicConvertedQueueWithFPtr<TQueueElementType>(max_queue_size,conversionFunction) {};
 
         deque<TQueueElementType> transmittedElements;
 
@@ -134,36 +179,3 @@ class DynamicConvertedQueueMockedTransmission: public DynamicConvertedQueue<TQue
         return 1;
     }
 };
-
-class Position3D
-{
-    public:
-        Position3D(int x, int y, int z): x_(x), y_(y), z_(z) {};
-
-        int x_ = 0;
-        int y_ = 0;
-        int z_ = 0;
-
-        friend bool operator==(const Position3D& traj1, const Position3D& traj2)
-        {
-            return (traj1.x_ == traj2.x_) && (traj1.y_ == traj2.y_) && (traj1.z_ == traj2.z_);
-        }
-};
-
-class Trajectory
-{
-    public:
-        Trajectory(string reference_frame, list<Position3D> point_list): 
-                    reference_frame_(reference_frame), point_list_(point_list) {};
-
-        list<Position3D> point_list_;
-        string reference_frame_;
-
-        friend bool operator==(const Trajectory& traj1, const Trajectory& traj2)
-        {
-            
-            return (traj1.reference_frame_==traj2.reference_frame_) && (traj1.point_list_==traj2.point_list_);
-        }
-
-};
-
