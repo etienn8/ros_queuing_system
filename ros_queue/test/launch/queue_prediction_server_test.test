@@ -1,0 +1,6 @@
+<?xml version="1.0" ?>
+<!-- Launchfile to unit test ROSQueues and test its interactions with services -->
+<launch>
+    <node name="test_service_node" pkg="ros_queue" type="test_service_node"/>
+    <test test-name="ros_queue_test" pkg="ros_queue" type="ros_queue_test"/>
+</launch>

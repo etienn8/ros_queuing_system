@@ -312,7 +312,7 @@ class InConVirtualQueue<void>: public IDynamicQueue<VirtualQueue>
 /**
  * @brief Virtual queue with interfaces to affect its dynamic. Implemented like virtual queues used with equality constraint where their size can go below 0. 
  * @tparam TStates Type of the argument of the evaluate function that is passed to the pridictions methods.
- * /
+ */
 template <typename TState=void>
 class EqConVirtualQueue: public IDynamicQueue<NVirtualQueue, TState>
 {

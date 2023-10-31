@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(ros_queues)
-
+project(ros_queue)
 
 set(QUEUE_LIB_NAME "lib_queue")
+set(ROSQUEUE_LIB_NAME "ros_queue_lib")
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -12,6 +12,8 @@ set(QUEUE_LIB_NAME "lib_queue")
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  std_msgs
+  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -54,12 +56,11 @@ find_package(catkin REQUIRED COMPONENTS
 #   Message2.msg
 # )
 
-## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+# Generate services in the 'srv' folder
+add_service_files(
+  FILES
+  ReturnSentValue.srv
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -69,10 +70,10 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  std_msgs  # Or other packages containing msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -105,8 +106,8 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES ${QUEUE_LIB_NAME}
-  CATKIN_DEPENDS roscpp
+  LIBRARIES ${QUEUE_LIB_NAME} ${ROSQUEUE_LIB_NAME}
+  CATKIN_DEPENDS roscpp message_runtime
   # DEPENDS system_lib
 )
 
@@ -127,6 +128,13 @@ include_directories(
    src/${QUEUE_LIB_NAME}/dynamic_virtual_queue.cpp
    src/${QUEUE_LIB_NAME}/virtual_queue.cpp
   )
+
+add_library(${ROSQUEUE_LIB_NAME}
+  src/ros_queue.cpp
+)
+
+add_executable(test_service_node test/test_service_node.cpp)
+target_link_libraries(test_service_node ${catkin_LIBRARIES})
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -199,17 +207,29 @@ include_directories(
 #############
 ## Testing ##
 #############
+if(CATKIN_ENABLE_TESTING)
+  find_package(rostest REQUIRED)
 
-## Add gtest based cpp test target and link libraries
-catkin_add_gtest(virtual_queues_test test/virtual_queues_test.cpp)
-if(TARGET virtual_queues_test)
-  target_link_libraries(virtual_queues_test ${QUEUE_LIB_NAME})
+  ## Add gtest based cpp test target and link libraries
+  catkin_add_gtest(virtual_queues_test test/virtual_queues_test.cpp)
+  if(TARGET virtual_queues_test)
+    target_link_libraries(virtual_queues_test ${QUEUE_LIB_NAME})
+  endif()
+
+  catkin_add_gtest(dynamic_queues_test test/dynamic_queues_test.cpp)
+  if(TARGET dynamic_queues_test)
+    target_link_libraries(dynamic_queues_test ${QUEUE_LIB_NAME})
+  endif()
+
+  add_rostest_gtest(ros_queue_test test/launch/queue_prediction_server_test.test test/ros_queue_test.cpp)
+  target_link_libraries(ros_queue_test ${catkin_LIBRARIES} ${QUEUE_LIB_NAME} ${ROSQUEUE_LIB_NAME})
+
+  #catkin_add_gtest(ros_queue_test test/ros_queue_test.cpp)
+  #if(TARGET ros_queue_test)
+  #  target_link_libraries(ros_queue_test ${QUEUE_LIB_NAME} ${ROSQUEUE_LIB_NAME})
+  #endif()
 endif()
 
-catkin_add_gtest(dynamic_queues_test test/dynamic_queues_test.cpp)
-if(TARGET dynamic_queues_test)
-  target_link_libraries(dynamic_queues_test ${QUEUE_LIB_NAME})
-endif()
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
