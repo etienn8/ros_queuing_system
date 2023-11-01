@@ -1,5 +1,9 @@
 #pragma once
 
+#include <list>
+
+using std::list;
+
 class Position3D
 {
     public:

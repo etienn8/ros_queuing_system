@@ -31,7 +31,6 @@ class DynamicQueue: public IDynamicQueue<deque<TQueueElementType>, TStates>
             return this->internal_queue_.size();
         } 
 
-
         /**
          * @brief Evaluate the size of the queue based on the real size of the queue and predicted arrival and departure rate.
          * @details It evaluates the size of the queue based on it's actual size and predicted arrival and departure rate. Those prediction are evaluated based on the methods IDynamicQueue::arrival_prediction and IDynamicQueue::transmission_prediction.
