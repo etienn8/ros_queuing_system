@@ -9,8 +9,6 @@
 #include "ros_queue_info.hpp"
 #include "lib_queue/virtual_queue.hpp"
 
-static const double WAIT_DELAY_FOR_SERVICE_EXISTENCE = 0.5;
-
 using std::string;
 using std::invalid_argument;
 
@@ -127,7 +125,7 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType<TServiceClass>
                 TServiceClass local_service= service; 
 
                 // Service ROS call
-                if (arrival_service_client_.waitForExistence(wait_for_service_delay_))
+                if (arrival_service_client_.waitForExistence(WAIT_DURATION_FOR_SERVICE_EXISTENCE))
                 {
                     if (arrival_service_client_.call(local_service))
                     {
@@ -160,7 +158,7 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType<TServiceClass>
                 TServiceClass local_service = service; 
 
                 // Service ROS call
-                if (transmission_service_client_.waitForExistence(wait_for_service_delay_))
+                if (transmission_service_client_.waitForExistence(WAIT_DURATION_FOR_SERVICE_EXISTENCE))
                 {
                     if (transmission_service_client_.call(local_service))
                     {
@@ -200,7 +198,10 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType<TServiceClass>
          */
         int (*transmission_prediction_fptr_)(const TServiceClass&) = nullptr;
 
-        ros::Duration wait_for_service_delay_ = ros::Duration(WAIT_DELAY_FOR_SERVICE_EXISTENCE);
+        /**
+         * @brief Duration to wait for the existence of services at each call.
+        */
+        const ros::Duration WAIT_DURATION_FOR_SERVICE_EXISTENCE = ros::Duration(0.5);
 };
 
 
