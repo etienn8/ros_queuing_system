@@ -7,21 +7,14 @@
 #include "ros/ros.h"
 
 #include "ros_queue_info.hpp"
+#include "ros_queue_utils.hpp"
+
 #include "lib_queue/dynamic_queue.hpp"
 
 
 using std::string;
 using std::invalid_argument;
 using std::deque;
-
-/**
- * @brief Struct to help the compiler resolving the type of the vector queue_elements contained in a TROSMsgType.
- * @tparam TROSMsgType Type of a ROS message that contains an array name queue_elements
-*/
-template <typename TROSMsgType>
-struct QueueElementTrait {
-  using ElementType = typename TROSMsgType::_queue_elements_type::value_type;
-};
 
 /**
  * @brief Queue of a rosmsg type with some ROS interface to interact with the queue via services and topics, and/or pointer functions.

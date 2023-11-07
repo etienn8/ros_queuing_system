@@ -8,6 +8,8 @@
 #include "ros_queue/lib_queue/element_with_converted_size.hpp"
 #include "ros_queue/lib_queue/queue_exception.hpp"
 
+using namespace std;
+
 /**
  * @brief Deque of a specified type with interfaces to affect its dynamic where the size of the queues is the sum of the converted size (computed from a conversion method to be overloaded) of each of its element.
  * @details Wraps a std::deque with interfaces to manipulate and evaluate it. 

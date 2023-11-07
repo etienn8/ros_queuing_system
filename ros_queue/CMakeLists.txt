@@ -60,6 +60,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_service_files(
   FILES
   ReturnSentValue.srv
+  ConversionTemplateService.srv
 )
 
 ## Generate actions in the 'action' folder
@@ -108,7 +109,7 @@ catkin_package(
   INCLUDE_DIRS include
   LIBRARIES ${QUEUE_LIB_NAME} ${ROSQUEUE_LIB_NAME}
   CATKIN_DEPENDS roscpp message_runtime
-  DEPENDS system_lib
+  #DEPENDS system_lib
 )
 
 ###########
