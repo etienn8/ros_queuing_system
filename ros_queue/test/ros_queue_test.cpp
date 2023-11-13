@@ -93,7 +93,7 @@ class RosConvertedQueueFixture : public testing::Test {
         void SetUp() override {
             arrival_prediction_service_name_f= "/return_sent_value_plus_two";
             transmission_prediction_service_name_f = "/return_sent_value_plus_three";
-            conversion_servic_name_f = "/conversion_int_to_bytes";
+            conversion_service_name_f = "/conversion_to_bytes_service";
             transmission_topic_name_f = QUEUE_TOPIC_TRANSMISSION_NAME;
             max_queue_size_f = 512;
             service_struct_test_f.request.value_to_return = 1;
@@ -111,7 +111,7 @@ class RosConvertedQueueFixture : public testing::Test {
         string arrival_prediction_service_name_f;
         string transmission_prediction_service_name_f;
         string transmission_topic_name_f;
-        string conversion_servic_name_f;
+        string conversion_service_name_f;
 
         ros::NodeHandle nh_f;
 
@@ -354,149 +354,167 @@ TEST_F(RosQueueFixture, transmissionTest)
 TEST_F(RosConvertedQueueFixture, constructorOverrideTest)
 {
     // ROSQueue queue with user-defined transmission, user-defined arrival, user-defined transmission
-    RosConvertedQueueFixture::ROSIntQueue_f vq0(max_queue_size_f, queue_info_f, nh_f ,
-                                                *arrival_prediction_fptr=prediction::return_value_plus_one,
-                                                transmission_prediction_fptr=prediction::return_value,
-                                                transmission_fptr=transmission::transmission_on_dequeue1,
-                                                conversion_fptr=conversion::conversion_int_to_byte);
+    //RosConvertedQueueFixture::ROSIntQueue_f::InterfacesArgs iargs;
+    RosConvertedQueueFixture::ROSIntQueue_f vq0(max_queue_size_f, queue_info_f, nh_f, 
+        (struct RosConvertedQueueFixture::ROSIntQueue_f::InterfacesArgs){
+            .arrival_prediction_fptr = prediction::return_value_plus_one,
+            .transmission_prediction_fptr = prediction::return_value,
+            .transmission_fptr = transmission::transmission_on_dequeue1,
+            .conversion_fptr = conversion::conversion_int_to_byte
+        });
     vq0.update(arrival_queue_f,0);
-    EXPECT_EQ(vq0.evaluate(service_struct_test_f), 5);
+    EXPECT_EQ(vq0.evaluate(service_struct_test_f), 14);
 
     // ROSQueue queue with user-defined transmission, ROS service arrival, user-defined transmission
-    RosConvertedQueueFixture::ROSIntQueue_f vq1(max_queue_size_f, queue_info_f, nh_f ,
-                                            arrival_prediction_fptr=prediction::return_value_plus_one,
-                                            transmission_prediction_service_name=transmission_prediction_service_name_f,
-                                            transmission_fptr=transmission::transmission_on_dequeue1,
-                                            conversion_fptr=conversion::conversion_int_to_byte);
+    RosConvertedQueueFixture::ROSIntQueue_f vq1(max_queue_size_f, queue_info_f, nh_f,
+                                            (struct RosConvertedQueueFixture::ROSIntQueue_f::InterfacesArgs){
+                                                .arrival_prediction_fptr = prediction::return_value_plus_one,
+                                                .transmission_prediction_service_name = transmission_prediction_service_name_f,
+                                                .transmission_fptr=transmission::transmission_on_dequeue1,
+                                                .conversion_fptr=conversion::conversion_int_to_byte
+                                            });
     vq1.update(arrival_queue_f,0);
     EXPECT_EQ(vq1.evaluate(service_struct_test_f), 2);
 
     // ROSQueue queue with ROS service transmission, user-defined arrival, user-defined transmission
     RosConvertedQueueFixture::ROSIntQueue_f vq2(max_queue_size_f, queue_info_f, nh_f ,
-                                            arrival_prediction_service_name=arrival_prediction_service_name_f,
-                                            transmission_prediction_fptr=prediction::return_value,
-                                            transmission_fptr=transmission::transmission_on_dequeue1,
-                                            conversion_fptr=conversion::conversion_int_to_byte);
+                                            (struct RosConvertedQueueFixture::ROSIntQueue_f::InterfacesArgs){
+                                                .arrival_prediction_service_name=arrival_prediction_service_name_f,
+                                                .transmission_prediction_fptr=prediction::return_value,
+                                                .transmission_fptr=transmission::transmission_on_dequeue1,
+                                                .conversion_fptr=conversion::conversion_int_to_byte
+                                                });
     vq2.update(arrival_queue_f,0);
-    EXPECT_EQ(vq2.evaluate(service_struct_test_f), 6);
+    EXPECT_EQ(vq2.evaluate(service_struct_test_f), 15);
 
     // ROSQueue queue with ROS service transmission, ROS servicearrival, user-defined transmission
     RosConvertedQueueFixture::ROSIntQueue_f vq3(max_queue_size_f, queue_info_f, nh_f ,
-                                            arrival_prediction_service_name=arrival_prediction_service_name_f,
-                                            transmission_prediction_service_name=transmission_prediction_service_name_f,
-                                            transmission_fptr=transmission::transmission_on_dequeue1,
-                                            conversion_fptr=conversion::conversion_int_to_byte);
+                                            (struct RosConvertedQueueFixture::ROSIntQueue_f::InterfacesArgs){
+                                                .arrival_prediction_service_name=arrival_prediction_service_name_f,
+                                                .transmission_prediction_service_name=transmission_prediction_service_name_f,
+                                                .transmission_fptr=transmission::transmission_on_dequeue1,
+                                                .conversion_fptr=conversion::conversion_int_to_byte});
     vq3.update(arrival_queue_f,0);
     EXPECT_EQ(vq3.evaluate(service_struct_test_f), 3);
 
     // ROSQueue queue with user-defined transmission, user-defined arrival, transmission topic
-    RosConvertedQueueFixture::ROSIntQueue_f vq4(max_queue_size_f, queue_info_f, nh_f ,
-                                            arrival_prediction_fptr=prediction::return_value_plus_one,
-                                            transmission_prediction_fptr=prediction::return_value,
-                                            transmission_topic_name=transmission_topic_name_f
-                                            conversion_fptr=conversion::conversion_int_to_byte);
+    RosConvertedQueueFixture::ROSIntQueue_f vq4(max_queue_size_f, queue_info_f, nh_f,
+                                            (struct RosConvertedQueueFixture::ROSIntQueue_f::InterfacesArgs){
+                                                .arrival_prediction_fptr=prediction::return_value_plus_one,
+                                                .transmission_prediction_fptr=prediction::return_value,
+                                                .transmission_topic_name=transmission_topic_name_f,
+                                                .conversion_fptr=conversion::conversion_int_to_byte});
     vq4.update(arrival_queue_f,0);
-    EXPECT_EQ(vq4.evaluate(service_struct_test_f), 5);
+    EXPECT_EQ(vq4.evaluate(service_struct_test_f), 14);
 
     // ROSQueue queue with user-defined transmission, ROS service arrival, transmission topic
-    RosConvertedQueueFixture::ROSIntQueue_f vq5(max_queue_size_f, queue_info_f, nh_f ,
-                                            arrival_prediction_fptr=prediction::return_value_plus_one,
-                                            transmission_prediction_service_name=transmission_prediction_service_name_f,
-                                            transmission_topic_name=transmission_topic_name_f,
-                                            conversion_fptr=conversion::conversion_int_to_byte);
+    RosConvertedQueueFixture::ROSIntQueue_f vq5(max_queue_size_f, queue_info_f, nh_f,
+                                            (struct RosConvertedQueueFixture::ROSIntQueue_f::InterfacesArgs){
+                                                .arrival_prediction_fptr=prediction::return_value_plus_one,
+                                                .transmission_prediction_service_name=transmission_prediction_service_name_f,
+                                                .transmission_topic_name=transmission_topic_name_f,
+                                                .conversion_fptr=conversion::conversion_int_to_byte});
     vq5.update(arrival_queue_f,0);
     EXPECT_EQ(vq5.evaluate(service_struct_test_f), 2);
 
     // ROSQueue queue with ROS service transmission, user-defined arrival, transmission topic
     RosConvertedQueueFixture::ROSIntQueue_f vq6(max_queue_size_f, queue_info_f, nh_f ,
-                                            arrival_prediction_service_name=arrival_prediction_service_name_f,
-                                            transmission_prediction_fptr=prediction::return_value,
-                                            transmission_topic_name=transmission_topic_name_f,
-                                            conversion_fptr=conversion::conversion_int_to_byte);
+                                            (struct RosConvertedQueueFixture::ROSIntQueue_f::InterfacesArgs){
+                                                .arrival_prediction_service_name=arrival_prediction_service_name_f,
+                                                .transmission_prediction_fptr=prediction::return_value,
+                                                .transmission_topic_name=transmission_topic_name_f,
+                                                .conversion_fptr=conversion::conversion_int_to_byte});
     vq6.update(arrival_queue_f,0);
-    EXPECT_EQ(vq6.evaluate(service_struct_test_f), 6);
+    EXPECT_EQ(vq6.evaluate(service_struct_test_f), 15);
 
     // ROSQueue queue with ROS service transmission, ROS servicearrival, transmission topic
-    RosConvertedQueueFixture::ROSIntQueue_f vq7(max_queue_size_f, queue_info_f, nh_f ,
-                                            arrival_prediction_service_name=arrival_prediction_service_name_f,
-                                            transmission_prediction_service_name=transmission_prediction_service_name_f,
-                                            transmission_topic_name=transmission_topic_name_f,
-                                            conversion_fptr=conversion::conversion_int_to_byte);
+    RosConvertedQueueFixture::ROSIntQueue_f vq7(max_queue_size_f, queue_info_f, nh_f,
+                                            (struct RosConvertedQueueFixture::ROSIntQueue_f::InterfacesArgs){
+                                            .arrival_prediction_service_name=arrival_prediction_service_name_f,
+                                            .transmission_prediction_service_name=transmission_prediction_service_name_f,
+                                            .transmission_topic_name=transmission_topic_name_f,
+                                            .conversion_fptr=conversion::conversion_int_to_byte});
     vq7.update(arrival_queue_f,0);
     EXPECT_EQ(vq7.evaluate(service_struct_test_f), 3);
 
     // ===================================
     // ROSQueue queue with user-defined transmission, user-defined arrival, user-defined transmission and
-    RosConvertedQueueFixture::ROSIntQueue_f vq8(max_queue_size_f, queue_info_f, nh_f ,
-                                            arrival_prediction_fptr=prediction::return_value_plus_one,
-                                            transmission_prediction_fptr=prediction::return_value,
-                                            transmission_fptr=transmission::transmission_on_dequeue1,
-                                            conversion_servic_name=conversion_servic_name_f);
+    RosConvertedQueueFixture::ROSIntQueue_f vq8(max_queue_size_f, queue_info_f, nh_f,
+                                            (struct RosConvertedQueueFixture::ROSIntQueue_f::InterfacesArgs){
+                                            .arrival_prediction_fptr=prediction::return_value_plus_one,
+                                            .transmission_prediction_fptr=prediction::return_value,
+                                            .transmission_fptr=transmission::transmission_on_dequeue1,
+                                            .conversion_service_name=conversion_service_name_f});
     vq8.update(arrival_queue_f,0);
-    EXPECT_EQ(vq8.evaluate(service_struct_test_f), 5);
+    EXPECT_EQ(vq8.evaluate(service_struct_test_f), 14);
 
     // ROSQueue queue with user-defined transmission, ROS service arrival, user-defined transmission and
-    RosConvertedQueueFixture::ROSIntQueue_f vq9(max_queue_size_f, queue_info_f, nh_f ,
-                                            arrival_prediction_fptr=prediction::return_value_plus_one,
-                                            transmission_prediction_service_name=transmission_prediction_service_name_f,
-                                            transmission_fptr=transmission::transmission_on_dequeue1,
-                                            conversion_servic_name=conversion_servic_name_f);
+    RosConvertedQueueFixture::ROSIntQueue_f vq9(max_queue_size_f, queue_info_f, nh_f,
+                                            (struct RosConvertedQueueFixture::ROSIntQueue_f::InterfacesArgs){
+                                            .arrival_prediction_fptr=prediction::return_value_plus_one,
+                                            .transmission_prediction_service_name=transmission_prediction_service_name_f,
+                                            .transmission_fptr=transmission::transmission_on_dequeue1,
+                                            .conversion_service_name=conversion_service_name_f});
     vq9.update(arrival_queue_f,0);
     EXPECT_EQ(vq9.evaluate(service_struct_test_f), 2);
 
     // ROSQueue queue with ROS service transmission, user-defined arrival, user-defined transmission and
-    RosConvertedQueueFixture::ROSIntQueue_f vq10(max_queue_size_f, queue_info_f, nh_f ,
-                                            arrival_prediction_service_name=arrival_prediction_service_name_f,
-                                            transmission_prediction_fptr=prediction::return_value,
-                                            transmission_fptr=transmission::transmission_on_dequeue1,
-                                            conversion_servic_name=conversion_servic_name_f);
+    RosConvertedQueueFixture::ROSIntQueue_f vq10(max_queue_size_f, queue_info_f, nh_f,
+                                            (struct RosConvertedQueueFixture::ROSIntQueue_f::InterfacesArgs){
+                                            .arrival_prediction_service_name=arrival_prediction_service_name_f,
+                                            .transmission_prediction_fptr=prediction::return_value,
+                                            .transmission_fptr=transmission::transmission_on_dequeue1,
+                                            .conversion_service_name=conversion_service_name_f});
     vq10.update(arrival_queue_f,0);
-    EXPECT_EQ(vq10.evaluate(service_struct_test_f), 6);
+    EXPECT_EQ(vq10.evaluate(service_struct_test_f), 15);
 
     // ROSQueue queue with ROS service transmission, ROS servicearrival, user-defined transmission and
-    RosConvertedQueueFixture::ROSIntQueue_f vq11(max_queue_size_f, queue_info_f, nh_f ,
-                                            arrival_prediction_service_name=arrival_prediction_service_name_f,
-                                            transmission_prediction_service_name=transmission_prediction_service_name_f,
-                                            transmission_fptr=transmission::transmission_on_dequeue1,
-                                            conversion_servic_name=conversion_servic_name_f);
+    RosConvertedQueueFixture::ROSIntQueue_f vq11(max_queue_size_f, queue_info_f, nh_f,
+                                            (struct RosConvertedQueueFixture::ROSIntQueue_f::InterfacesArgs){
+                                            .arrival_prediction_service_name=arrival_prediction_service_name_f,
+                                            .transmission_prediction_service_name=transmission_prediction_service_name_f,
+                                            .transmission_fptr=transmission::transmission_on_dequeue1,
+                                            .conversion_service_name=conversion_service_name_f});
     vq11.update(arrival_queue_f,0);
     EXPECT_EQ(vq11.evaluate(service_struct_test_f), 3);
 
     // ROSQueue queue with user-defined transmission, user-defined arrival, transmission topic and
-    RosConvertedQueueFixture::ROSIntQueue_f vq12(max_queue_size_f, queue_info_f, nh_f ,
-                                            arrival_prediction_fptr=prediction::return_value_plus_one,
-                                            transmission_prediction_fptr=prediction::return_value,
-                                            transmission_topic_name=transmission_topic_name_f,
-                                            conversion_servic_name=conversion_servic_name_f);
+    RosConvertedQueueFixture::ROSIntQueue_f vq12(max_queue_size_f, queue_info_f, nh_f,
+                                            (struct RosConvertedQueueFixture::ROSIntQueue_f::InterfacesArgs){
+                                            .arrival_prediction_fptr=prediction::return_value_plus_one,
+                                            .transmission_prediction_fptr=prediction::return_value,
+                                            .transmission_topic_name=transmission_topic_name_f,
+                                            .conversion_service_name=conversion_service_name_f});
     vq12.update(arrival_queue_f,0);
-    EXPECT_EQ(vq12.evaluate(service_struct_test_f), 5);
+    EXPECT_EQ(vq12.evaluate(service_struct_test_f), 14);
 
     // ROSQueue queue with user-defined transmission, ROS service arrival, transmission topic and
-    RosConvertedQueueFixture::ROSIntQueue_f vq13(max_queue_size_f, queue_info_f, nh_f ,
-                                            arrival_prediction_fptr=prediction::return_value_plus_one,
-                                            transmission_prediction_service_name=ptransmission_prediction_service_name_f,
-                                            transmission_topic_name=transmission_topic_name_f,
-                                            conversion_servic_name=conversion_servic_name_f);
+    RosConvertedQueueFixture::ROSIntQueue_f vq13(max_queue_size_f, queue_info_f, nh_f,
+                                            (struct RosConvertedQueueFixture::ROSIntQueue_f::InterfacesArgs){
+                                            .arrival_prediction_fptr=prediction::return_value_plus_one,
+                                            .transmission_prediction_service_name=transmission_prediction_service_name_f,
+                                            .transmission_topic_name=transmission_topic_name_f,
+                                            .conversion_service_name=conversion_service_name_f});
     vq13.update(arrival_queue_f,0);
     EXPECT_EQ(vq13.evaluate(service_struct_test_f), 2);
 
     // ROSQueue queue with ROS service transmission, user-defined arrival, transmission topic and
-    RosConvertedQueueFixture::ROSIntQueue_f vq14(max_queue_size_f, queue_info_f, nh_f, arrival_prediction_service_name_f, prediction::return_value, transmission_topic_name_f);
-    RosConvertedQueueFixture::ROSIntQueue_f vq14(max_queue_size_f, queue_info_f, nh_f ,
-                                            arrival_prediction_service_name=arrival_prediction_service_name_f,
-                                            transmission_prediction_fptr=prediction::return_value,
-                                            transmission_topic_name=transmission_topic_name_f,
-                                            conversion_servic_name=conversion_servic_name_f);
+    RosConvertedQueueFixture::ROSIntQueue_f vq14(max_queue_size_f, queue_info_f, nh_f,
+                                            (struct RosConvertedQueueFixture::ROSIntQueue_f::InterfacesArgs){
+                                            .arrival_prediction_service_name=arrival_prediction_service_name_f,
+                                            .transmission_prediction_fptr=prediction::return_value,
+                                            .transmission_topic_name=transmission_topic_name_f,
+                                            .conversion_service_name=conversion_service_name_f});
     vq14.update(arrival_queue_f,0);
-    EXPECT_EQ(vq14.evaluate(service_struct_test_f), 6);
+    EXPECT_EQ(vq14.evaluate(service_struct_test_f), 15);
 
     // ROSQueue queue with ROS service transmission, ROS servicearrival, transmission topic and
-    RosConvertedQueueFixture::ROSIntQueue_f vq15(max_queue_size_f, queue_info_f, nh_f, arrival_prediction_service_name_f, transmission_prediction_service_name_f, transmission_topic_name_f);
-    RosConvertedQueueFixture::ROSIntQueue_f vq0(max_queue_size_f, queue_info_f, nh_f ,
-                                            arrival_prediction_service_name=arrival_prediction_service_name_f,
-                                            transmission_prediction_service_name=transmission_prediction_service_name_f,
-                                            transmission_topic_name=transmission_topic_name_f,
-                                            conversion_servic_name=conversion_servic_name_f);
+    RosConvertedQueueFixture::ROSIntQueue_f vq15(max_queue_size_f, queue_info_f, nh_f,
+                                            (struct RosConvertedQueueFixture::ROSIntQueue_f::InterfacesArgs){
+                                            .arrival_prediction_service_name=arrival_prediction_service_name_f,
+                                            .transmission_prediction_service_name=transmission_prediction_service_name_f,
+                                            .transmission_topic_name=transmission_topic_name_f,
+                                            .conversion_service_name=conversion_service_name_f});
     vq15.update(arrival_queue_f,0);
     EXPECT_EQ(vq15.evaluate(service_struct_test_f), 3);
 }
@@ -504,70 +522,110 @@ TEST_F(RosConvertedQueueFixture, constructorOverrideTest)
 TEST_F(RosConvertedQueueFixture, badInitTest)
 {
     //Test all constructors with a bad initialization of their function pointers
-    /*
-    EXPECT_THROW(RosConvertedQueueFixture::ROSIntQueue_f vq0(max_queue_size_f, queue_info_f, nullptr, prediction::return_value, transmission::transmission_on_dequeue1, nullptr), invalid_argument);
+        EXPECT_THROW(
+        RosConvertedQueueFixture::ROSIntQueue_f vq0(max_queue_size_f, queue_info_f, nh_f, 
+            (struct RosConvertedQueueFixture::ROSIntQueue_f::InterfacesArgs){});
+    , invalid_argument);
 
-    EXPECT_THROW(RosConvertedQueueFixture::ROSIntQueue_f vq1(max_queue_size_f, queue_info_f, prediction::return_value, nullptr, transmission::transmission_on_dequeue1, nullptr), invalid_argument);
+    EXPECT_THROW(
+        RosConvertedQueueFixture::ROSIntQueue_f vq0(max_queue_size_f, queue_info_f, nh_f, 
+            (struct RosConvertedQueueFixture::ROSIntQueue_f::InterfacesArgs){
 
-    EXPECT_THROW(RosConvertedQueueFixture::ROSIntQueue_f vq2(max_queue_size_f, queue_info_f, nh_f, nullptr, transmission_prediction_service_name_f, transmission::transmission_on_dequeue1, nullptr), invalid_argument);
+                .transmission_prediction_fptr = prediction::return_value,
+                .transmission_fptr = transmission::transmission_on_dequeue1,
+                .conversion_fptr = conversion::conversion_int_to_byte
+            });
+    , invalid_argument);
 
-    EXPECT_THROW(RosConvertedQueueFixture::ROSIntQueue_f vq3(max_queue_size_f, queue_info_f, nh_f, arrival_prediction_service_name_f, nullptr, transmission::transmission_on_dequeue1, nullptr), invalid_argument);
+    EXPECT_THROW(
+        RosConvertedQueueFixture::ROSIntQueue_f vq1(max_queue_size_f, queue_info_f, nh_f, 
+            (struct RosConvertedQueueFixture::ROSIntQueue_f::InterfacesArgs){
+                .arrival_prediction_fptr = prediction::return_value_plus_one,
 
-    EXPECT_THROW(RosConvertedQueueFixture::ROSIntQueue_f vq4(max_queue_size_f, queue_info_f, nullptr, prediction::return_value, transmission_topic_name_f, nullptr), invalid_argument);
+                .transmission_fptr = transmission::transmission_on_dequeue1,
+                .conversion_fptr = conversion::conversion_int_to_byte
+            });
+    , invalid_argument);
 
-    EXPECT_THROW(RosConvertedQueueFixture::ROSIntQueue_f vq5(max_queue_size_f, queue_info_f, prediction::return_value, nullptr, transmission_topic_name_f, nullptr), invalid_argument);
+    EXPECT_THROW(
+        RosConvertedQueueFixture::ROSIntQueue_f vq2(max_queue_size_f, queue_info_f, nh_f, 
+            (struct RosConvertedQueueFixture::ROSIntQueue_f::InterfacesArgs){
+                .arrival_prediction_fptr = prediction::return_value_plus_one,
+                .transmission_prediction_fptr = prediction::return_value,
 
-    EXPECT_THROW(RosConvertedQueueFixture::ROSIntQueue_f vq6(max_queue_size_f, queue_info_f, nh_f, nullptr, transmission_prediction_service_name_f, transmission_topic_name_f, nullptr), invalid_argument);
+                .conversion_fptr = conversion::conversion_int_to_byte
+            });
+    , invalid_argument);
 
-    EXPECT_THROW(RosConvertedQueueFixture::ROSIntQueue_f vq7(max_queue_size_f, queue_info_f, nh_f, arrival_prediction_service_name_f, nullptr, transmission_topic_name_f, nullptr), invalid_argument);
+    EXPECT_THROW(
+        RosConvertedQueueFixture::ROSIntQueue_f vq3(max_queue_size_f, queue_info_f, nh_f, 
+            (struct RosConvertedQueueFixture::ROSIntQueue_f::InterfacesArgs){
+                .arrival_prediction_fptr = prediction::return_value_plus_one,
+                .transmission_prediction_fptr = prediction::return_value,
+                .transmission_fptr = transmission::transmission_on_dequeue1
 
-    EXPECT_THROW(RosConvertedQueueFixture::ROSIntQueue_f vq8(max_queue_size_f, queue_info_f, nullptr, prediction::return_value, nullptr, nullptr), invalid_argument);
+            });
+    , invalid_argument);
+}
 
-    EXPECT_THROW(RosConvertedQueueFixture::ROSIntQueue_f vq9(max_queue_size_f, queue_info_f, prediction::return_value, nullptr, nullptr, nullptr), invalid_argument);
+TEST_F(RosConvertedQueueFixture, initOverrideTest)
+{
+    // Clear the test transmission queue is empty
+    transmission::output_int_dequeue_1.clear();
+    EXPECT_EQ(transmission::output_int_dequeue_1.size(), 0);
 
-    EXPECT_THROW(RosConvertedQueueFixture::ROSIntQueue_f vq10(max_queue_size_f, queue_info_f, nh_f, nullptr, transmission_prediction_service_name_f, nullptr, nullptr), invalid_argument);
+    // Test if function pointers overides the behavior of the service if both are defined
+    RosConvertedQueueFixture::ROSIntQueue_f vq0(max_queue_size_f, queue_info_f, nh_f, 
+        (struct RosConvertedQueueFixture::ROSIntQueue_f::InterfacesArgs){
+            .arrival_prediction_fptr = prediction::return_value_plus_one,
+            .arrival_prediction_service_name = arrival_prediction_service_name_f,
 
-    EXPECT_THROW(RosConvertedQueueFixture::ROSIntQueue_f v11(max_queue_size_f, queue_info_f, nh_f, arrival_prediction_service_name_f, nullptr, nullptr, nullptr), invalid_argument);
+            .transmission_prediction_fptr = prediction::return_value,
+            .transmission_prediction_service_name = transmission_prediction_service_name_f,
 
-    EXPECT_THROW(RosConvertedQueueFixture::ROSIntQueue_f vq12(max_queue_size_f, queue_info_f, nullptr, prediction::return_value, transmission::transmission_on_dequeue1), invalid_argument);
+            .transmission_fptr = transmission::transmission_on_dequeue1,
+            .transmission_topic_name = transmission_prediction_service_name_f,
 
-    EXPECT_THROW(RosConvertedQueueFixture::ROSIntQueue_f vq13(max_queue_size_f, queue_info_f, prediction::return_value, nullptr, transmission::transmission_on_dequeue1), invalid_argument);
+            .conversion_fptr = conversion::conversion_int_to_byte,
+            .conversion_service_name = conversion_service_name_f
+        });
 
-    EXPECT_THROW(RosConvertedQueueFixture::ROSIntQueue_f vq14(max_queue_size_f, queue_info_f, nh_f, nullptr, transmission_prediction_service_name_f, transmission::transmission_on_dequeue1), invalid_argument);
+    vq0.update(arrival_queue_f,0);
+    // Look if the function
+    EXPECT_EQ(vq0.evaluate(service_struct_test_f), 14);
 
-    EXPECT_THROW(RosConvertedQueueFixture::ROSIntQueue_f vq15(max_queue_size_f, queue_info_f, nh_f, arrival_prediction_service_name_f, nullptr, transmission::transmission_on_dequeue1), invalid_argument);
+    vq0.update(arrival_queue_f, 2);
+    
+    deque<ros_queue::queue_int_element> compared_queue;
+    ros_queue::queue_int_element int_element;
+    int_element.value =1;
+    compared_queue.push_back(int_element);
+    int_element.value = 2;
+    compared_queue.push_back(int_element);
 
-    EXPECT_THROW(RosConvertedQueueFixture::ROSIntQueue_f vq16(max_queue_size_f, queue_info_f, nullptr, prediction::return_value, transmission_topic_name_f), invalid_argument);
+    EXPECT_EQ(transmission::output_int_dequeue_1, compared_queue);
 
-    EXPECT_THROW(RosConvertedQueueFixture::ROSIntQueue_f vq17(max_queue_size_f, queue_info_f, prediction::return_value, nullptr, transmission_topic_name_f), invalid_argument);
-
-    EXPECT_THROW(RosConvertedQueueFixture::ROSIntQueue_f vq18(max_queue_size_f, queue_info_f, nh_f, nullptr, transmission_prediction_service_name_f, transmission_topic_name_f), invalid_argument);
-
-    EXPECT_THROW(RosConvertedQueueFixture::ROSIntQueue_f vq19(max_queue_size_f, queue_info_f, nh_f, arrival_prediction_service_name_f, nullptr, transmission_topic_name_f), invalid_argument);
-
-    EXPECT_THROW(RosConvertedQueueFixture::ROSIntQueue_f vq20(max_queue_size_f, queue_info_f, nullptr, prediction::return_value, nullptr), invalid_argument);
-
-    EXPECT_THROW(RosConvertedQueueFixture::ROSIntQueue_f vq21(max_queue_size_f, queue_info_f, prediction::return_value, nullptr, nullptr), invalid_argument);
-
-    EXPECT_THROW(RosConvertedQueueFixture::ROSIntQueue_f vq22(max_queue_size_f, queue_info_f, nh_f, nullptr, transmission_prediction_service_name_f, nullptr), invalid_argument);
-
-    EXPECT_THROW(RosConvertedQueueFixture::ROSIntQueue_f v23(max_queue_size_f, queue_info_f, nh_f, arrival_prediction_service_name_f, nullptr, nullptr), invalid_argument);
-    */
 }
 
 TEST_F(RosConvertedQueueFixture, transmissionTest)
 {
-    /*
     // Clear the test transmission queue is empty
     transmission::output_int_dequeue_1.clear();
     EXPECT_EQ(transmission::output_int_dequeue_1.size(), 0);
 
     // Test if the user-defined transmission works
-    RosConvertedQueueFixture::ROSIntQueue_f vq0(max_queue_size_f, queue_info_f, prediction::return_value_plus_one, prediction::return_value, transmission::transmission_on_dequeue1);
+    RosConvertedQueueFixture::ROSIntQueue_f vq0(max_queue_size_f, queue_info_f, nh_f, 
+    (struct RosConvertedQueueFixture::ROSIntQueue_f::InterfacesArgs){
+        .arrival_prediction_fptr = prediction::return_value_plus_one,
+        .transmission_prediction_fptr = prediction::return_value,
+        .transmission_fptr = transmission::transmission_on_dequeue1,
+        .conversion_fptr = conversion::conversion_int_to_byte,
+    });
+
     vq0.update(arrival_queue_f,0);
     EXPECT_EQ(transmission::output_int_dequeue_1.size(), 0);
     vq0.update(arrival_queue_f, 2);
-    EXPECT_EQ(vq0.getSize(), 6);
+    EXPECT_EQ(vq0.getSize(), 24);
 
     
     deque<ros_queue::queue_int_element> compared_queue;
@@ -579,9 +637,9 @@ TEST_F(RosConvertedQueueFixture, transmissionTest)
 
     EXPECT_EQ(transmission::output_int_dequeue_1, compared_queue);
     
-    // Test if the transmission through ROS Topics works. EDIT: Verified with in another way.
+    // Test if transmission through ROS Topics works. EDIT: Verified in another way.
 
-    RosQueueFixture::ROSIntQueue_f vq1(max_queue_size_f, queue_info_f, prediction::return_value_plus_one, prediction::return_value, transmission_topic_name_f);
+    /* RosQueueFixture::ROSIntQueue_f vq1(max_queue_size_f, queue_info_f, prediction::return_value_plus_one, prediction::return_value, transmission_topic_name_f);
     vq1.update(arrival_queue_f,0);
     vq1.update(arrival_queue_f, 2);*/
 
@@ -590,8 +648,27 @@ TEST_F(RosConvertedQueueFixture, transmissionTest)
 TEST_F(RosConvertedQueueFixture, conversionTest)
 {
     // Test the user-defined conversion
+    RosConvertedQueueFixture::ROSIntQueue_f vq0(max_queue_size_f, queue_info_f, nh_f, 
+    (struct RosConvertedQueueFixture::ROSIntQueue_f::InterfacesArgs){
+        .arrival_prediction_fptr = prediction::return_value_plus_one,
+        .transmission_prediction_fptr = prediction::return_value,
+        .transmission_fptr = transmission::transmission_on_dequeue1,
+        .conversion_fptr = conversion::conversion_int_to_byte
+    });
+    vq0.update(arrival_queue_f,0);
+    // Since the conversion::convserion_int_to_byte computes the size in bytes, we can compared it with sizeof()
+    EXPECT_EQ(vq0.getSize(), arrival_queue_f.size() * sizeof(ros_queue::queue_int_element));
 
     //Test the service conversion
+    RosConvertedQueueFixture::ROSIntQueue_f vq1(max_queue_size_f, queue_info_f, nh_f, 
+    (struct RosConvertedQueueFixture::ROSIntQueue_f::InterfacesArgs){
+        .arrival_prediction_fptr = prediction::return_value_plus_one,
+        .transmission_prediction_fptr = prediction::return_value,
+        .transmission_fptr = transmission::transmission_on_dequeue1,
+        .conversion_service_name = conversion_service_name_f
+    });
+    vq1.update(arrival_queue_f,0);
+    EXPECT_EQ(vq1.getSize(), arrival_queue_f.size() * sizeof(ros_queue::queue_int_element));
 }
 
 // Run all the tests that were declared with TEST()
