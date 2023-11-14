@@ -77,8 +77,6 @@ class RosQueueFixture : public testing::Test {
         ros::NodeHandle nh_f;
 
         deque<ros_queue::queue_int_element> arrival_queue_f;
-
-
         
         ros_queue::ReturnSentValue service_struct_test_f;
 
@@ -104,7 +102,6 @@ class RosConvertedQueueFixture : public testing::Test {
                 element_to_push.value = i;
                 arrival_queue_f.push_back(element_to_push);
             }
-            
         }
 
         int max_queue_size_f;
@@ -172,43 +169,66 @@ namespace conversion
 TEST_F(RosVirtualQueueFixture, constructorOverrideTest)
 {
     // InConVirtualQueue queue with user-defined transmission and user-defined arrival
-    ROSVirtualQueue<InConVirtualQueue, ros_queue::ReturnSentValue> vq0(max_queue_size_f, queue_info_f, prediction::return_value_plus_one, prediction::return_value);
+    ROSVirtualQueue<InConVirtualQueue, ros_queue::ReturnSentValue> vq0(max_queue_size_f, queue_info_f, nh_f,
+                                                                    (ROSVirtualQueue<InConVirtualQueue, ros_queue::ReturnSentValue>::InterfacesArgs){
+                                                                    .arrival_prediction_fptr= prediction::return_value_plus_one,
+                                                                    .transmission_prediction_fptr= prediction::return_value});
     vq0.update(4,0);
     EXPECT_EQ(vq0.evaluate(service_struct_test_f), 5);
 
     // InConVirtualQueue queue with user-defined transmission and ROS service arrival
-    ROSVirtualQueue<InConVirtualQueue, ros_queue::ReturnSentValue> vq1(max_queue_size_f, queue_info_f, nh_f, prediction::return_value_plus_one, transmission_prediction_service_name_f);
+    ROSVirtualQueue<InConVirtualQueue, ros_queue::ReturnSentValue> vq1(max_queue_size_f, queue_info_f, nh_f,
+                                                                (ROSVirtualQueue<InConVirtualQueue, ros_queue::ReturnSentValue>::InterfacesArgs){
+                                                                .arrival_prediction_fptr = prediction::return_value_plus_one,
+                                                                .transmission_prediction_service_name = transmission_prediction_service_name_f});
     vq1.update(4,0);
     EXPECT_EQ(vq1.evaluate(service_struct_test_f), 2);
 
     // InConVirtualQueue queue with ROS service transmission and user-defined arrival
-    ROSVirtualQueue<InConVirtualQueue, ros_queue::ReturnSentValue>vq2(max_queue_size_f, queue_info_f, nh_f, arrival_prediction_service_name_f, prediction::return_value);
+    ROSVirtualQueue<InConVirtualQueue, ros_queue::ReturnSentValue> vq2(max_queue_size_f, queue_info_f, nh_f,
+                                                            (ROSVirtualQueue<InConVirtualQueue, ros_queue::ReturnSentValue>::InterfacesArgs){
+                                                            .arrival_prediction_service_name = arrival_prediction_service_name_f,
+                                                            .transmission_prediction_fptr = prediction::return_value});
     vq2.update(4,0);
     EXPECT_EQ(vq2.evaluate(service_struct_test_f), 6);
 
     // InConVirtualQueue queue with ROS service transmission and ROS servicearrival
-    ROSVirtualQueue<InConVirtualQueue, ros_queue::ReturnSentValue> vq3(max_queue_size_f, queue_info_f, nh_f, arrival_prediction_service_name_f, transmission_prediction_service_name_f);
+    ROSVirtualQueue<InConVirtualQueue, ros_queue::ReturnSentValue> vq3(max_queue_size_f, queue_info_f, nh_f,
+                                                            (ROSVirtualQueue<InConVirtualQueue, ros_queue::ReturnSentValue>::InterfacesArgs){
+                                                            .arrival_prediction_service_name = arrival_prediction_service_name_f,
+                                                            .transmission_prediction_service_name = transmission_prediction_service_name_f});
     vq3.update(4,0);
     EXPECT_EQ(vq3.evaluate(service_struct_test_f), 3);
 
-
     // EqConVirtualQueue queue with user-defined transmission and user-defined arrival
-    ROSVirtualQueue<EqConVirtualQueue, ros_queue::ReturnSentValue> vq4(max_queue_size_f, queue_info_f, prediction::return_value_plus_one, prediction::return_value);
+    ROSVirtualQueue<EqConVirtualQueue, ros_queue::ReturnSentValue> vq4(max_queue_size_f, queue_info_f, nh_f,
+                                                                    (ROSVirtualQueue<EqConVirtualQueue, ros_queue::ReturnSentValue>::InterfacesArgs){
+                                                                    .arrival_prediction_fptr= prediction::return_value_plus_one,
+                                                                    .transmission_prediction_fptr= prediction::return_value});
     vq4.update(4,0);
     EXPECT_EQ(vq4.evaluate(service_struct_test_f), 5);
-    
+
     // EqConVirtualQueue queue with user-defined transmission and ROS service arrival
-    ROSVirtualQueue<EqConVirtualQueue, ros_queue::ReturnSentValue> vq5(max_queue_size_f, queue_info_f, nh_f, prediction::return_value_plus_one, transmission_prediction_service_name_f);
+    ROSVirtualQueue<EqConVirtualQueue, ros_queue::ReturnSentValue> vq5(max_queue_size_f, queue_info_f, nh_f,
+                                                                (ROSVirtualQueue<EqConVirtualQueue, ros_queue::ReturnSentValue>::InterfacesArgs){
+                                                                .arrival_prediction_fptr = prediction::return_value_plus_one,
+                                                                .transmission_prediction_service_name = transmission_prediction_service_name_f});
     vq5.update(4,0);
     EXPECT_EQ(vq5.evaluate(service_struct_test_f), 2);
-    
+
     // EqConVirtualQueue queue with ROS service transmission and user-defined arrival
-    ROSVirtualQueue<EqConVirtualQueue, ros_queue::ReturnSentValue> vq6(max_queue_size_f, queue_info_f, nh_f, arrival_prediction_service_name_f, prediction::return_value);
+    ROSVirtualQueue<EqConVirtualQueue, ros_queue::ReturnSentValue> vq6(max_queue_size_f, queue_info_f, nh_f,
+                                                            (ROSVirtualQueue<EqConVirtualQueue, ros_queue::ReturnSentValue>::InterfacesArgs){
+                                                            .arrival_prediction_service_name = arrival_prediction_service_name_f,
+                                                            .transmission_prediction_fptr = prediction::return_value});
     vq6.update(4,0);
     EXPECT_EQ(vq6.evaluate(service_struct_test_f), 6);
-    
+
     // EqConVirtualQueue queue with ROS service transmission and ROS servicearrival
-    ROSVirtualQueue<EqConVirtualQueue, ros_queue::ReturnSentValue> vq7(max_queue_size_f, queue_info_f, nh_f, arrival_prediction_service_name_f, transmission_prediction_service_name_f);
+    ROSVirtualQueue<EqConVirtualQueue, ros_queue::ReturnSentValue> vq7(max_queue_size_f, queue_info_f, nh_f,
+                                                            (ROSVirtualQueue<EqConVirtualQueue, ros_queue::ReturnSentValue>::InterfacesArgs){
+                                                            .arrival_prediction_service_name = arrival_prediction_service_name_f,
+                                                            .transmission_prediction_service_name = transmission_prediction_service_name_f});
     vq7.update(4,0);
     EXPECT_EQ(vq7.evaluate(service_struct_test_f), 3);
 }
@@ -220,30 +240,40 @@ TEST_F(RosVirtualQueueFixture, badInitTest)
     // Create a type since the EXPECT_THROW macros confuses the coma in the template's parameters as a separator for its macro arguments.
     typedef ROSVirtualQueue<InConVirtualQueue,ros_queue::ReturnSentValue> ROSInConVirtualQUeue; 
 
-    // InConVirtualQueue queue with user-defined transmission and user-defined arrival
-    EXPECT_THROW(ROSInConVirtualQUeue vq0(max_queue_size_f, queue_info_f, nullptr, prediction::return_value), invalid_argument);
+    EXPECT_THROW(ROSInConVirtualQUeue vq0(max_queue_size_f, queue_info_f, nh_f, 
+                (ROSInConVirtualQUeue::InterfacesArgs){
+                .arrival_prediction_fptr= nullptr,
+                .transmission_prediction_fptr= prediction::return_value})
+    , invalid_argument);
 
-    // InConVirtualQueue queue with user-defined transmission and user-defined arrival
-    EXPECT_THROW(ROSInConVirtualQUeue vq0(max_queue_size_f, queue_info_f, prediction::return_value, nullptr), invalid_argument);
+    EXPECT_THROW(ROSInConVirtualQUeue vq0(max_queue_size_f, queue_info_f, nh_f, 
+                (ROSInConVirtualQUeue::InterfacesArgs){
+                .arrival_prediction_fptr= prediction::return_value,
+                .transmission_prediction_fptr= nullptr})
+    , invalid_argument);
 
-    // InConVirtualQueue queue with user-defined transmission and ROS service arrival
-    EXPECT_THROW(ROSInConVirtualQUeue vq1(max_queue_size_f, queue_info_f, nh_f, nullptr, transmission_prediction_service_name_f), invalid_argument);
+    EXPECT_THROW(ROSInConVirtualQUeue vq1(max_queue_size_f, queue_info_f, nh_f,
+                (ROSInConVirtualQUeue::InterfacesArgs){})
+    , invalid_argument);
 
-    // InConVirtualQueue queue with ROS service transmission and user-defined arrival
-    EXPECT_THROW(ROSInConVirtualQUeue vq2(max_queue_size_f, queue_info_f, nh_f, arrival_prediction_service_name_f, nullptr), invalid_argument);
 
     typedef ROSVirtualQueue<EqConVirtualQueue,ros_queue::ReturnSentValue> ROSEqConVirtualQUeue; 
-    // InConVirtualQueue queue with user-defined transmission and user-defined arrival
-    EXPECT_THROW(ROSEqConVirtualQUeue vq3(max_queue_size_f, queue_info_f, nullptr, prediction::return_value), invalid_argument);
 
-    // InConVirtualQueue queue with user-defined transmission and user-defined arrival
-    EXPECT_THROW(ROSEqConVirtualQUeue vq4(max_queue_size_f, queue_info_f, prediction::return_value, nullptr), invalid_argument);
+    EXPECT_THROW(ROSEqConVirtualQUeue vq0(max_queue_size_f, queue_info_f, nh_f, 
+                (ROSEqConVirtualQUeue::InterfacesArgs){
+                .arrival_prediction_fptr= nullptr,
+                .transmission_prediction_fptr= prediction::return_value})
+    , invalid_argument);
 
-    // InConVirtualQueue queue with user-defined transmission and ROS service arrival
-    EXPECT_THROW(ROSEqConVirtualQUeue vq5(max_queue_size_f, queue_info_f, nh_f, nullptr, transmission_prediction_service_name_f), invalid_argument);
+    EXPECT_THROW(ROSEqConVirtualQUeue vq0(max_queue_size_f, queue_info_f, nh_f, 
+                (ROSEqConVirtualQUeue::InterfacesArgs){
+                .arrival_prediction_fptr= prediction::return_value,
+                .transmission_prediction_fptr= nullptr})
+    , invalid_argument);
 
-    // InConVirtualQueue queue with ROS service transmission and user-defined arrival
-    EXPECT_THROW(ROSEqConVirtualQUeue vq6(max_queue_size_f, queue_info_f, nh_f, arrival_prediction_service_name_f, nullptr), invalid_argument);
+    EXPECT_THROW(ROSEqConVirtualQUeue vq1(max_queue_size_f, queue_info_f, nh_f,
+                (ROSEqConVirtualQUeue::InterfacesArgs){})
+    , invalid_argument);
 
 }
 

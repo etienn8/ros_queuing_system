@@ -14,11 +14,11 @@ using std::invalid_argument;
 
 /**
  * @brief Virtual queue wrapped with some ROS interface to interact with the queue with services and/or pointer functions.
- * @tparam TDynamicVirtualQueueType Type of the virtual queue used. Queue that could be used: InConVirtualQueue<TServiceClass> or EqConVirtualQueue<TServiceClass> 
- * @tparam TServiceClass Type of the service used for the evaluation and prediction step. The response must have an int32 named "prediction".
+ * @tparam TDynamicVirtualQueueType Type of the virtual queue used. Queue that could be used: InConVirtualQueue<TPredictionServiceClass> or EqConVirtualQueue<TPredictionServiceClass> 
+ * @tparam TPredictionServiceClass Type of the service used for the evaluation and prediction step. The response must have an int32 named "prediction".
  */
-template <template <typename> class TDynamicVirtualQueueType, typename TServiceClass>
-class ROSVirtualQueue: public TDynamicVirtualQueueType<TServiceClass>
+template <template <typename> class TDynamicVirtualQueueType, typename TPredictionServiceClass>
+class ROSVirtualQueue: public TDynamicVirtualQueueType<TPredictionServiceClass>
 {
     public:
         /**
@@ -27,84 +27,68 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType<TServiceClass>
         ROSQueueInfo info_;
 
         /**
-         * @brief  Constructor that initialize the max queue size, the ROSQueueINfo and the different predictions methods.
+         * @brief Struct that contains all the options related to using pointer functions, or ROS Topics/Services for prediction, transmission and conversion. 
+         * @param arrival_prediction_fptr Pointer to a user-defined function that is called to predict the number of arrivals. If defined, arrival_prediction_service_name won't be used.
+         * @param arrival_prediction_service_name String of the service name called to predict the number of arriving data. 
+         * @param transmission_prediction_fptr Pointer to a user-defined function that is called to predict the number of departure. If defined, transmission_prediction_service_name won't be used.
+         * @param transmission_prediction_service_name String of the service name called to predict the number of transmitted data.
+         */
+        struct InterfacesArgs
+        {
+            int (*arrival_prediction_fptr)(const TPredictionServiceClass&) = nullptr;
+            string arrival_prediction_service_name = "";
+
+            int (*transmission_prediction_fptr)(const TPredictionServiceClass&) = nullptr;
+            string transmission_prediction_service_name = "";
+        };
+
+        /**
+         * @brief Constructor that initialize the max queue size, the ROSQueueINfo and the different predictions methods.
          * @param max_queue_size Maximum size the queue can take and over which, data will be discarded.
          * @param info ROSQueueInfo reference that contains meta data about the queue.
-         * @param arrival_prediction_fptr Pointer to a user-defined function that is called to predict the number of arrivals.
-         * @param transmission_prediction_fptr Pointer to a user-defined function that is called to predict the number of departure.
+         * @param interfaces Struct that contains all the options for the prediction interfaces.See ROSVirtualQueue::InterfacesArgs.
          * @throw Throws an std::invalid_argument if one of the function pointers is null. 
         */
-        ROSVirtualQueue(int max_queue_size, ROSQueueInfo& info, int (*arrival_prediction_fptr)(const TServiceClass&),
-         int (*transmission_prediction_fptr)(const TServiceClass&)):TDynamicVirtualQueueType<TServiceClass>(max_queue_size), info_(info)
+        ROSVirtualQueue(int max_queue_size, ROSQueueInfo& info, ros::NodeHandle& nh, InterfacesArgs interfaces)
+                        :TDynamicVirtualQueueType<TPredictionServiceClass>(max_queue_size), info_(info)
         {
-            if (arrival_prediction_fptr == nullptr)
+            // Init the arrival prediction
+            if (interfaces.arrival_prediction_fptr)
             {
-                throw invalid_argument("Tried to initiate arrival_prediction with null function pointer.");
-            }
-            arrival_prediction_fptr_ = arrival_prediction_fptr;
+                arrival_prediction_fptr_ = interfaces.arrival_prediction_fptr;
 
-            if (transmission_prediction_fptr == nullptr)
+                if (!interfaces.arrival_prediction_service_name.empty())
+                {
+                    ROS_WARN("An arrival prediction function pointer and a service name has been provided. The function pointer will be used.");
+                }
+            }
+            else if (!interfaces.arrival_prediction_service_name.empty())
             {
-                throw invalid_argument("Tried to initiate transmission_prediction with null function pointer.");
+                arrival_service_client_ = nh.serviceClient<TPredictionServiceClass>(interfaces.arrival_prediction_service_name);
             }
-            transmission_prediction_fptr_ = transmission_prediction_fptr;
-        }
-
-        /**
-         * @brief  Constructor that initialize the max queue size, the ROSQueueINfo and the different predictions methods.
-         * @param max_queue_size Maximum size the queue can take and over which, data will be discarded.
-         * @param info ROSQueueInfo reference that contains meta data about the queue.
-         * @param nh Its ros::NodeHandle used to create the services and make sure that a node handle exists during the life time of the ROSQueue.
-         * @param arrival_prediction_fptr Pointer to a user-defined function that is called to predict the number of arrivals.
-         * @param transmission_prediction_service_name String of the service name called to predict the number of transmitted data.
-         * @throw Throws an std::invalid_argument if the arrival prediction function pointers is null. 
-        */
-        ROSVirtualQueue(int max_queue_size, ROSQueueInfo& info, ros::NodeHandle& nh, int (*arrival_prediction_fptr)(const TServiceClass&),
-         string transmission_prediction_service_name):TDynamicVirtualQueueType<TServiceClass>(max_queue_size), info_(info), nh_(nh)
-        {
-            if (arrival_prediction_fptr == nullptr)
+            else
             {
-                throw invalid_argument("Tried to initiate arrival_prediction with null function pointer.");
+                throw invalid_argument("No arrival prediction function pointer or service name provided.");
             }
-            arrival_prediction_fptr_ = arrival_prediction_fptr;
 
-            transmission_service_client_ = nh.serviceClient<TServiceClass>(transmission_prediction_service_name);
-        }
-
-        /**
-         * @brief  Constructor that initialize the max queue size, the ROSQueueINfo and the different predictions methods.
-         * @param max_queue_size Maximum size the queue can take and over which, data will be discarded.
-         * @param info ROSQueueInfo reference that contains meta data about the queue.
-         * @param nh Its ros::NodeHandle used to create the services and make sure that a node handle exists during the life time of the ROSQueue.
-         * @param arrival_prediction_service_name String of the service name called to predict the number of arriving data.
-         * @param transmission_prediction_fptr Pointer to a user-defined function that is called to predict the number of departure.
-         * @throw Throws an std::invalid_argument if the transmission prediction function pointers is null. 
-        */
-        ROSVirtualQueue(int max_queue_size, ROSQueueInfo& info, ros::NodeHandle& nh, string arrival_prediction_service_name,
-        int (*transmission_prediction_fptr)(const TServiceClass&)):TDynamicVirtualQueueType<TServiceClass>(max_queue_size), info_(info), nh_(nh)
-        {
-            if (transmission_prediction_fptr == nullptr)
+            // Init the transmission prediction
+            if (interfaces.transmission_prediction_fptr)
             {
-                throw invalid_argument("Tried to initiate transmission_prediction with null function pointer.");
-            }
-            transmission_prediction_fptr_ = transmission_prediction_fptr;
-            arrival_service_client_ = nh.serviceClient<TServiceClass>(arrival_prediction_service_name);
-        }
+                transmission_prediction_fptr_ = interfaces.transmission_prediction_fptr;
 
-        /**
-         * @brief  Constructor that initialize the max queue size, the ROSQueueINfo and the different predictions methods.
-         * @param max_queue_size Maximum size the queue can take and over which, data will be discarded.
-         * @param info ROSQueueInfo reference that contains meta data about the queue.
-         * @param nh Its ros::NodeHandle used to create the services and make sure that a node handle exists during the life time of the ROSQueue.
-         * @param arrival_prediction_service_name String of the service name called to predict the number of arriving data.
-         * @param transmission_prediction_service_name String of the service name called to predict the number of transmitted data.
-         * @throw Throws an std::invalid_argument if the transmission prediction function pointers is null. 
-        */
-        ROSVirtualQueue(int max_queue_size, ROSQueueInfo& info, ros::NodeHandle& nh, string arrival_prediction_service_name,
-        string transmission_prediction_service_name):TDynamicVirtualQueueType<TServiceClass>(max_queue_size), info_(info), nh_(nh)
-        {
-            arrival_service_client_ = nh.serviceClient<TServiceClass>(arrival_prediction_service_name);
-            transmission_service_client_ = nh.serviceClient<TServiceClass>(transmission_prediction_service_name);
+                if (!interfaces.transmission_prediction_service_name.empty())
+                {
+                    ROS_WARN("A transmission prediction function pointer and a service name has been provided. The function pointer will be used.");
+                }
+            }
+            else if (!interfaces.transmission_prediction_service_name.empty())
+            {
+                transmission_service_client_ = nh.serviceClient<TPredictionServiceClass>(interfaces.transmission_prediction_service_name);
+            }
+            else
+            {
+                throw invalid_argument("No transmission prediction function pointer or service name provided.");
+            }
         }
 
     protected:
@@ -113,7 +97,7 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType<TServiceClass>
          * @param service Is a service class definition that is used for the service call and for the user-defined prediction function as data structure input and output.
          * @return Returns the converted size of the estimated arrival queue.
          */
-        virtual int arrival_prediction(const TServiceClass& service) override 
+        virtual int arrival_prediction(const TPredictionServiceClass& service) override 
         {
             if (arrival_prediction_fptr_)
             {
@@ -122,7 +106,7 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType<TServiceClass>
             else
             {
                 //Make a local copy to respect the const arg but still allowing the service call
-                TServiceClass local_service= service; 
+                TPredictionServiceClass local_service= service; 
 
                 // Service ROS call
                 if (arrival_service_client_.waitForExistence(WAIT_DURATION_FOR_SERVICE_EXISTENCE))
@@ -146,7 +130,7 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType<TServiceClass>
          * @param service Is a service class definition that is used for the service call and for the user-defined prediction function as data structure input and output.
          * @return Returns the converted size of the estimated transmission queue.
          */
-        virtual int transmission_prediction(const TServiceClass& service) override
+        virtual int transmission_prediction(const TPredictionServiceClass& service) override
         {
             if (transmission_prediction_fptr_)
             {
@@ -155,7 +139,7 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType<TServiceClass>
             else
             {
                 //Make a local copy to respect the const arg but still allowing the service call
-                TServiceClass local_service = service; 
+                TPredictionServiceClass local_service = service; 
 
                 // Service ROS call
                 if (transmission_service_client_.waitForExistence(WAIT_DURATION_FOR_SERVICE_EXISTENCE))
@@ -187,7 +171,7 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType<TServiceClass>
         /**
          * @brief Function pointer for the arrival prediction service calls.
          */
-        int (*arrival_prediction_fptr_)(const TServiceClass&) = nullptr;
+        int (*arrival_prediction_fptr_)(const TPredictionServiceClass&) = nullptr;
 
         /**
          * @brief Service client used for the transmission prediction service calls.
@@ -196,7 +180,7 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType<TServiceClass>
         /**
          * @brief Function pointer for the transmission prediction service calls.
          */
-        int (*transmission_prediction_fptr_)(const TServiceClass&) = nullptr;
+        int (*transmission_prediction_fptr_)(const TPredictionServiceClass&) = nullptr;
 
         /**
          * @brief Duration to wait for the existence of services at each call.
