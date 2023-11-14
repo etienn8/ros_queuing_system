@@ -33,6 +33,11 @@ class ROSConvertedQueue: public DynamicConvertedQueue<typename QueueElementTrait
 {
     public:
         /**
+         * @brief Member that contains meta data for queues.
+        */
+        ROSQueueInfo info_;
+
+        /**
          * @brief Struct that contains all the options related to using pointer functions, or ROS Topics/Services for prediction, transmission and conversion. 
          * @param arrival_prediction_fptr Pointer to a user-defined function that is called to predict the number of arrivals. If defined, arrival_prediction_service_name won't be used.
          * @param arrival_prediction_service_name String of the service name called to predict the number of arriving data. 
@@ -57,11 +62,6 @@ class ROSConvertedQueue: public DynamicConvertedQueue<typename QueueElementTrait
             void (*conversion_fptr)(deque<typename QueueElementTrait<TROSMsgType>::ElementType>&, deque<ElementWithConvertedSize<typename QueueElementTrait<TROSMsgType>::ElementType>>&) = nullptr;
             string conversion_service_name = "";
         };
-
-        /**
-         * @brief Member that contains meta data for queues.
-        */
-        ROSQueueInfo info_;
 
         /**
          * @brief Constructor that initialized all the prediction, transmission and conversion functions.
