@@ -3,9 +3,13 @@
 
 #include <gtest/gtest.h>
 
-#include "ros_queues/lib_queue/dynamic_queue.hpp"
-#include "ros_queues/lib_queue/queue_exception.hpp"
-#include "ros_queues/test/dynamic_queues_test.hpp"
+#include "include/dynamic_queues_test.hpp"
+#include "include/trajectory.hpp"
+
+#include "ros_queue/lib_queue/dynamic_queue.hpp"
+#include "ros_queue/lib_queue/dynamic_converted_queue.hpp"
+#include "ros_queue/lib_queue/queue_exception.hpp"
+
 
 using std::list;
 using std::deque;
@@ -13,41 +17,41 @@ using std::deque;
 static const list<Position3D> point_list_0 = {Position3D(1,1,1), Position3D(2,2,2), Position3D(3,3,3)};
 static const list<Position3D> point_list_1 = {Position3D(4,4,4), Position3D(5,5,5), Position3D(6,6,6), Position3D(7,7,7)};
 
-void traj_to_byte_conversion(deque<Trajectory>& queue_trajectory, deque<ElementWithConvertedSize<Trajectory>>& converted_queue)
+// Conversion function
+void traj_to_byte_conversion(deque<Trajectory>&& queue_trajectory, deque<ElementWithConvertedSize<Trajectory>>& converted_queue)
 {
     for(typename deque<Trajectory>::iterator it = queue_trajectory.begin(); it != queue_trajectory.end(); ++it)
     {
         int converted_size = it->reference_frame_.size() + it->point_list_.size()*sizeof(Position3D);
 
-        ElementWithConvertedSize<Trajectory> convertedElement(*it, converted_size);
-        converted_queue.push_back(convertedElement);
+        ElementWithConvertedSize<Trajectory> convertedElement(std::move(*it), converted_size);
+        converted_queue.push_back(std::move(convertedElement));
     }
 }
 
-void no_conversion(deque<Trajectory>& queue_trajectory, deque<ElementWithConvertedSize<Trajectory>>& converted_queue) {};
+void no_conversion(deque<Trajectory>&& queue_trajectory, deque<ElementWithConvertedSize<Trajectory>>& converted_queue) {};
 
-void null_size_conversion(deque<Trajectory>& queue_trajectory, deque<ElementWithConvertedSize<Trajectory>>& converted_queue)
+void null_size_conversion(deque<Trajectory>&& queue_trajectory, deque<ElementWithConvertedSize<Trajectory>>& converted_queue)
 {
     for(typename deque<Trajectory>::iterator it = queue_trajectory.begin(); it != queue_trajectory.end(); ++it)
     {
         int converted_size = 0;
 
-        ElementWithConvertedSize<Trajectory> convertedElement(*it, converted_size);
-        converted_queue.push_back(convertedElement);
+        ElementWithConvertedSize<Trajectory> convertedElement(std::move(*it), converted_size);
+        converted_queue.push_back(std::move(convertedElement));
     }
 }
 
-void traj_to_negative_conversion(deque<Trajectory>& queue_trajectory, deque<ElementWithConvertedSize<Trajectory>>& converted_queue)
+void traj_to_negative_conversion(deque<Trajectory>&& queue_trajectory, deque<ElementWithConvertedSize<Trajectory>>& converted_queue)
 {
     for(typename deque<Trajectory>::iterator it = queue_trajectory.begin(); it != queue_trajectory.end(); ++it)
     {
         int converted_size = it->reference_frame_.size() + it->point_list_.size()*sizeof(Position3D);
 
-        ElementWithConvertedSize<Trajectory> convertedElement(*it, -converted_size);
-        converted_queue.push_back(convertedElement);
+        ElementWithConvertedSize<Trajectory> convertedElement(std::move(*it), -converted_size);
+        converted_queue.push_back(std::move(convertedElement));
     }
 }
-
 
 // Tests for the dynamic queue
 TEST(DynamicQueueTest, manipultationTest)
@@ -161,6 +165,20 @@ TEST(DynamicQueueTest, predictionTest)
     EXPECT_THROW(q.evaluate(), NegativeDeparturePredictionException);
 }
 
+TEST(DynamicQueueTest, specializedPredictionTest)
+{
+    const int queue_max_size = 10;
+
+    // Initialize queue with an evaluation that takes an in at the input
+    SpecializedDynamicQueueMockedPrediction<int, int> q(10);
+    deque<int> arrival_queue = {1, 2, 3, 4, 5};
+    q.update(arrival_queue, 0);
+
+    int state = 4;
+    // Evaluate queue and verify its content and size. This implementation predicts an arrival of 4+1 and transmission of 4.
+    EXPECT_EQ(q.evaluate(state), 6);
+}
+
 TEST(DynamicQueueTest, transmissionTest)
 {
     // Create a mock to receive data
@@ -187,8 +205,7 @@ TEST(DynamicConvertedQueueTest, manipultationTest)
 {
     // Initialize queue
     const int queue_max_size = 512;
-    DynamicConvertedQueue<Trajectory> q(queue_max_size, traj_to_byte_conversion);
-    
+    DynamicConvertedQueueWithFPtr<Trajectory> q(queue_max_size, traj_to_byte_conversion);
     // Initialize queue to inject
     // Size of "frame_X" = 7 bytes and each point list contains 3 int (3*4 byte = 12). So each trajectory is 7 + 12*point_in_point_list.
     // The frame_0 and frame_2 trajectories take 43 bytes each and the frame_1 trajectory takes 55 bytes
@@ -227,14 +244,14 @@ TEST(DynamicConvertedQueueTest, initTest)
 {
     // Verify if throws an error with a negative maximum size
     const int QUEUE_MAX_SIZE = -10;
-    EXPECT_THROW(DynamicConvertedQueue<Trajectory> q(-512, traj_to_byte_conversion), invalid_argument);
+    EXPECT_THROW(DynamicConvertedQueueWithFPtr<Trajectory> q(-512, traj_to_byte_conversion), invalid_argument);
 }
 
 TEST(DynamicConvertedQueueTest, dimensionLimitTest)
 {
     // Initialize queue
     const int queue_max_size = 256;
-    DynamicConvertedQueue<Trajectory> q(queue_max_size, traj_to_byte_conversion);
+    DynamicConvertedQueueWithFPtr<Trajectory> q(queue_max_size, traj_to_byte_conversion);
 
     // Initialize queue to inject
     deque<Trajectory> arrival_queue = {Trajectory("frame_0", point_list_0), Trajectory("frame_1", point_list_1), Trajectory("frame_2", point_list_0)};
@@ -296,6 +313,21 @@ TEST(DynamicConvertedQueueTest, predictionTest)
     EXPECT_THROW(q.evaluate(), NegativeDeparturePredictionException);
 }
 
+TEST(DynamicConvertedQueueTest, specializedPredictionTest)
+{
+    const int queue_max_size = 512;
+
+    // Initialize queue with an evaluation that takes an in at the input
+    SpecializedDynamicConvertedQueueMockedPrediction<Trajectory, int> q(queue_max_size, traj_to_byte_conversion);
+    deque<Trajectory> arrival_queue = {Trajectory("frame_0", point_list_0), Trajectory("frame_1", point_list_1), Trajectory("frame_2", point_list_0)};
+    q.update(arrival_queue, 0);
+    q.update(arrival_queue, 0);
+
+    int state = 4;
+    // Evaluate queue and verify its content and size. This implementation predicts an arrival of 4+1 and transmission of 4.
+    EXPECT_EQ(q.evaluate(state), 103);
+}
+
 TEST(DynamicConvertedQueueTest, transmissionTest)
 {
     const int queue_max_size = 512;
@@ -325,23 +357,20 @@ TEST(DynamicConvertedQueueTest, badConversionTest)
 
     // Initialize queue to inject
     deque<Trajectory> arrival_queue = {Trajectory("frame_0", point_list_0), Trajectory("frame_1", point_list_1), Trajectory("frame_2", point_list_0)};
-
-    // Initialize queue with null function
-    DynamicConvertedQueue<Trajectory> q1(queue_max_size, nullptr);
-    EXPECT_THROW(q1.update(arrival_queue, 0), BadConversionException);
     
     // Verify that null conversion function is detected
-    DynamicConvertedQueue<Trajectory> q2(queue_max_size, null_size_conversion);
+    DynamicConvertedQueueWithFPtr<Trajectory> q2(queue_max_size, null_size_conversion);
     EXPECT_THROW(q2.update(arrival_queue, 0), BadConversionException);
 
     // Verify that size of the converted list is the same as the arriving elements
-    DynamicConvertedQueue<Trajectory> q3(queue_max_size, no_conversion);
+    DynamicConvertedQueueWithFPtr<Trajectory> q3(queue_max_size, no_conversion);
     EXPECT_THROW(q3.update(arrival_queue, 0), BadConversionException);
 
     //Verify that conversion can't give a negative number
-    DynamicConvertedQueue<Trajectory> q4(queue_max_size, traj_to_negative_conversion);
+    DynamicConvertedQueueWithFPtr<Trajectory> q4(queue_max_size, traj_to_negative_conversion);
     EXPECT_THROW(q4.update(arrival_queue, 0), BadConversionException);
 }
+
 
 // Run all the tests that were declared with TEST()
 int main(int argc, char **argv){

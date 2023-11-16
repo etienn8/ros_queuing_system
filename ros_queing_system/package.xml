@@ -50,7 +50,7 @@
   <!--   <doc_depend>doxygen</doc_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
 
-  <depend>ros_queues</depend>
+  <depend>ros_queue</depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

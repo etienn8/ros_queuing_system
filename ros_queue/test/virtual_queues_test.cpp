@@ -2,18 +2,18 @@
 
 #include <gtest/gtest.h>
 
-#include "ros_queues/lib_queue/dynamic_virtual_queue.hpp"
-#include "ros_queues/lib_queue/virtual_queue.hpp"
+#include "ros_queue/lib_queue/dynamic_virtual_queue.hpp"
+#include "ros_queue/lib_queue/virtual_queue.hpp"
 
-#include "ros_queues/lib_queue/queue_exception.hpp"
+#include "ros_queue/lib_queue/queue_exception.hpp"
 
 
 using std::invalid_argument;
 
-class InConVirtualQueueEvaluation: public InConVirtualQueue
+class InConVirtualQueueMockedPrediction: public InConVirtualQueue<>
 {
     public:
-        InConVirtualQueueEvaluation(int max_queue_size): InConVirtualQueue(max_queue_size){};
+        InConVirtualQueueMockedPrediction(int max_queue_size): InConVirtualQueue<>(max_queue_size){};
         int predicted_arrival_=0;
         int predicted_transmission_=0;
 
@@ -29,11 +29,29 @@ class InConVirtualQueueEvaluation: public InConVirtualQueue
         }
 };
 
-
-class EqConVirtualQueueEvaluation: public EqConVirtualQueue
+template<typename TState>
+class SpecializedInConVirtualQueueMockedPrediction: public InConVirtualQueue<TState>
 {
     public:
-        EqConVirtualQueueEvaluation(int max_queue_size): EqConVirtualQueue(max_queue_size){};
+        SpecializedInConVirtualQueueMockedPrediction(int max_queue_size): InConVirtualQueue<TState>(max_queue_size){};
+
+    protected:
+        virtual int arrival_prediction(const TState& states) override
+        {
+            return states+1;
+        }
+        
+        virtual int transmission_prediction(const TState& states) override
+        {
+            return states;
+        }
+};
+
+
+class EqConVirtualQueueMockedPrediction: public EqConVirtualQueue<>
+{
+    public:
+        EqConVirtualQueueMockedPrediction(int max_queue_size): EqConVirtualQueue<>(max_queue_size){};
         int predicted_arrival_=0;
         int predicted_transmission_=0;
 
@@ -46,6 +64,24 @@ class EqConVirtualQueueEvaluation: public EqConVirtualQueue
         virtual int transmission_prediction() override
         {
             return predicted_transmission_;
+        }
+};
+
+template <typename TState>
+class SpecializedEqConVirtualQueueMockedPrediction: public EqConVirtualQueue<TState>
+{
+    public:
+        SpecializedEqConVirtualQueueMockedPrediction(int max_queue_size): EqConVirtualQueue<TState>(max_queue_size){};
+
+    protected:
+        virtual int arrival_prediction(const TState& states) override
+        {
+            return states+1;
+        }
+        
+        virtual int transmission_prediction(const TState& states) override
+        {
+            return states;
         }
 };
 
@@ -129,7 +165,7 @@ TEST(NVirtualQueueTest, dimensionLimitTest)
 // Test for the inequqality constraint virtual queue
 TEST(InConVirutalQueueDynamicTest, manipultationTest)
 {
-    InConVirtualQueue vq(10);
+    InConVirtualQueue<> vq(10);
 
     VirtualQueue vq_arrival;
     vq_arrival.setSize(5);
@@ -151,13 +187,13 @@ TEST(InConVirutalQueueDynamicTest, manipultationTest)
 TEST(InConVirutalQueueDynamicTest, initTest)
 {
     const int QUEUE_MAX_SIZE = -10;
-    EXPECT_THROW(InConVirtualQueue vq(QUEUE_MAX_SIZE), invalid_argument);
+    EXPECT_THROW(InConVirtualQueue<> vq(QUEUE_MAX_SIZE), invalid_argument);
 }
 
 TEST(InConVirutalQueueDynamicTest, dimensionLimitTest)
 {
     const int QUEUE_MAX_SIZE = 10;
-    InConVirtualQueue vq(QUEUE_MAX_SIZE);
+    InConVirtualQueue<> vq(QUEUE_MAX_SIZE);
     
     VirtualQueue vq_arrival;
     vq_arrival.setSize(QUEUE_MAX_SIZE+1);
@@ -177,7 +213,7 @@ TEST(InConVirutalQueueDynamicTest, dimensionLimitTest)
 TEST(InConVirutalQueueDynamicTest, predictionTest)
 {
     const int QUEUE_MAX_SIZE = 10;
-    InConVirtualQueueEvaluation vq(QUEUE_MAX_SIZE);
+    InConVirtualQueueMockedPrediction vq(QUEUE_MAX_SIZE);
     vq.predicted_arrival_ = 2;
     vq.predicted_transmission_ = 3;
 
@@ -197,10 +233,20 @@ TEST(InConVirutalQueueDynamicTest, predictionTest)
     EXPECT_THROW(vq.evaluate(), NegativeDeparturePredictionException);
 }
 
+TEST(InConVirutalQueueDynamicTest, specializedPredictionTest)
+{
+    const int QUEUE_MAX_SIZE = 10;
+    SpecializedInConVirtualQueueMockedPrediction<int> vq(QUEUE_MAX_SIZE);
+    vq.update(5,0);
+    
+    int state = 4; 
+    EXPECT_EQ(vq.evaluate(state), 6);
+}
+
 // Test for the equality constraint virtual queue
 TEST(EqConVirtualQueueDynamicTest, manipultationTest)
 {
-    EqConVirtualQueue vq(10);
+    EqConVirtualQueue<> vq(10);
 
     NVirtualQueue vq_arrival;
     vq_arrival.setSize(5);
@@ -225,13 +271,13 @@ TEST(EqConVirtualQueueDynamicTest, manipultationTest)
 TEST(EqConVirtualQueueDynamicTest, initTest)
 {
     const int QUEUE_MAX_SIZE = -10;
-    EXPECT_THROW(EqConVirtualQueue vq(QUEUE_MAX_SIZE), invalid_argument);
+    EXPECT_THROW(EqConVirtualQueue<> vq(QUEUE_MAX_SIZE), invalid_argument);
 }
 
 TEST(EqConVirtualQueueDynamicTest, dimensionLimitTest)
 {
     const int QUEUE_MAX_SIZE = 10;
-    EqConVirtualQueue vq(QUEUE_MAX_SIZE);
+    EqConVirtualQueue<> vq(QUEUE_MAX_SIZE);
     
     NVirtualQueue vq_arrival;
     vq_arrival.setSize(QUEUE_MAX_SIZE+1);
@@ -253,7 +299,7 @@ TEST(EqConVirtualQueueDynamicTest, dimensionLimitTest)
 TEST(EqConVirtualQueueDynamicTest, predictionTest)
 {
     const int QUEUE_MAX_SIZE = 10;
-    EqConVirtualQueueEvaluation vq(QUEUE_MAX_SIZE);
+    EqConVirtualQueueMockedPrediction vq(QUEUE_MAX_SIZE);
     vq.predicted_arrival_ = 2;
     vq.predicted_transmission_ = 3;
 
@@ -280,6 +326,16 @@ TEST(EqConVirtualQueueDynamicTest, predictionTest)
     vq.predicted_arrival_ = 0;
     vq.predicted_transmission_ = -1;
     EXPECT_THROW(vq.evaluate(), NegativeDeparturePredictionException);
+}
+
+TEST(EqConVirtualQueueDynamicTest, specializedPredictionTest)
+{
+    const int QUEUE_MAX_SIZE = 10;
+    SpecializedEqConVirtualQueueMockedPrediction<int> vq(QUEUE_MAX_SIZE);
+    vq.update(5,0);
+    
+    int state = 4; 
+    EXPECT_EQ(vq.evaluate(state), 6);
 }
 
 // Run all the tests that were declared with TEST()

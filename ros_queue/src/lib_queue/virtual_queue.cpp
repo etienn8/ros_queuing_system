@@ -1,5 +1,5 @@
 #include <stdexcept>
-#include "ros_queues/lib_queue/virtual_queue.hpp"
+#include "ros_queue/lib_queue/virtual_queue.hpp"
 
 using std::invalid_argument;
 
