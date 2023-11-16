@@ -41,12 +41,25 @@ class IDynamicQueue
         virtual int evaluate(const TStates& states)=0;
         
         /**
-         * @brief Updates the queue by adding the arriving_elements and by removind the specifiy number of departing elements while respecting the maximum queue size.
+         * @brief Updates the queue by copying the adding the arriving_elements and by removing the specifiy number of departing elements while respecting the maximum queue size.
          * @param arriving_elements Queue of elements to add to the queue.
          * @param nb_departing_elements Number of elements to remove from the queue.
          * @return Boolean of it the queue overflowed while adding elements.
          */
-        virtual bool update(TQueueType arriving_elements, const int nb_departing_elements)=0;
+        virtual bool update(const TQueueType& arriving_elements, const int nb_departing_elements)
+        {
+            TQueueType arriving_elements_copy = arriving_elements;
+            return this->update(std::move(arriving_elements_copy), nb_departing_elements);
+        }
+
+        /**
+         * @brief Updates the queue by adding (by move semantics) the arriving_elements and by removing the specifiy number of departing elements while respecting the maximum queue size.
+         * @details Since the use of move semantics is expected with this overloaded update method, there is no guarantee  of what will be the state of arriving element given by the caller after the update.
+         * @param arriving_elements Rvalue to a queue of elements to add to the queue.
+         * @param nb_departing_elements Number of elements to remove from the queue.
+         * @return Boolean of it the queue overflowed while adding elements.
+         */
+        virtual bool update(TQueueType&& arriving_elements, const int nb_departing_elements)=0;
         
         /**
          * @brief Indicates if the queue is full.
@@ -116,12 +129,25 @@ class IDynamicQueue<TQueueType, void>
         virtual int evaluate(void)=0;
         
         /**
-         * @brief Updates the queue by adding the arriving_elements and by removind the specifiy number of departing elements while respecting the maximum queue size.
+         * @brief Updates the queue by copying the adding the arriving_elements and by removing the specifiy number of departing elements while respecting the maximum queue size.
          * @param arriving_elements Queue of elements to add to the queue.
          * @param nb_departing_elements Number of elements to remove from the queue.
          * @return Boolean of it the queue overflowed while adding elements.
          */
-        virtual bool update(TQueueType arriving_elements, const int nb_departing_elements)=0;
+        virtual bool update(const TQueueType& arriving_elements, const int nb_departing_elements)
+        {
+            TQueueType arriving_elements_copy = arriving_elements;
+            return this->update(std::move(arriving_elements_copy), nb_departing_elements);
+        }
+
+        /**
+         * @brief Updates the queue by adding (by move semantics) the arriving_elements and by removing the specifiy number of departing elements while respecting the maximum queue size.
+         * @details Since the use of move semantics is expected with this overloaded update method, there is no guarantee  of what will be the state of arriving element given by the caller after the update.
+         * @param arriving_elements Rvalue to a queue of elements to add to the queue.
+         * @param nb_departing_elements Number of elements to remove from the queue.
+         * @return Boolean of it the queue overflowed while adding elements.
+         */
+        virtual bool update(TQueueType&& arriving_elements, const int nb_departing_elements)=0;
         
         /**
          * @brief Indicates if the queue is full.

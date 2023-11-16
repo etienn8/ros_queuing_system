@@ -3,6 +3,7 @@
 #include <deque>
 #include <mutex>
 #include <stdexcept>
+#include <utility>
 
 #include "ros_queue/lib_queue/I_dynamic_queue.hpp"
 #include "ros_queue/lib_queue/queue_exception.hpp"
@@ -68,15 +69,18 @@ class DynamicQueue: public IDynamicQueue<deque<TQueueElementType>, TStates>
             return new_size;
         }
 
+        // Allow the use of the IDynamicQueue overloaded update method
+        using IDynamicQueue<deque<TQueueElementType>, TStates>::update;
+
         /**
          * @brief Updates the queue by adding the arriving_elements and by transmitting the specifiy number of departing elements while respecting the maximum queue size.
-         * @details Data are transmitted by using DynamicQueue::transmit.
-         * @param arriving_elements Queue of elements to add to the queue.
+         * @details Data are transmitted by using DynamicQueue::transmit. Since the use of move semantics is expected with this overloaded update method, there is no guarantee  of what will be the state of arriving element given by the caller after the update.
+         * @param arriving_elements Rvalue to a queue of elements to add to the queue.
          * @param nb_departing_elements Number of elements to remove from the queue.
          * @throw Throws an invalid_argument exception if the departure arguement is negative since it can't transmit negative number of elements.
          * @return Boolean of it the queue overflowed while adding elements.
          */
-        bool update(deque<TQueueElementType> arriving_elements, const int nb_departing_elements) override
+        bool update(deque<TQueueElementType>&& arriving_elements, const int nb_departing_elements) override
         {
             if(nb_departing_elements < 0)
             {
@@ -97,7 +101,7 @@ class DynamicQueue: public IDynamicQueue<deque<TQueueElementType>, TStates>
                     {
                         break;
                     }
-                    queue_to_transmit.push_back(this->internal_queue_.front());
+                    queue_to_transmit.push_back(std::move(this->internal_queue_.front()));
                     this->internal_queue_.pop_front();
                 }
                 //Receiving data
@@ -109,13 +113,13 @@ class DynamicQueue: public IDynamicQueue<deque<TQueueElementType>, TStates>
                         break;
                     }
 
-                    this->internal_queue_.push_back(arriving_elements.front());
+                    this->internal_queue_.push_back(std::move(arriving_elements.front()));
                     arriving_elements.pop_front();
                 }
             }
 
             //TODO: Add transmission error handling
-            transmit(queue_to_transmit);
+            transmit(std::move(queue_to_transmit));
 
             return !overflowed;
         }
@@ -133,10 +137,10 @@ class DynamicQueue: public IDynamicQueue<deque<TQueueElementType>, TStates>
     protected:
         /**
          * @brief Method used internaly to transmit data. Override this method to define a specific transmit behavior.  
-         * @param queue_to_transmit Queue of elements to transmit.
+         * @param queue_to_transmit Rvalue to queue of elements to transmit.
          * @return Returns if the transmission succeeded or not.
          */
-        virtual bool transmit(deque<TQueueElementType> &queue_to_transmit) {return 1;};
+        virtual bool transmit(deque<TQueueElementType>&& queue_to_transmit) {return 1;};
 
         /**
          * @brief Method used in the evaluation process to predict what will be the arrival. Override this method to define a specific arrival prediction behavior.
@@ -215,15 +219,18 @@ class DynamicQueue<TQueueElementType, void>: public IDynamicQueue<deque<TQueueEl
             return new_size;
         }
 
+        // Allow the use of the IDynamicQueue overloaded update method
+        using IDynamicQueue<deque<TQueueElementType>, void>::update;        
+
         /**
          * @brief Updates the queue by adding the arriving_elements and by transmitting the specifiy number of departing elements while respecting the maximum queue size.
-         * @details Data are transmitted by using DynamicQueue::transmit.
-         * @param arriving_elements Queue of elements to add to the queue.
+         * @details Data are transmitted by using DynamicQueue::transmit. Since the use of move semantics is expected with this overloaded update method, there is no guarantee  of what will be the state of arriving element given by the caller after the update.
+         * @param arriving_elements Rvalue to queue of elements to add to the queue.
          * @param nb_departing_elements Number of elements to remove from the queue.
          * @throw Throws an invalid_argument exception if the departure arguement is negative since it can't transmit negative number of elements.
          * @return Boolean of it the queue overflowed while adding elements.
          */
-        bool update(deque<TQueueElementType> arriving_elements, const int nb_departing_elements) override
+        bool update(deque<TQueueElementType>&& arriving_elements, const int nb_departing_elements) override
         {
             if(nb_departing_elements < 0)
             {
@@ -244,7 +251,7 @@ class DynamicQueue<TQueueElementType, void>: public IDynamicQueue<deque<TQueueEl
                     {
                         break;
                     }
-                    queue_to_transmit.push_back(this->internal_queue_.front());
+                    queue_to_transmit.push_back(std::move(this->internal_queue_.front()));
                     this->internal_queue_.pop_front();
                 }
                 //Receiving data
@@ -256,16 +263,17 @@ class DynamicQueue<TQueueElementType, void>: public IDynamicQueue<deque<TQueueEl
                         break;
                     }
 
-                    this->internal_queue_.push_back(arriving_elements.front());
+                    this->internal_queue_.push_back(std::move(arriving_elements.front()));
                     arriving_elements.pop_front();
                 }
             }
 
             //TODO: Add transmission error handling
-            transmit(queue_to_transmit);
+            transmit(std::move(queue_to_transmit));
 
             return !overflowed;
         }
+        
 
         /**
          * @brief Get a copy of the internal deque.
@@ -280,10 +288,10 @@ class DynamicQueue<TQueueElementType, void>: public IDynamicQueue<deque<TQueueEl
     protected:
         /**
          * @brief Method used internaly to transmit data. Override this method to define a specific transmit behavior.  
-         * @param queue_to_transmit Queue of elements to transmit.
+         * @param queue_to_transmit Rvalue to queue of elements to transmit.
          * @return Returns if the transmission succeeded or not.
          */
-        virtual bool transmit(deque<TQueueElementType> &queue_to_transmit) {return 1;};
+        virtual bool transmit(deque<TQueueElementType>&& queue_to_transmit) {return 1;};
 
         /**
          * @brief Method used in the evaluation process to predict what will be the arrival. Override this method to define a specific arrival prediction behavior.

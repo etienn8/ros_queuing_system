@@ -67,6 +67,9 @@ class InConVirtualQueue: public IDynamicQueue<VirtualQueue, TStates>
             return new_size;
         };
         
+        // Allow the use of the IDynamicQueue overloaded update method
+        using IDynamicQueue<VirtualQueue, TStates>::update;
+
         /**
          * @brief Updates the queue by adding the arriving_elements and by removing the specifiy number of departing elements while respecting the maximum queue size.
          * @param arriving_elements Virtual queue to append to the internal virtual queue.
@@ -74,7 +77,7 @@ class InConVirtualQueue: public IDynamicQueue<VirtualQueue, TStates>
          * @throw Throws an invalid_argument exception if the departure arguement is negative since it can't transmit negative number of elements.
          * @return Boolean of it the queue overflowed while adding elements.
          */
-        virtual bool update(VirtualQueue arriving_elements, const int nb_departing_elements) override
+        virtual bool update(VirtualQueue&& arriving_elements, const int nb_departing_elements) override
         {
             const int arrival = arriving_elements.size();
             
@@ -216,6 +219,9 @@ class InConVirtualQueue<void>: public IDynamicQueue<VirtualQueue>
             
             return new_size;
         };
+
+        // Allow the use of the IDynamicQueue overloaded update method
+        using IDynamicQueue<VirtualQueue>::update;
         
         /**
          * @brief Updates the queue by adding the arriving_elements and by removing the specifiy number of departing elements while respecting the maximum queue size.
@@ -224,7 +230,7 @@ class InConVirtualQueue<void>: public IDynamicQueue<VirtualQueue>
          * @throw Throws an invalid_argument exception if the departure arguement is negative since it can't transmit negative number of elements.
          * @return Boolean of it the queue overflowed while adding elements.
          */
-        virtual bool update(VirtualQueue arriving_elements, const int nb_departing_elements) override
+        virtual bool update(VirtualQueue&& arriving_elements, const int nb_departing_elements) override
         {
             const int arrival = arriving_elements.size();
             
@@ -313,11 +319,11 @@ class InConVirtualQueue<void>: public IDynamicQueue<VirtualQueue>
  * @brief Virtual queue with interfaces to affect its dynamic. Implemented like virtual queues used with equality constraint where their size can go below 0. 
  * @tparam TStates Type of the argument of the evaluate function that is passed to the pridictions methods.
  */
-template <typename TState=void>
-class EqConVirtualQueue: public IDynamicQueue<NVirtualQueue, TState>
+template <typename TStates=void>
+class EqConVirtualQueue: public IDynamicQueue<NVirtualQueue, TStates>
 {
     public:
-        EqConVirtualQueue(int max_queue_size): IDynamicQueue<NVirtualQueue, TState>(max_queue_size) {};
+        EqConVirtualQueue(int max_queue_size): IDynamicQueue<NVirtualQueue, TStates>(max_queue_size) {};
         /**
          * @brief Get the size of the internal queue.
          * @return Return the size of the internal queue.
@@ -336,7 +342,7 @@ class EqConVirtualQueue: public IDynamicQueue<NVirtualQueue, TState>
          * @throw Throws a NegativeDeparturePredictionException if the IDynamicQueue::transmission_prediction predicts an negative number of departing elements which sould never logicaly happen.
          * @return Predicted size of the queue after evaluation.
          */
-        virtual int evaluate(const TState& states) override
+        virtual int evaluate(const TStates& states) override
         {
             const int arrival = arrival_prediction(states);
             const int departure = transmission_prediction(states);
@@ -368,6 +374,9 @@ class EqConVirtualQueue: public IDynamicQueue<NVirtualQueue, TState>
             return new_size;
         };
 
+        // Allow the use of the IDynamicQueue overloaded update method
+        using IDynamicQueue<NVirtualQueue, TStates>::update;
+
         /**
          * @brief Updates the queue by adding the arriving_elements and by removing the specifiy number of departing elements while respecting the maximum queue size.
          * @param arriving_elements Virtual queue to append to the internal virtual queue.
@@ -375,7 +384,7 @@ class EqConVirtualQueue: public IDynamicQueue<NVirtualQueue, TState>
          * @throw Throws an invalid_argument exception if the departure arguement is negative since it can't transmit negative number of elements.
          * @return Boolean of it the queue overflowed while adding elements.
          */
-        virtual bool update(NVirtualQueue arriving_elements, const int nb_departing_elements) override
+        virtual bool update(NVirtualQueue&& arriving_elements, const int nb_departing_elements) override
         {
             const int arrival =  arriving_elements.size();
 
@@ -452,13 +461,13 @@ class EqConVirtualQueue: public IDynamicQueue<NVirtualQueue, TState>
          * @brief Method used in the evaluation process to predict what will be the arrival size. Override this method to define a specific arrival prediction behavior.
          * @return Returns the number of elements that could be added to the queue.
          */
-        virtual int arrival_prediction(const TState& states) override {return 0;};
+        virtual int arrival_prediction(const TStates& states) override {return 0;};
 
         /**
          * @brief Method used in the evaluation process to predict what will be the departure size. Override this method to define a specific transmission prediction behavior.
          * @return Returns the number of elements that could be removed from the queue.
          */
-        virtual int transmission_prediction(const TState& states) override {return 0;};
+        virtual int transmission_prediction(const TStates& states) override {return 0;};
 
         /**
          * @brief Mutex to protect access to the internal queue.
@@ -520,6 +529,9 @@ class EqConVirtualQueue<void>: public IDynamicQueue<NVirtualQueue>
             return new_size;
         };
 
+        // Allow the use of the IDynamicQueue overloaded update method
+        using IDynamicQueue<NVirtualQueue>::update;
+
         /**
          * @brief Updates the queue by adding the arriving_elements and by removing the specifiy number of departing elements while respecting the maximum queue size.
          * @param arriving_elements Virtual queue to append to the internal virtual queue.
@@ -527,7 +539,7 @@ class EqConVirtualQueue<void>: public IDynamicQueue<NVirtualQueue>
          * @throw Throws an invalid_argument exception if the departure arguement is negative since it can't transmit negative number of elements.
          * @return Boolean of it the queue overflowed while adding elements.
          */
-        virtual bool update(NVirtualQueue arriving_elements, const int nb_departing_elements) override
+        virtual bool update(NVirtualQueue&& arriving_elements, const int nb_departing_elements) override
         {
             const int arrival =  arriving_elements.size();
 

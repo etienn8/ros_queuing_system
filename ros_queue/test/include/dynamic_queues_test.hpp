@@ -39,12 +39,12 @@ class DynamicQueueMockedTransmission: public DynamicQueue<TQueueElementType>
 
         deque<TQueueElementType> transmittedElements;
 
-    virtual bool transmit(deque<TQueueElementType> &queue_to_transmit)
+    virtual bool transmit(deque<TQueueElementType>&& queue_to_transmit) override
     {   
         //Receiving data
         while(!queue_to_transmit.empty())
         {
-            transmittedElements.push_back(queue_to_transmit.front());
+            transmittedElements.push_back(std::move(queue_to_transmit.front()));
             queue_to_transmit.pop_front();
         }
 
@@ -74,41 +74,41 @@ template<typename TQueueElementType, typename TStates=void>
 class DynamicConvertedQueueWithFPtr : public DynamicConvertedQueue<TQueueElementType, TStates>
 {
         public:
-        DynamicConvertedQueueWithFPtr(int max_queue_size, void (*conversionFunction)(deque<TQueueElementType>&,
+        DynamicConvertedQueueWithFPtr(int max_queue_size, void (*conversionFunction)(deque<TQueueElementType>&&,
                                                 deque<ElementWithConvertedSize<TQueueElementType>>&)):
                                                 DynamicConvertedQueue<TQueueElementType, TStates>(max_queue_size), generateConvertedQueueMock_(conversionFunction) {};
 
     protected:
 
-        virtual void generateConvertedQueue(deque<TQueueElementType>& arriving_queue, deque<ElementWithConvertedSize<TQueueElementType>>& converted_dequeue) override
+        virtual void generateConvertedQueue(deque<TQueueElementType>&& arriving_queue, deque<ElementWithConvertedSize<TQueueElementType>>& converted_dequeue) override
         {
             if (generateConvertedQueueMock_)
             {
-                generateConvertedQueueMock_(arriving_queue, converted_dequeue);
+                generateConvertedQueueMock_(std::move(arriving_queue), converted_dequeue);
             }
         }
     private:
-        void (*generateConvertedQueueMock_)(deque<TQueueElementType>&, deque<ElementWithConvertedSize<TQueueElementType>>&);
+        void (*generateConvertedQueueMock_)(deque<TQueueElementType>&&, deque<ElementWithConvertedSize<TQueueElementType>>&);
 };
 
 template<typename TQueueElementType> 
 class DynamicConvertedQueueWithFPtr<TQueueElementType, void>: public DynamicConvertedQueue<TQueueElementType>
 {
         public:
-        DynamicConvertedQueueWithFPtr(int max_queue_size, void (*conversionFunction)(deque<TQueueElementType>&,
+        DynamicConvertedQueueWithFPtr(int max_queue_size, void (*conversionFunction)(deque<TQueueElementType>&&,
                                                 deque<ElementWithConvertedSize<TQueueElementType>>&)):
                                                 DynamicConvertedQueue<TQueueElementType>(max_queue_size), 
                                                 generateConvertedQueueMock_(conversionFunction){};
 
-        void (*generateConvertedQueueMock_)(deque<TQueueElementType>&, deque<ElementWithConvertedSize<TQueueElementType>>&);
+        void (*generateConvertedQueueMock_)(deque<TQueueElementType>&&, deque<ElementWithConvertedSize<TQueueElementType>>&);
 
     protected:
 
-        virtual void generateConvertedQueue(deque<TQueueElementType>& arriving_queue, deque<ElementWithConvertedSize<TQueueElementType>>& converted_queue) override
+        virtual void generateConvertedQueue(deque<TQueueElementType>&& arriving_queue, deque<ElementWithConvertedSize<TQueueElementType>>& converted_queue) override
         {
             if (generateConvertedQueueMock_)
             {
-                generateConvertedQueueMock_(arriving_queue, converted_queue);
+                generateConvertedQueueMock_(std::move(arriving_queue), converted_queue);
             }
         }
 };
@@ -118,7 +118,7 @@ template<typename TQueueElementType>
 class DynamicConvertedQueueMockedPrediction: public DynamicConvertedQueueWithFPtr<TQueueElementType>
 {
     public:
-        DynamicConvertedQueueMockedPrediction(int max_queue_size, void (*conversionFunction)(deque<TQueueElementType>&,
+        DynamicConvertedQueueMockedPrediction(int max_queue_size, void (*conversionFunction)(deque<TQueueElementType>&&,
                                                 deque<ElementWithConvertedSize<TQueueElementType>>&)):
                                                 DynamicConvertedQueueWithFPtr<TQueueElementType>(max_queue_size,conversionFunction) {};
 
@@ -141,7 +141,7 @@ template<typename TQueueElementType, typename TStates>
 class SpecializedDynamicConvertedQueueMockedPrediction: public DynamicConvertedQueueWithFPtr<TQueueElementType, TStates>
 {
     public:
-        SpecializedDynamicConvertedQueueMockedPrediction(int max_queue_size, void (*conversionFunction)(deque<TQueueElementType>&,
+        SpecializedDynamicConvertedQueueMockedPrediction(int max_queue_size, void (*conversionFunction)(deque<TQueueElementType>&&,
                                                 deque<ElementWithConvertedSize<TQueueElementType>>&)):
                                                 DynamicConvertedQueueWithFPtr<TQueueElementType, TStates>(max_queue_size,conversionFunction) {};
 
@@ -161,18 +161,18 @@ template<typename TQueueElementType>
 class DynamicConvertedQueueMockedTransmission: public DynamicConvertedQueueWithFPtr<TQueueElementType>
 {
     public:
-        DynamicConvertedQueueMockedTransmission(int max_queue_size, void (*conversionFunction)(deque<TQueueElementType>&,
+        DynamicConvertedQueueMockedTransmission(int max_queue_size, void (*conversionFunction)(deque<TQueueElementType>&&,
                                                 deque<ElementWithConvertedSize<TQueueElementType>>&)):
                                                 DynamicConvertedQueueWithFPtr<TQueueElementType>(max_queue_size,conversionFunction) {};
 
         deque<TQueueElementType> transmittedElements;
 
-    virtual bool transmit(deque<TQueueElementType> &queue_to_transmit)
+    virtual bool transmit(deque<TQueueElementType>&& queue_to_transmit) override
     {   
         //Receiving data
         while(!queue_to_transmit.empty())
         {
-            transmittedElements.push_back(queue_to_transmit.front());
+            transmittedElements.push_back(std::move(queue_to_transmit.front()));
             queue_to_transmit.pop_front();
         }
 

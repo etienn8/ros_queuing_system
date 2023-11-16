@@ -47,7 +47,7 @@ class ROSQueue: public DynamicQueue<typename QueueElementTrait<TROSMsgType>::Ele
             int (*transmission_prediction_fptr)(const TPredictionServiceClass&) = nullptr;
             string transmission_prediction_service_name = "";
 
-            bool (*transmission_fptr)(deque<typename QueueElementTrait<TROSMsgType>::ElementType>&) = nullptr;
+            bool (*transmission_fptr)(deque<typename QueueElementTrait<TROSMsgType>::ElementType>&&) = nullptr;
             string transmission_topic_name = "";
         };
 
@@ -187,14 +187,14 @@ class ROSQueue: public DynamicQueue<typename QueueElementTrait<TROSMsgType>::Ele
 
         /**
          * @brief Method used internaly to transmit data.It uses the user-defined ROSQueue::transmission_fptr_if it's defined, otherwise, it publishes on a ROS topic based on a name given by the constructor.
-         * @param queue_to_transmit Queue of elements to transmit.
+         * @param queue_to_transmit Rvalue of a queue of elements to transmit.
          * @return Returns if the transmission succeeded or not.
          */
-        virtual bool transmit(deque<typename QueueElementTrait<TROSMsgType>::ElementType> &queue_to_transmit) override
+        virtual bool transmit(deque<typename QueueElementTrait<TROSMsgType>::ElementType>&& queue_to_transmit) override
         {
             if (transmission_fptr_)
             {
-                return transmission_fptr_(queue_to_transmit);
+                return transmission_fptr_(std::move(queue_to_transmit));
             }
             else
             {
@@ -202,7 +202,7 @@ class ROSQueue: public DynamicQueue<typename QueueElementTrait<TROSMsgType>::Ele
 
                 for(typename deque<typename QueueElementTrait<TROSMsgType>::ElementType>::const_iterator it = queue_to_transmit.begin(); it != queue_to_transmit.end(); ++it)
                 {
-                    new_msg.queue_elements.push_back(*it);
+                    new_msg.queue_elements.push_back(std::move(*it));
                 }
 
                 transmission_pub_.publish(new_msg);
@@ -243,9 +243,9 @@ class ROSQueue: public DynamicQueue<typename QueueElementTrait<TROSMsgType>::Ele
         ros::Publisher transmission_pub_;
         /**
          * @brief Function pointer for the transmission of data queue from the updates.
-         * @param deque<typename QueueElementTrait<TROSMsgType>::ElementType>& Type of dequeue to transmit.
+         * @param deque<typename QueueElementTrait<TROSMsgType>::ElementType>&& Rvalue to a queue to transmit.
          */
-        bool (*transmission_fptr_)(deque<typename QueueElementTrait<TROSMsgType>::ElementType>&) = nullptr;
+        bool (*transmission_fptr_)(deque<typename QueueElementTrait<TROSMsgType>::ElementType>&&) = nullptr;
 
         /**
          * @brief Duration to wait for the existence of services at each call.

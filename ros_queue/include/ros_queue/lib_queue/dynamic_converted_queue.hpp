@@ -1,8 +1,10 @@
 #pragma once
 
 #include <deque>
+#include <iostream>
 #include <mutex>
 #include <stdexcept>
+#include <utility>
 
 #include "ros_queue/lib_queue/I_dynamic_queue.hpp"
 #include "ros_queue/lib_queue/element_with_converted_size.hpp"
@@ -94,6 +96,9 @@ class DynamicConvertedQueue: public IDynamicQueue<deque<ElementWithConvertedSize
             return new_size;
         }
 
+        // Allow the use of the IDynamicQueue overloaded update method
+        using IDynamicQueue<deque<ElementWithConvertedSize<TQueueElementType>>, TStates>::update;
+
         /**
          * @brief Updates the queue by adding the wrapped arriving_elements and by transmitting the specifiy number of departing elements while respecting the maximum queue size.
          * @details Data are transmitted by using DynamicQueue::transmit. The converted size of the queue is increasing whenever an element is added by its converted cost integrated in the wrapped element object. 
@@ -103,13 +108,12 @@ class DynamicConvertedQueue: public IDynamicQueue<deque<ElementWithConvertedSize
          * @throw Throws an BadConversionException if the converted size of an element is 0 or negative.  
          * @return Boolean of it the queue overflowed while adding elements.
          */
-        bool update(deque<ElementWithConvertedSize<TQueueElementType>> arriving_elements, const int nb_departing_elements) override
+        bool update(deque<ElementWithConvertedSize<TQueueElementType>>&& arriving_elements, const int nb_departing_elements) override
         {
             if(nb_departing_elements < 0)
             {
                 throw invalid_argument("Tried to remove a negative number of elements from the queue.");
             }
-
             deque<TQueueElementType> queue_to_transmit;
             bool overflowed = false;
 
@@ -126,7 +130,7 @@ class DynamicConvertedQueue: public IDynamicQueue<deque<ElementWithConvertedSize
                     }
                     
                     converted_queue_size_ -= this->internal_queue_.front().converted_size_;
-                    queue_to_transmit.push_back(this->internal_queue_.front().element_);
+                    queue_to_transmit.push_back(std::move(this->internal_queue_.front().element_));
                     this->internal_queue_.pop_front();
                 }
                 //Receiving data
@@ -149,17 +153,31 @@ class DynamicConvertedQueue: public IDynamicQueue<deque<ElementWithConvertedSize
                         break;
                     }
                     converted_queue_size_ += size_of_element;
-                    this->internal_queue_.push_back(arriving_elements.front());
+                    this->internal_queue_.push_back(std::move(arriving_elements.front()));
                     arriving_elements.pop_front();
                 }
             }
 
             //TODO: Add transmission error handling
-            transmit(queue_to_transmit);
+            transmit(std::move(queue_to_transmit));
 
             return !overflowed;
         }
 
+        /**
+         * @brief Copy and wraps incoming elements in a queue with their converted size based on a user-defined function and then updates the queue.
+         * @details The incoming elements are stored with a converted cost computed from the user-defined function DynamicConvertedQueue::generateConvertedQueue. Once all the elements are wrapped, the queue is updated by calling DynamicConvertedQueue::update(deque<ElementWithConvertedSize<TQueueElementType>>, const int).
+         * @param arriving_elements Queue of object to add to the internal queue.
+         * @param nb_departing_elements Number of elements (not in converted size but in internal_queue size) to remove from the internal queue.
+         * @throw Throws and invalid_argument exception if the departure arguement is negative since it can't transmit negative number of elements.
+         * @throw Throws an BadConversionException if the converted size of an element is 0 or negative, the conversion function doesn't produce a queue of equal size as the queue of incoming data, or the conversion function points toward a null function. 
+         * @return Boolean of it the queue overflowed while adding elements.
+         */
+        bool update(const deque<TQueueElementType>& arriving_elements, const int nb_departing_elements)
+        {
+            deque<TQueueElementType> arriving_elements_copy = arriving_elements;
+            return update(std::move(arriving_elements_copy), nb_departing_elements);
+        }
 
         /**
          * @brief Wraps incoming elements in a queue with their converted size based on a user-defined function and then updates the queue.
@@ -170,27 +188,27 @@ class DynamicConvertedQueue: public IDynamicQueue<deque<ElementWithConvertedSize
          * @throw Throws an BadConversionException if the converted size of an element is 0 or negative, the conversion function doesn't produce a queue of equal size as the queue of incoming data, or the conversion function points toward a null function. 
          * @return Boolean of it the queue overflowed while adding elements.
          */
-        bool update(deque<TQueueElementType> arriving_elements, const int nb_departing_elements)
+        bool update(deque<TQueueElementType>&& arriving_elements, const int nb_departing_elements)
         {
             deque<ElementWithConvertedSize<TQueueElementType>> wrapped_arriving_elements;
             const int arriving_elements_size = arriving_elements.size();
 
-            generateConvertedQueue(arriving_elements, wrapped_arriving_elements);
+            generateConvertedQueue(std::move(arriving_elements), wrapped_arriving_elements);
             
             if (arriving_elements_size != wrapped_arriving_elements.size())
             {
                 throw BadConversionException("The size of the arriving elements and the wrapped queue are different. Likely due to a bad conversion function.");
             }
 
-            return update(wrapped_arriving_elements, nb_departing_elements);
+            return update(std::move(wrapped_arriving_elements), nb_departing_elements);
         }
 
         /**
          * @brief Method used internaly to transmit data. Override this method to define a specific transmit behavior.  
-         * @param queue_to_transmit Queue of elements to transmit.
+         * @param queue_to_transmit Rvalue to a queue of elements to transmit.
          * @return Returns if the transmission succeeded or not.
          */
-        virtual bool transmit(deque<TQueueElementType> &queue_to_transmit) {return 1;};
+        virtual bool transmit(deque<TQueueElementType>&& queue_to_transmit) {return 1;};
         
         /**
          * @brief Get a copy of the internal deque of elements without being wrapped.
@@ -220,20 +238,20 @@ class DynamicConvertedQueue: public IDynamicQueue<deque<ElementWithConvertedSize
          * @details To work properly and prevent BadConversionException during runtime, follow those requirements: The wrapped queue should be the 
          * same size as the input queue size and elements should have non-zero positive converted size. This default implementation returns a converted 
          * cost of one for each element. 
-         * @param arriving_queue Reference of a deque of elements that needs to be converted
+         * @param arriving_queue Rvalue to a deque of elements that needs to be converted
          * @param converted_dequeue Reference that serves as an output of the wrapped queue with a cost affiliated to each element. 
          * @throw Might not throw any exception directly, but DynamicConvertedQueue::update() might throw BadConversionException during runtime because of a bad behavior of this user-defined function.
          * @return Boolean of it the queue overflowed while adding elements.
          */
-        virtual void generateConvertedQueue(deque<TQueueElementType>& arriving_queue, deque<ElementWithConvertedSize<TQueueElementType>>& converted_queue)
+        virtual void generateConvertedQueue(deque<TQueueElementType>&& arriving_queue, deque<ElementWithConvertedSize<TQueueElementType>>& converted_queue)
         {
             // Default implementation of a converted size of 1 per Element.
             for(typename deque<TQueueElementType>::iterator it = arriving_queue.begin(); it != arriving_queue.end(); ++it)
             {
                 int converted_size = 1;
 
-                ElementWithConvertedSize<TQueueElementType> convertedElement(*it, converted_size);
-                converted_queue.push_back(convertedElement);
+                ElementWithConvertedSize<TQueueElementType> convertedElement(std::move(*it), converted_size);
+                converted_queue.push_back(std::move(convertedElement));
             }
         }
         
@@ -333,6 +351,9 @@ class DynamicConvertedQueue<TQueueElementType, void>: public IDynamicQueue<deque
             return new_size;
         }
 
+        // Allow the use of the IDynamicQueue overloaded update method
+        using IDynamicQueue<deque<ElementWithConvertedSize<TQueueElementType>>>::update;
+
         /**
          * @brief Updates the queue by adding the wrapped arriving_elements and by transmitting the specifiy number of departing elements while respecting the maximum queue size.
          * @details Data are transmitted by using DynamicQueue::transmit. The converted size of the queue is increasing whenever an element is added by its converted cost integrated in the wrapped element object. 
@@ -342,7 +363,7 @@ class DynamicConvertedQueue<TQueueElementType, void>: public IDynamicQueue<deque
          * @throw Throws an BadConversionException if the converted size of an element is 0 or negative.  
          * @return Boolean of it the queue overflowed while adding elements.
          */
-        bool update(deque<ElementWithConvertedSize<TQueueElementType>> arriving_elements, const int nb_departing_elements) override
+        bool update(deque<ElementWithConvertedSize<TQueueElementType>>&& arriving_elements, const int nb_departing_elements) override
         {
             if(nb_departing_elements < 0)
             {
@@ -365,7 +386,7 @@ class DynamicConvertedQueue<TQueueElementType, void>: public IDynamicQueue<deque
                     }
                     
                     converted_queue_size_ -= this->internal_queue_.front().converted_size_;
-                    queue_to_transmit.push_back(this->internal_queue_.front().element_);
+                    queue_to_transmit.push_back(std::move(this->internal_queue_.front().element_));
                     this->internal_queue_.pop_front();
                 }
                 //Receiving data
@@ -388,17 +409,31 @@ class DynamicConvertedQueue<TQueueElementType, void>: public IDynamicQueue<deque
                         break;
                     }
                     converted_queue_size_ += size_of_element;
-                    this->internal_queue_.push_back(arriving_elements.front());
+                    this->internal_queue_.push_back(std::move(arriving_elements.front()));
                     arriving_elements.pop_front();
                 }
             }
 
             //TODO: Add transmission error handling
-            transmit(queue_to_transmit);
+            transmit(std::move(queue_to_transmit));
 
             return !overflowed;
         }
 
+        /**
+         * @brief Copy and wraps incoming elements in a queue with their converted size based on a user-defined function and then updates the queue.
+         * @details The incoming elements are stored with a converted cost computed from the user-defined function DynamicConvertedQueue::generateConvertedQueue. Once all the elements are wrapped, the queue is updated by calling DynamicConvertedQueue::update(deque<ElementWithConvertedSize<TQueueElementType>>, const int).
+         * @param arriving_elements Queue of object to add to the internal queue.
+         * @param nb_departing_elements Number of elements (not in converted size but in internal_queue size) to remove from the internal queue.
+         * @throw Throws and invalid_argument exception if the departure arguement is negative since it can't transmit negative number of elements.
+         * @throw Throws an BadConversionException if the converted size of an element is 0 or negative, the conversion function doesn't produce a queue of equal size as the queue of incoming data, or the conversion function points toward a null function. 
+         * @return Boolean of it the queue overflowed while adding elements.
+         */
+        bool update(const deque<TQueueElementType>& arriving_elements, const int nb_departing_elements)
+        {
+            deque<TQueueElementType> arriving_elements_copy = arriving_elements;
+            return update(std::move(arriving_elements_copy), nb_departing_elements);
+        }
 
         /**
          * @brief Wraps incoming elements in a queue with their converted size based on a user-defined function and then updates the queue.
@@ -409,27 +444,27 @@ class DynamicConvertedQueue<TQueueElementType, void>: public IDynamicQueue<deque
          * @throw Throws an BadConversionException if the converted size of an element is 0 or negative, the conversion function doesn't produce a queue of equal size as the queue of incoming data, or the conversion function points toward a null function. 
          * @return Boolean of it the queue overflowed while adding elements.
          */
-        bool update(deque<TQueueElementType> arriving_elements, const int nb_departing_elements)
+        bool update(deque<TQueueElementType>&& arriving_elements, const int nb_departing_elements)
         {
             deque<ElementWithConvertedSize<TQueueElementType>> wrapped_arriving_elements;
             const int arriving_elements_size = arriving_elements.size();
 
-            generateConvertedQueue(arriving_elements, wrapped_arriving_elements);
+            generateConvertedQueue(std::move(arriving_elements), wrapped_arriving_elements);
             
             if (arriving_elements_size != wrapped_arriving_elements.size())
             {
                 throw BadConversionException("The size of the arriving elements and the wrapped queue are different. Likely due to a bad conversion function.");
             }
 
-            return update(wrapped_arriving_elements, nb_departing_elements);
+            return update(std::move(wrapped_arriving_elements), nb_departing_elements);
         }
 
         /**
          * @brief Method used internaly to transmit data. Override this method to define a specific transmit behavior.  
-         * @param queue_to_transmit Queue of elements to transmit.
+         * @param queue_to_transmit Rvalue to a queue of elements to transmit.
          * @return Returns if the transmission succeeded or not.
          */
-        virtual bool transmit(deque<TQueueElementType> &queue_to_transmit) {return 1;};
+        virtual bool transmit(deque<TQueueElementType>&& queue_to_transmit) {return 1;};
         
         /**
          * @brief Get a copy of the internal deque of elements without being wrapped.
@@ -459,20 +494,20 @@ class DynamicConvertedQueue<TQueueElementType, void>: public IDynamicQueue<deque
          * @details To work properly and prevent BadConversionException during runtime, follow those requirements: The wrapped queue should be the 
          * same size as the input queue size and elements should have non-zero positive converted size. This default implementation returns a converted 
          * cost of one for each element. 
-         * @param arriving_queue Reference of a deque of elements that needs to be converted
+         * @param arriving_queue Rvalue to a deque of elements that needs to be converted
          * @param converted_dequeue Reference that serves as an output of the wrapped queue with a cost affiliated to each element. 
          * @throw Might not throw any exception directly, but DynamicConvertedQueue::update() might throw BadConversionException during runtime because of a bad behavior of this user-defined function.
          * @return Boolean of it the queue overflowed while adding elements.
          */
-        virtual void generateConvertedQueue(deque<TQueueElementType>& arriving_queue, deque<ElementWithConvertedSize<TQueueElementType>>& converted_queue)
+        virtual void generateConvertedQueue(deque<TQueueElementType>&& arriving_queue, deque<ElementWithConvertedSize<TQueueElementType>>& converted_queue)
         {
             // Default implementation of a converted size of 1 per Element.
             for(typename deque<TQueueElementType>::iterator it = arriving_queue.begin(); it != arriving_queue.end(); ++it)
             {
                 int converted_size = 1;
 
-                ElementWithConvertedSize<TQueueElementType> convertedElement(*it, converted_size);
-                converted_queue.push_back(convertedElement);
+                ElementWithConvertedSize<TQueueElementType> convertedElement(std::move(*it), converted_size);
+                converted_queue.push_back(std::move(convertedElement));
             }
         }
         

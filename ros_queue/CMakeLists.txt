@@ -225,6 +225,11 @@ if(CATKIN_ENABLE_TESTING)
   add_rostest_gtest(ros_queue_test test/launch/queue_prediction_server_test.test test/ros_queue_test.cpp)
   target_link_libraries(ros_queue_test ${catkin_LIBRARIES} ${QUEUE_LIB_NAME} ${ROSQUEUE_LIB_NAME})
 
+  catkin_add_gtest(move_optimization_test test/move_optimization_tests.cpp)
+  if(TARGET dynamic_queues_test)
+    target_link_libraries(move_optimization_test ${catkin_LIBRARIES} ${QUEUE_LIB_NAME} ${ROSQUEUE_LIB_NAME})
+  endif()
+
   #catkin_add_gtest(ros_queue_test test/ros_queue_test.cpp)
   #if(TARGET ros_queue_test)
   #  target_link_libraries(ros_queue_test ${QUEUE_LIB_NAME} ${ROSQUEUE_LIB_NAME})

@@ -136,30 +136,23 @@ namespace prediction
 namespace transmission
 {
     deque<ros_queue::queue_int_element> output_int_dequeue_1;
-    deque<ros_queue::queue_int_element> output_int_dequeue_2;
 
-    bool transmission_on_dequeue1(deque<ros_queue::queue_int_element> &queue_to_transmit)
+    bool transmission_on_dequeue1(deque<ros_queue::queue_int_element>&& queue_to_transmit)
     {
-        queue_utils::concatenate_queues(transmission::output_int_dequeue_1, queue_to_transmit);
-        return true;
-    }
-
-    bool transmission_on_dequeue2(deque<ros_queue::queue_int_element> &queue_to_transmit)
-    {
-        queue_utils::concatenate_queues(transmission::output_int_dequeue_2, queue_to_transmit);
+        queue_utils::concatenate_queues(transmission::output_int_dequeue_1, std::move(queue_to_transmit));
         return true;
     }
 }
 
 namespace conversion
 {
-    void conversion_int_to_byte(deque<ros_queue::queue_int_element>& arriving_queue,  deque<ElementWithConvertedSize<ros_queue::queue_int_element>>& converted_queue)
+    void conversion_int_to_byte(deque<ros_queue::queue_int_element>&& arriving_queue,  deque<ElementWithConvertedSize<ros_queue::queue_int_element>>& converted_queue)
     {
         for(deque<ros_queue::queue_int_element>::iterator it = arriving_queue.begin(); it != arriving_queue.end(); ++it)
         {
             int converted_size = sizeof(it->value);
 
-            ElementWithConvertedSize<ros_queue::queue_int_element> convertedElement(*it, converted_size);
+            ElementWithConvertedSize<ros_queue::queue_int_element> convertedElement(std::move(*it), converted_size);
             converted_queue.push_back(convertedElement);
         }
     }

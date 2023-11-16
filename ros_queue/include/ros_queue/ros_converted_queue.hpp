@@ -56,10 +56,10 @@ class ROSConvertedQueue: public DynamicConvertedQueue<typename QueueElementTrait
             int (*transmission_prediction_fptr)(const TPredictionServiceClass&) = nullptr;
             string transmission_prediction_service_name = "";
 
-            bool (*transmission_fptr)(deque<typename QueueElementTrait<TROSMsgType>::ElementType>&) = nullptr;
+            bool (*transmission_fptr)(deque<typename QueueElementTrait<TROSMsgType>::ElementType>&&) = nullptr;
             string transmission_topic_name = "";
 
-            void (*conversion_fptr)(deque<typename QueueElementTrait<TROSMsgType>::ElementType>&, deque<ElementWithConvertedSize<typename QueueElementTrait<TROSMsgType>::ElementType>>&) = nullptr;
+            void (*conversion_fptr)(deque<typename QueueElementTrait<TROSMsgType>::ElementType>&&, deque<ElementWithConvertedSize<typename QueueElementTrait<TROSMsgType>::ElementType>>&) = nullptr;
             string conversion_service_name = "";
         };
 
@@ -162,7 +162,7 @@ class ROSConvertedQueue: public DynamicConvertedQueue<typename QueueElementTrait
             else
             {
                 //Make a local copy to respect the const arg but still allowing the service call
-                TPredictionServiceClass local_service= service; 
+                TPredictionServiceClass local_service = service; 
 
                 // Service ROS call
                 if (arrival_service_client_.waitForExistence(WAIT_DURATION_FOR_SERVICE_EXISTENCE))
@@ -216,14 +216,14 @@ class ROSConvertedQueue: public DynamicConvertedQueue<typename QueueElementTrait
 
         /**
          * @brief Method used internaly to transmit data.It uses the user-defined ROSQueue::transmission_fptr_if it's defined, otherwise, it publishes on a ROS topic based on a name given by the constructor.
-         * @param queue_to_transmit Queue of elements to transmit.
+         * @param queue_to_transmit Rvalue of a queue of elements to transmit.
          * @return Returns if the transmission succeeded or not.
          */
-        virtual bool transmit(deque<typename QueueElementTrait<TROSMsgType>::ElementType> &queue_to_transmit) override
+        virtual bool transmit(deque<typename QueueElementTrait<TROSMsgType>::ElementType>&& queue_to_transmit) override
         {
             if (transmission_fptr_)
             {
-                return transmission_fptr_(queue_to_transmit);
+                return transmission_fptr_(std::move(queue_to_transmit));
             }
             else
             {
@@ -243,18 +243,18 @@ class ROSConvertedQueue: public DynamicConvertedQueue<typename QueueElementTrait
 
         /**
          * @brief Method to convert a queue in a another queue where each element is stored with a specific size choseen by the user. See the details to see implementation tips.
-         * @param arriving_queue Reference of a deque of elements that needs to be converted
+         * @param arriving_queue Rvalue of a deque of elements that needs to be converted
          * @param converted_dequeue Reference that serves as an output of the wrapped queue with a cost affiliated to each element. 
          * @throw Throws an BadConversionException if the conversion service doesn't produce a queue of equal size as the queue of incoming data, or if the input queue changes.
          * @return Boolean of it the queue overflowed while adding elements.
          */
-        virtual void generateConvertedQueue(deque<typename QueueElementTrait<TROSMsgType>::ElementType>& arriving_queue, deque<ElementWithConvertedSize<typename QueueElementTrait<TROSMsgType>::ElementType>>& converted_queue) override
+        virtual void generateConvertedQueue(deque<typename QueueElementTrait<TROSMsgType>::ElementType>&& arriving_queue, deque<ElementWithConvertedSize<typename QueueElementTrait<TROSMsgType>::ElementType>>& converted_queue) override
         {
             if (!arriving_queue.empty())
             {
                 if (conversion_fptr_)
                 {
-                    return conversion_fptr_(arriving_queue, converted_queue);
+                    return conversion_fptr_(std::move(arriving_queue), converted_queue);
                 }
                 else
                 {
@@ -286,7 +286,7 @@ class ROSConvertedQueue: public DynamicConvertedQueue<typename QueueElementTrait
                             for(int index =0; index < service_msg.request.queue_to_convert.size(); ++index)
                             {
                                 // @TODO: Reduce the copies with rvalues
-                                ElementWithConvertedSize<typename QueueElementTrait<TROSMsgType>::ElementType> convertedElement(service_msg.request.queue_to_convert[index], service_msg.response.converted_costs[index]);
+                                ElementWithConvertedSize<typename QueueElementTrait<TROSMsgType>::ElementType> convertedElement(std::move(service_msg.request.queue_to_convert[index]), service_msg.response.converted_costs[index]);
                                 converted_queue.push_back(std::move(convertedElement));
                             }
                         }
@@ -331,9 +331,9 @@ class ROSConvertedQueue: public DynamicConvertedQueue<typename QueueElementTrait
         ros::Publisher transmission_pub_;
         /**
          * @brief Function pointer for the transmission of data queue from the updates.
-         * @param deque<typename QueueElementTrait<TROSMsgType>::ElementType>& Type of dequeue to transmit.
+         * @param deque<typename QueueElementTrait<TROSMsgType>::ElementType>&& Rvalue to the deque to transmit.
          */
-        bool (*transmission_fptr_)(deque<typename QueueElementTrait<TROSMsgType>::ElementType>&) = nullptr;
+        bool (*transmission_fptr_)(deque<typename QueueElementTrait<TROSMsgType>::ElementType>&&) = nullptr;
 
         /**
          * @brief Service client used to evaluate the converted size of a queue element through a ROS service calls.
@@ -341,13 +341,13 @@ class ROSConvertedQueue: public DynamicConvertedQueue<typename QueueElementTrait
         ros::ServiceClient conversion_service_client_;
         /**
          * @brief Function pointer to a function that creates a new queue that stores the original queue elements in addition to a converted size.
-         * @param deque<QueueElementTrait<TROSMsgType>::ElementType>& Reference to a queue to convert.
+         * @param deque<QueueElementTrait<TROSMsgType>::ElementType>&& Rvalue to a queue to convert.
          * @param deque<ElementWithConvertedSize<QueueElementTrait<TROSMsgType>::ElementType>>& Queue in which to put the wrapped queue. Serves as an output to the function.
          * @details To work properly and prevent BadConversionException during runtime, follow those requirements: The wrapped queue should be the 
          * same size as the input queue size and elements should have non-zero positive converted size.
          * @throw Might not throw any exception directly, but the update step might throw BadConversionException during runtime because of a bad behavior of this user-defined function.
          */
-        void (*conversion_fptr_)(deque<typename QueueElementTrait<TROSMsgType>::ElementType>&,
+        void (*conversion_fptr_)(deque<typename QueueElementTrait<TROSMsgType>::ElementType>&&,
                                 deque<ElementWithConvertedSize<typename QueueElementTrait<TROSMsgType>::ElementType>>&) = nullptr;
 
         /**

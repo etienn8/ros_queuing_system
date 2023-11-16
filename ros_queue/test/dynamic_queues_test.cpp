@@ -18,38 +18,38 @@ static const list<Position3D> point_list_0 = {Position3D(1,1,1), Position3D(2,2,
 static const list<Position3D> point_list_1 = {Position3D(4,4,4), Position3D(5,5,5), Position3D(6,6,6), Position3D(7,7,7)};
 
 // Conversion function
-void traj_to_byte_conversion(deque<Trajectory>& queue_trajectory, deque<ElementWithConvertedSize<Trajectory>>& converted_queue)
+void traj_to_byte_conversion(deque<Trajectory>&& queue_trajectory, deque<ElementWithConvertedSize<Trajectory>>& converted_queue)
 {
     for(typename deque<Trajectory>::iterator it = queue_trajectory.begin(); it != queue_trajectory.end(); ++it)
     {
         int converted_size = it->reference_frame_.size() + it->point_list_.size()*sizeof(Position3D);
 
-        ElementWithConvertedSize<Trajectory> convertedElement(*it, converted_size);
-        converted_queue.push_back(convertedElement);
+        ElementWithConvertedSize<Trajectory> convertedElement(std::move(*it), converted_size);
+        converted_queue.push_back(std::move(convertedElement));
     }
 }
 
-void no_conversion(deque<Trajectory>& queue_trajectory, deque<ElementWithConvertedSize<Trajectory>>& converted_queue) {};
+void no_conversion(deque<Trajectory>&& queue_trajectory, deque<ElementWithConvertedSize<Trajectory>>& converted_queue) {};
 
-void null_size_conversion(deque<Trajectory>& queue_trajectory, deque<ElementWithConvertedSize<Trajectory>>& converted_queue)
+void null_size_conversion(deque<Trajectory>&& queue_trajectory, deque<ElementWithConvertedSize<Trajectory>>& converted_queue)
 {
     for(typename deque<Trajectory>::iterator it = queue_trajectory.begin(); it != queue_trajectory.end(); ++it)
     {
         int converted_size = 0;
 
-        ElementWithConvertedSize<Trajectory> convertedElement(*it, converted_size);
-        converted_queue.push_back(convertedElement);
+        ElementWithConvertedSize<Trajectory> convertedElement(std::move(*it), converted_size);
+        converted_queue.push_back(std::move(convertedElement));
     }
 }
 
-void traj_to_negative_conversion(deque<Trajectory>& queue_trajectory, deque<ElementWithConvertedSize<Trajectory>>& converted_queue)
+void traj_to_negative_conversion(deque<Trajectory>&& queue_trajectory, deque<ElementWithConvertedSize<Trajectory>>& converted_queue)
 {
     for(typename deque<Trajectory>::iterator it = queue_trajectory.begin(); it != queue_trajectory.end(); ++it)
     {
         int converted_size = it->reference_frame_.size() + it->point_list_.size()*sizeof(Position3D);
 
-        ElementWithConvertedSize<Trajectory> convertedElement(*it, -converted_size);
-        converted_queue.push_back(convertedElement);
+        ElementWithConvertedSize<Trajectory> convertedElement(std::move(*it), -converted_size);
+        converted_queue.push_back(std::move(convertedElement));
     }
 }
 
