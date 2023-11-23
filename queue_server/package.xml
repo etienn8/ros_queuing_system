@@ -56,6 +56,9 @@
   <exec_depend>ros_queue</exec_depend>
   <exec_depend>roscpp</exec_depend>
 
+  <depend>message_generation</depend>
+  <exec_depend>message_runtime</exec_depend>
+
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

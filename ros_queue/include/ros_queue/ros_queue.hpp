@@ -133,7 +133,7 @@ class ROSQueue: public DynamicQueue<typename QueueElementTrait<TROSMsgType>::Ele
             else
             {
                 //Make a local copy to respect the const arg but still allowing the service call
-                TPredictionServiceClass local_service= service; 
+                TPredictionServiceClass local_service= service;
 
                 // Service ROS call
                 if (arrival_service_client_.waitForExistence(WAIT_DURATION_FOR_SERVICE_EXISTENCE))
