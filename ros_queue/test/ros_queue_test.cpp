@@ -32,20 +32,21 @@ static const list<Position3D> point_list_1 = {Position3D(4,4,4), Position3D(5,5,
 class RosVirtualQueueFixture : public testing::Test {
     protected:
         void SetUp() override {
-            arrival_prediction_service_name_f= "/return_sent_value_plus_two";
-            transmission_prediction_service_name_f = "/return_sent_value_plus_three";
+            metric_computation_service_name_f= "/return_sent_value_plus_1point2";
             max_queue_size_f = 10;
-            service_struct_test_f.request.value_to_return = 1;
+            target_metric_f = 3.0f;
         }
         
         int max_queue_size_f;
-        string arrival_prediction_service_name_f;
-        string transmission_prediction_service_name_f;
+        string metric_computation_service_name_f;
+
         ros::NodeHandle nh_f;
 
         ros_queue::ReturnSentValue service_struct_test_f;
 
         ROSQueueInfo queue_info_f;
+
+        float target_metric_f; 
 };
 
 class RosQueueFixture : public testing::Test {
@@ -119,6 +120,15 @@ class RosConvertedQueueFixture : public testing::Test {
         ROSQueueInfo queue_info_f;
 };
 
+namespace metric_computation
+{
+    float mocked_metric;
+
+    float getMockedMetric()
+    {
+        return mocked_metric;
+    }
+}
 
 namespace prediction
 {
@@ -161,111 +171,74 @@ namespace conversion
 
 TEST_F(RosVirtualQueueFixture, constructorOverrideTest)
 {
-    // InConVirtualQueue queue with user-defined transmission and user-defined arrival
-    ROSVirtualQueue<InConVirtualQueue, ros_queue::ReturnSentValue> vq0(max_queue_size_f, queue_info_f, nh_f,
-                                                                    (ROSVirtualQueue<InConVirtualQueue, ros_queue::ReturnSentValue>::InterfacesArgs){
-                                                                    .arrival_prediction_fptr= prediction::return_value_plus_one,
-                                                                    .transmission_prediction_fptr= prediction::return_value});
-    vq0.update(4,0);
-    EXPECT_EQ(vq0.evaluate(service_struct_test_f), 5);
+    // Set mocked_metric
+    metric_computation::mocked_metric = 1.5f;
 
-    // InConVirtualQueue queue with user-defined transmission and ROS service arrival
-    ROSVirtualQueue<InConVirtualQueue, ros_queue::ReturnSentValue> vq1(max_queue_size_f, queue_info_f, nh_f,
-                                                                (ROSVirtualQueue<InConVirtualQueue, ros_queue::ReturnSentValue>::InterfacesArgs){
-                                                                .arrival_prediction_fptr = prediction::return_value_plus_one,
-                                                                .transmission_prediction_service_name = transmission_prediction_service_name_f});
-    vq1.update(4,0);
-    EXPECT_EQ(vq1.evaluate(service_struct_test_f), 2);
+    // InConVirtualQueue queue with user-defined metric computation
+    ROSVirtualQueue<InConVirtualQueue> vq0(max_queue_size_f, queue_info_f, nh_f, target_metric_f,
+                                            (ROSVirtualQueue<InConVirtualQueue>::InterfacesArgs){
+                                            .metric_computation_fptr= metric_computation::getMockedMetric});
+    vq0.update();
+    EXPECT_FLOAT_EQ(vq0.getSize(), 1.5f);
 
-    // InConVirtualQueue queue with ROS service transmission and user-defined arrival
-    ROSVirtualQueue<InConVirtualQueue, ros_queue::ReturnSentValue> vq2(max_queue_size_f, queue_info_f, nh_f,
-                                                            (ROSVirtualQueue<InConVirtualQueue, ros_queue::ReturnSentValue>::InterfacesArgs){
-                                                            .arrival_prediction_service_name = arrival_prediction_service_name_f,
-                                                            .transmission_prediction_fptr = prediction::return_value});
-    vq2.update(4,0);
-    EXPECT_EQ(vq2.evaluate(service_struct_test_f), 6);
+    // InConVirtualQueue queue with a service to compute the metric
+    ROSVirtualQueue<InConVirtualQueue> vq1(max_queue_size_f, queue_info_f, nh_f, target_metric_f,
+                                            (ROSVirtualQueue<InConVirtualQueue>::InterfacesArgs){
+                                            .metric_computation_service_name = metric_computation_service_name_f});
+    vq1.update();
+    EXPECT_FLOAT_EQ(vq1.getSize(), 1.8f);
 
-    // InConVirtualQueue queue with ROS service transmission and ROS servicearrival
-    ROSVirtualQueue<InConVirtualQueue, ros_queue::ReturnSentValue> vq3(max_queue_size_f, queue_info_f, nh_f,
-                                                            (ROSVirtualQueue<InConVirtualQueue, ros_queue::ReturnSentValue>::InterfacesArgs){
-                                                            .arrival_prediction_service_name = arrival_prediction_service_name_f,
-                                                            .transmission_prediction_service_name = transmission_prediction_service_name_f});
-    vq3.update(4,0);
-    EXPECT_EQ(vq3.evaluate(service_struct_test_f), 3);
+    // EqConVirtualQueue queue with user-defined metric computation
+    ROSVirtualQueue<EqConVirtualQueue> vq2(max_queue_size_f, queue_info_f, nh_f, target_metric_f,
+                                            (ROSVirtualQueue<EqConVirtualQueue>::InterfacesArgs){
+                                            .metric_computation_fptr= metric_computation::getMockedMetric});
+    vq2.update();
+    EXPECT_FLOAT_EQ(vq2.getSize(), 1.5f);
 
-    // EqConVirtualQueue queue with user-defined transmission and user-defined arrival
-    ROSVirtualQueue<EqConVirtualQueue, ros_queue::ReturnSentValue> vq4(max_queue_size_f, queue_info_f, nh_f,
-                                                                    (ROSVirtualQueue<EqConVirtualQueue, ros_queue::ReturnSentValue>::InterfacesArgs){
-                                                                    .arrival_prediction_fptr= prediction::return_value_plus_one,
-                                                                    .transmission_prediction_fptr= prediction::return_value});
-    vq4.update(4,0);
-    EXPECT_EQ(vq4.evaluate(service_struct_test_f), 5);
-
-    // EqConVirtualQueue queue with user-defined transmission and ROS service arrival
-    ROSVirtualQueue<EqConVirtualQueue, ros_queue::ReturnSentValue> vq5(max_queue_size_f, queue_info_f, nh_f,
-                                                                (ROSVirtualQueue<EqConVirtualQueue, ros_queue::ReturnSentValue>::InterfacesArgs){
-                                                                .arrival_prediction_fptr = prediction::return_value_plus_one,
-                                                                .transmission_prediction_service_name = transmission_prediction_service_name_f});
-    vq5.update(4,0);
-    EXPECT_EQ(vq5.evaluate(service_struct_test_f), 2);
-
-    // EqConVirtualQueue queue with ROS service transmission and user-defined arrival
-    ROSVirtualQueue<EqConVirtualQueue, ros_queue::ReturnSentValue> vq6(max_queue_size_f, queue_info_f, nh_f,
-                                                            (ROSVirtualQueue<EqConVirtualQueue, ros_queue::ReturnSentValue>::InterfacesArgs){
-                                                            .arrival_prediction_service_name = arrival_prediction_service_name_f,
-                                                            .transmission_prediction_fptr = prediction::return_value});
-    vq6.update(4,0);
-    EXPECT_EQ(vq6.evaluate(service_struct_test_f), 6);
-
-    // EqConVirtualQueue queue with ROS service transmission and ROS servicearrival
-    ROSVirtualQueue<EqConVirtualQueue, ros_queue::ReturnSentValue> vq7(max_queue_size_f, queue_info_f, nh_f,
-                                                            (ROSVirtualQueue<EqConVirtualQueue, ros_queue::ReturnSentValue>::InterfacesArgs){
-                                                            .arrival_prediction_service_name = arrival_prediction_service_name_f,
-                                                            .transmission_prediction_service_name = transmission_prediction_service_name_f});
-    vq7.update(4,0);
-    EXPECT_EQ(vq7.evaluate(service_struct_test_f), 3);
+    // EqConVirtualQueue queue with a service to compute the metric
+    ROSVirtualQueue<EqConVirtualQueue> vq3(max_queue_size_f, queue_info_f, nh_f, target_metric_f,
+                                        (ROSVirtualQueue<EqConVirtualQueue>::InterfacesArgs){
+                                        .metric_computation_service_name = metric_computation_service_name_f});
+    vq3.update();
+    EXPECT_FLOAT_EQ(vq3.getSize(), 1.8f);
 }
 
 TEST_F(RosVirtualQueueFixture, badInitTest)
 {
     //Test all constructors with a bad initialization of their function pointers.
 
-    // Create a type since the EXPECT_THROW macros confuses the coma in the template's parameters as a separator for its macro arguments.
-    typedef ROSVirtualQueue<InConVirtualQueue,ros_queue::ReturnSentValue> ROSInConVirtualQUeue; 
+    typedef ROSVirtualQueue<InConVirtualQueue> ROSInConVirtualQUeue; 
 
-    EXPECT_THROW(ROSInConVirtualQUeue vq0(max_queue_size_f, queue_info_f, nh_f, 
-                (ROSInConVirtualQUeue::InterfacesArgs){
-                .arrival_prediction_fptr= nullptr,
-                .transmission_prediction_fptr= prediction::return_value})
+    EXPECT_THROW(ROSInConVirtualQUeue vq0(max_queue_size_f, queue_info_f, nh_f, target_metric_f,
+                                            (ROSInConVirtualQUeue::InterfacesArgs){
+                                            .metric_computation_fptr= nullptr})
     , invalid_argument);
 
-    EXPECT_THROW(ROSInConVirtualQUeue vq0(max_queue_size_f, queue_info_f, nh_f, 
-                (ROSInConVirtualQUeue::InterfacesArgs){
-                .arrival_prediction_fptr= prediction::return_value,
-                .transmission_prediction_fptr= nullptr})
+    EXPECT_THROW(ROSInConVirtualQUeue vq1(max_queue_size_f, queue_info_f, nh_f, target_metric_f,
+                                            (ROSInConVirtualQUeue::InterfacesArgs){
+                                            .metric_computation_fptr = nullptr,
+                                            .metric_computation_service_name = ""})
     , invalid_argument);
 
-    EXPECT_THROW(ROSInConVirtualQUeue vq1(max_queue_size_f, queue_info_f, nh_f,
-                (ROSInConVirtualQUeue::InterfacesArgs){})
+    EXPECT_THROW(ROSInConVirtualQUeue vq2(max_queue_size_f, queue_info_f, nh_f, target_metric_f,
+                                            (ROSInConVirtualQUeue::InterfacesArgs){})
     , invalid_argument);
 
+    typedef ROSVirtualQueue<EqConVirtualQueue> ROSEqConVirtualQUeue; 
 
-    typedef ROSVirtualQueue<EqConVirtualQueue,ros_queue::ReturnSentValue> ROSEqConVirtualQUeue; 
-
-    EXPECT_THROW(ROSEqConVirtualQUeue vq0(max_queue_size_f, queue_info_f, nh_f, 
-                (ROSEqConVirtualQUeue::InterfacesArgs){
-                .arrival_prediction_fptr= nullptr,
-                .transmission_prediction_fptr= prediction::return_value})
+    EXPECT_THROW(ROSEqConVirtualQUeue vq3(max_queue_size_f, queue_info_f, nh_f, target_metric_f,
+                                            (ROSEqConVirtualQUeue::InterfacesArgs){
+                                            .metric_computation_fptr= nullptr})
     , invalid_argument);
 
-    EXPECT_THROW(ROSEqConVirtualQUeue vq0(max_queue_size_f, queue_info_f, nh_f, 
-                (ROSEqConVirtualQUeue::InterfacesArgs){
-                .arrival_prediction_fptr= prediction::return_value,
-                .transmission_prediction_fptr= nullptr})
+    EXPECT_THROW(ROSEqConVirtualQUeue vq4(max_queue_size_f, queue_info_f, nh_f, target_metric_f,
+                                            (ROSEqConVirtualQUeue::InterfacesArgs){
+                                            .metric_computation_fptr = nullptr,
+                                            .metric_computation_service_name = ""})
     , invalid_argument);
 
-    EXPECT_THROW(ROSEqConVirtualQUeue vq1(max_queue_size_f, queue_info_f, nh_f,
-                (ROSEqConVirtualQUeue::InterfacesArgs){})
+    EXPECT_THROW(ROSEqConVirtualQUeue vq5(max_queue_size_f, queue_info_f, nh_f, target_metric_f,
+                                            (ROSEqConVirtualQUeue::InterfacesArgs){})
     , invalid_argument);
 
 }

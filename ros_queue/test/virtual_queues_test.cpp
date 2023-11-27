@@ -10,332 +10,148 @@
 
 using std::invalid_argument;
 
-class InConVirtualQueueMockedPrediction: public InConVirtualQueue<>
-{
-    public:
-        InConVirtualQueueMockedPrediction(int max_queue_size): InConVirtualQueue<>(max_queue_size){};
-        int predicted_arrival_=0;
-        int predicted_transmission_=0;
-
-    protected:
-        virtual int arrival_prediction() override
-        {
-            return predicted_arrival_;
-        }
-        
-        virtual int transmission_prediction() override
-        {
-            return predicted_transmission_;
-        }
-};
-
-template<typename TState>
-class SpecializedInConVirtualQueueMockedPrediction: public InConVirtualQueue<TState>
-{
-    public:
-        SpecializedInConVirtualQueueMockedPrediction(int max_queue_size): InConVirtualQueue<TState>(max_queue_size){};
-
-    protected:
-        virtual int arrival_prediction(const TState& states) override
-        {
-            return states+1;
-        }
-        
-        virtual int transmission_prediction(const TState& states) override
-        {
-            return states;
-        }
-};
-
-
-class EqConVirtualQueueMockedPrediction: public EqConVirtualQueue<>
-{
-    public:
-        EqConVirtualQueueMockedPrediction(int max_queue_size): EqConVirtualQueue<>(max_queue_size){};
-        int predicted_arrival_=0;
-        int predicted_transmission_=0;
-
-    protected:
-        virtual int arrival_prediction() override
-        {
-            return predicted_arrival_;
-        }
-        
-        virtual int transmission_prediction() override
-        {
-            return predicted_transmission_;
-        }
-};
-
-template <typename TState>
-class SpecializedEqConVirtualQueueMockedPrediction: public EqConVirtualQueue<TState>
-{
-    public:
-        SpecializedEqConVirtualQueueMockedPrediction(int max_queue_size): EqConVirtualQueue<TState>(max_queue_size){};
-
-    protected:
-        virtual int arrival_prediction(const TState& states) override
-        {
-            return states+1;
-        }
-        
-        virtual int transmission_prediction(const TState& states) override
-        {
-            return states;
-        }
-};
-
 
 TEST(VirtualQueueTest, manipulationTest)
 {
     VirtualQueue vq;
 
-    EXPECT_EQ(vq.size(), 0);
-    vq.push(2);
-    EXPECT_EQ(vq.size(), 2);
-    vq.push(2);
-    EXPECT_EQ(vq.size(), 4);
+    EXPECT_FLOAT_EQ(vq.size(), 0);
+    vq.push(2.0f);
+    EXPECT_FLOAT_EQ(vq.size(), 2.0f);
+    vq.push(2.0f);
+    EXPECT_FLOAT_EQ(vq.size(), 4.0f);
 
-    vq.pop(2);
-    EXPECT_EQ(vq.size(), 2);
-    vq.pop(2);
-    EXPECT_EQ(vq.size(), 0);
+    vq.pop(2.0f);
+    EXPECT_FLOAT_EQ(vq.size(), 2.0f);
+    vq.pop(2.0f);
+    EXPECT_FLOAT_EQ(vq.size(), 0.0f);
 
-    vq.setSize(5);
-    EXPECT_EQ(vq.size(), 5);
+    vq.setSize(5.0f);
+    EXPECT_FLOAT_EQ(vq.size(), 5.0f);
 
-    EXPECT_THROW(vq.push(-7),invalid_argument);
-    EXPECT_THROW(vq.pop(-7),invalid_argument);
+    EXPECT_THROW(vq.push(-7.0f),invalid_argument);
+    EXPECT_THROW(vq.pop(-7.0f),invalid_argument);
 
-    EXPECT_THROW(vq.setSize(-1), invalid_argument);
+    EXPECT_THROW(vq.setSize(-1.0f), invalid_argument);
 }
 
 TEST(VirtualQueueTest, dimensionLimitTest)
 {
     VirtualQueue vq;
 
-    EXPECT_EQ(vq.empty(), true);
-    vq.push(2);
-    EXPECT_EQ(vq.empty(), false);
+    EXPECT_FLOAT_EQ(vq.empty(), true);
+    vq.push(2.0f);
+    EXPECT_FLOAT_EQ(vq.empty(), false);
 
-    vq.pop(4);
-    EXPECT_EQ(vq.size(), 0);
-    vq.pop(2);
-    EXPECT_EQ(vq.size(), 0);
+    vq.pop(4.0f);
+    EXPECT_FLOAT_EQ(vq.size(), 0.0f);
+    vq.pop(2.0f);
+    EXPECT_FLOAT_EQ(vq.size(), 0.0f);
 }
 
 TEST(NVirtualQueueTest, manipulationTest)
 {
     NVirtualQueue vq;
 
-    EXPECT_EQ(vq.size(), 0);
-    vq.push(2);
-    EXPECT_EQ(vq.size(), 2);
-    vq.push(2);
-    EXPECT_EQ(vq.size(), 4);
+    EXPECT_FLOAT_EQ(vq.size(), 0.0f);
+    vq.push(2.0f);
+    EXPECT_FLOAT_EQ(vq.size(), 2.0f);
+    vq.push(2.0f);
+    EXPECT_FLOAT_EQ(vq.size(), 4.0f);
 
-    vq.pop(2);
-    EXPECT_EQ(vq.size(), 2);
-    vq.pop(2);
-    EXPECT_EQ(vq.size(), 0);
-    vq.pop(3);
-    EXPECT_EQ(vq.size(), -3);
+    vq.pop(2.0f);
+    EXPECT_FLOAT_EQ(vq.size(), 2.0f);
+    vq.pop(2.0f);
+    EXPECT_FLOAT_EQ(vq.size(), 0.0f);
+    vq.pop(3.0f);
+    EXPECT_FLOAT_EQ(vq.size(), -3.0f);
 
-    vq.setSize(5);
-    EXPECT_EQ(vq.size(), 5);
+    vq.setSize(5.0f);
+    EXPECT_FLOAT_EQ(vq.size(), 5.0f);
 
-    EXPECT_THROW(vq.push(-7),invalid_argument);
-    EXPECT_THROW(vq.pop(-7),invalid_argument);
+    EXPECT_THROW(vq.push(-7.0f),invalid_argument);
+    EXPECT_THROW(vq.pop(-7.0f),invalid_argument);
     
-    vq.setSize(-1);
-    EXPECT_EQ(vq.size(), -1);
+    vq.setSize(-1.0f);
+    EXPECT_FLOAT_EQ(vq.size(), -1.0f);
 }
 
 TEST(NVirtualQueueTest, dimensionLimitTest)
 {
     NVirtualQueue vq;
 
-    EXPECT_EQ(vq.empty(), true);
-    vq.push(2);
-    EXPECT_EQ(vq.empty(), false);
-    vq.setSize(-2);
-    EXPECT_EQ(vq.empty(), false);
+    EXPECT_FLOAT_EQ(vq.empty(), true);
+    vq.push(2.0f);
+    EXPECT_FLOAT_EQ(vq.empty(), false);
+    vq.setSize(-2.0f);
+    EXPECT_FLOAT_EQ(vq.empty(), false);
 }
 
 // Test for the inequqality constraint virtual queue
 TEST(InConVirutalQueueDynamicTest, manipultationTest)
 {
-    InConVirtualQueue<> vq(10);
+    InConVirtualQueue vq(10.0f);
 
-    VirtualQueue vq_arrival;
-    vq_arrival.setSize(5);
-
-    EXPECT_EQ(vq.getSize(), 0);
-    vq.update(4,3);
-    EXPECT_EQ(vq.getSize(), 4);
-    vq.update(4,3);
-    EXPECT_EQ(vq.getSize(), 5);
-
-    vq.update(vq_arrival, 2);
-    EXPECT_EQ(vq.getSize(), 8);
-
-    EXPECT_THROW(vq.update(-1,0),invalid_argument);
-    EXPECT_THROW(vq.update(0,-1),invalid_argument);
-    EXPECT_THROW(vq.update(vq_arrival,-1),invalid_argument);
+    EXPECT_FLOAT_EQ(vq.getSize(), 0);
+    vq.update(4.0f-3.0f);
+    EXPECT_FLOAT_EQ(vq.getSize(), 1.0f);
+    vq.update(4.0f-3.0f);
+    EXPECT_FLOAT_EQ(vq.getSize(), 2.0f);
 }
 
 TEST(InConVirutalQueueDynamicTest, initTest)
 {
-    const int QUEUE_MAX_SIZE = -10;
-    EXPECT_THROW(InConVirtualQueue<> vq(QUEUE_MAX_SIZE), invalid_argument);
+    const int QUEUE_MAX_SIZE = -10.0f;
+    EXPECT_THROW(InConVirtualQueue vq(QUEUE_MAX_SIZE), invalid_argument);
 }
 
 TEST(InConVirutalQueueDynamicTest, dimensionLimitTest)
 {
-    const int QUEUE_MAX_SIZE = 10;
-    InConVirtualQueue<> vq(QUEUE_MAX_SIZE);
-    
-    VirtualQueue vq_arrival;
-    vq_arrival.setSize(QUEUE_MAX_SIZE+1);
+    const int QUEUE_MAX_SIZE = 10.0f;
+    InConVirtualQueue vq(QUEUE_MAX_SIZE);
 
-    vq.update(0, 1);
-    EXPECT_EQ(vq.getSize(), 0);
-    vq.update(QUEUE_MAX_SIZE + 1, 0);
-    EXPECT_EQ(vq.getSize(), QUEUE_MAX_SIZE);
+    vq.update(-1.0f);
+    EXPECT_FLOAT_EQ(vq.getSize(), 0.0f);
+    vq.update(QUEUE_MAX_SIZE + 1.0f);
+    EXPECT_FLOAT_EQ(vq.getSize(), QUEUE_MAX_SIZE);
 
-    vq.update(vq_arrival, 0);
-    EXPECT_EQ(vq.getSize(), QUEUE_MAX_SIZE);
-
-    vq.update(2,3);
-    EXPECT_EQ(vq.getSize(), 9);
-}
-
-TEST(InConVirutalQueueDynamicTest, predictionTest)
-{
-    const int QUEUE_MAX_SIZE = 10;
-    InConVirtualQueueMockedPrediction vq(QUEUE_MAX_SIZE);
-    vq.predicted_arrival_ = 2;
-    vq.predicted_transmission_ = 3;
-
-    vq.update(4,0);
-    EXPECT_EQ(vq.evaluate(), 4 - vq.predicted_transmission_ + vq.predicted_arrival_);
-    EXPECT_EQ(vq.getSize(), 4);
-
-    vq.predicted_arrival_ = 7;
-    vq.predicted_transmission_ = 0;
-    EXPECT_EQ(vq.evaluate(), QUEUE_MAX_SIZE);
-
-    vq.predicted_arrival_ = -1;
-    EXPECT_THROW(vq.evaluate(), NegativeArrivalPredictionException);
-    
-    vq.predicted_arrival_ = 0;
-    vq.predicted_transmission_ = -1;
-    EXPECT_THROW(vq.evaluate(), NegativeDeparturePredictionException);
-}
-
-TEST(InConVirutalQueueDynamicTest, specializedPredictionTest)
-{
-    const int QUEUE_MAX_SIZE = 10;
-    SpecializedInConVirtualQueueMockedPrediction<int> vq(QUEUE_MAX_SIZE);
-    vq.update(5,0);
-    
-    int state = 4; 
-    EXPECT_EQ(vq.evaluate(state), 6);
+    vq.update(QUEUE_MAX_SIZE + 1.0f);
+    EXPECT_FLOAT_EQ(vq.getSize(), QUEUE_MAX_SIZE);
 }
 
 // Test for the equality constraint virtual queue
 TEST(EqConVirtualQueueDynamicTest, manipultationTest)
 {
-    EqConVirtualQueue<> vq(10);
+    EqConVirtualQueue vq(10.0f);
 
-    NVirtualQueue vq_arrival;
-    vq_arrival.setSize(5);
+    EXPECT_FLOAT_EQ(vq.getSize(), 0.0f);
+    vq.update(4.0f-3.0f);
+    EXPECT_FLOAT_EQ(vq.getSize(), 1.0f);
+    vq.update(4.0f-3.0f);
+    EXPECT_FLOAT_EQ(vq.getSize(), 2.0f);
 
-    EXPECT_EQ(vq.getSize(), 0);
-    vq.update(4,3);
-    EXPECT_EQ(vq.getSize(), 1);
-    vq.update(4,3);
-    EXPECT_EQ(vq.getSize(), 2);
-
-    vq.update(vq_arrival, 2);
-    EXPECT_EQ(vq.getSize(), 5);
-
-    vq.update(0,9);
-    EXPECT_EQ(vq.getSize(), -4);
-
-    EXPECT_THROW(vq.update(-1,0),invalid_argument);
-    EXPECT_THROW(vq.update(0,-1),invalid_argument);
-    EXPECT_THROW(vq.update(vq_arrival,-1),invalid_argument);
+    vq.update(-9.0f);
+    EXPECT_FLOAT_EQ(vq.getSize(), -7.0f);
 }
 
 TEST(EqConVirtualQueueDynamicTest, initTest)
 {
-    const int QUEUE_MAX_SIZE = -10;
-    EXPECT_THROW(EqConVirtualQueue<> vq(QUEUE_MAX_SIZE), invalid_argument);
+    const int QUEUE_MAX_SIZE = -10.0f;
+    EXPECT_THROW(EqConVirtualQueue vq(QUEUE_MAX_SIZE), invalid_argument);
 }
 
 TEST(EqConVirtualQueueDynamicTest, dimensionLimitTest)
 {
-    const int QUEUE_MAX_SIZE = 10;
-    EqConVirtualQueue<> vq(QUEUE_MAX_SIZE);
-    
-    NVirtualQueue vq_arrival;
-    vq_arrival.setSize(QUEUE_MAX_SIZE+1);
+    const int QUEUE_MAX_SIZE = 10.0f;
+    EqConVirtualQueue vq(QUEUE_MAX_SIZE);
 
-    vq.update(QUEUE_MAX_SIZE + 1, 0);
-    EXPECT_EQ(vq.getSize(), QUEUE_MAX_SIZE);
-    vq.update(0, 2*QUEUE_MAX_SIZE+1);
-    EXPECT_EQ(vq.getSize(), -QUEUE_MAX_SIZE);
+    vq.update(QUEUE_MAX_SIZE + 1.0f);
+    EXPECT_FLOAT_EQ(vq.getSize(), QUEUE_MAX_SIZE);
+    vq.update(-2*QUEUE_MAX_SIZE-1.0f);
+    EXPECT_FLOAT_EQ(vq.getSize(), -QUEUE_MAX_SIZE);
 
-    vq.update(vq_arrival, 0);
-    vq.update(vq_arrival, 0);
-    vq.update(vq_arrival, 0);
-    EXPECT_EQ(vq.getSize(), QUEUE_MAX_SIZE);
-
-    vq.update(2,3);
-    EXPECT_EQ(vq.getSize(), 9);
-}
-
-TEST(EqConVirtualQueueDynamicTest, predictionTest)
-{
-    const int QUEUE_MAX_SIZE = 10;
-    EqConVirtualQueueMockedPrediction vq(QUEUE_MAX_SIZE);
-    vq.predicted_arrival_ = 2;
-    vq.predicted_transmission_ = 3;
-
-    vq.update(4,0);
-    EXPECT_EQ(vq.evaluate(), 4 - vq.predicted_transmission_ + vq.predicted_arrival_);
-    
-    // Evaluation has no effect on real queue size
-    EXPECT_EQ(vq.getSize(), 4);
-
-    // Max bound evaluation limit
-    vq.predicted_arrival_ = 7;
-    vq.predicted_transmission_ = 0;
-    EXPECT_EQ(vq.evaluate(), QUEUE_MAX_SIZE);
-
-    // Min bound evaluation limit
-    vq.predicted_arrival_ = 0;
-    vq.predicted_transmission_ = 20;
-    EXPECT_EQ(vq.evaluate(), -QUEUE_MAX_SIZE);
-
-    // Ilegal prediction
-    vq.predicted_arrival_ = -1;
-    EXPECT_THROW(vq.evaluate(), NegativeArrivalPredictionException);
-    
-    vq.predicted_arrival_ = 0;
-    vq.predicted_transmission_ = -1;
-    EXPECT_THROW(vq.evaluate(), NegativeDeparturePredictionException);
-}
-
-TEST(EqConVirtualQueueDynamicTest, specializedPredictionTest)
-{
-    const int QUEUE_MAX_SIZE = 10;
-    SpecializedEqConVirtualQueueMockedPrediction<int> vq(QUEUE_MAX_SIZE);
-    vq.update(5,0);
-    
-    int state = 4; 
-    EXPECT_EQ(vq.evaluate(state), 6);
+    vq.update(1.0f);
+    EXPECT_FLOAT_EQ(vq.getSize(), -9.0f);
 }
 
 // Run all the tests that were declared with TEST()

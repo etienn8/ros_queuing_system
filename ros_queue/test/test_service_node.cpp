@@ -4,6 +4,7 @@
 
 #include "ros_queue/ReturnSentValue.h"
 #include "ros_queue/ConversionTemplateService.h"
+#include "ros_queue/ComputeVirtualQueueMetric.h"
 
 bool returnValueServicePlusTwo(ros_queue::ReturnSentValue::Request  &req,
                    ros_queue::ReturnSentValue::Response &res)
@@ -29,6 +30,13 @@ bool conversionToBytesService(ros_queue::ConversionTemplateService::Request  &re
     return true;
 }
 
+bool return1point2(ros_queue::ComputeVirtualQueueMetric::Request &req,
+                    ros_queue::ComputeVirtualQueueMetric::Response &res)
+{
+    res.value = 1.2f;
+    return true;
+}
+
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "test_service_node");
@@ -39,6 +47,7 @@ int main(int argc, char **argv)
     ros::ServiceServer service1 = nh.advertiseService("return_sent_value_plus_two",   returnValueServicePlusTwo);
     ros::ServiceServer service2 = nh.advertiseService("return_sent_value_plus_three", returnValueServicePlusPlusThree);
     ros::ServiceServer service3 = nh.advertiseService("conversion_to_bytes_service",  conversionToBytesService);
+    ros::ServiceServer service4 = nh.advertiseService("/return_sent_value_plus_1point2", return1point2);
 
     ros::spin();
     return 0;
