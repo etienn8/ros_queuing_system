@@ -32,21 +32,17 @@ static const list<Position3D> point_list_1 = {Position3D(4,4,4), Position3D(5,5,
 class RosVirtualQueueFixture : public testing::Test {
     protected:
         void SetUp() override {
-            metric_computation_service_name_f= "/return_sent_value_plus_1point2";
+            departure_evaluation_service_name_f= "/return_1point2";
+            arrival_evaluation_service_name_f= "/return_3f";
             max_queue_size_f = 10;
-            target_metric_f = 3.0f;
         }
         
         int max_queue_size_f;
-        string metric_computation_service_name_f;
+        string departure_evaluation_service_name_f;
+        string arrival_evaluation_service_name_f;
 
         ros::NodeHandle nh_f;
-
-        ros_queue::ReturnSentValue service_struct_test_f;
-
         ROSQueueInfo queue_info_f;
-
-        float target_metric_f; 
 };
 
 class RosQueueFixture : public testing::Test {
@@ -122,11 +118,17 @@ class RosConvertedQueueFixture : public testing::Test {
 
 namespace metric_computation
 {
-    float mocked_metric;
+    float mocked_arrival;
+    float mocked_departure;
 
-    float getMockedMetric()
+    float getMockedArrival()
     {
-        return mocked_metric;
+        return mocked_arrival;
+    }
+
+    float getMockedDeparture()
+    {
+        return mocked_departure;
     }
 }
 
@@ -172,35 +174,39 @@ namespace conversion
 TEST_F(RosVirtualQueueFixture, constructorOverrideTest)
 {
     // Set mocked_metric
-    metric_computation::mocked_metric = 1.5f;
+    metric_computation::mocked_arrival = 3.5f;
+    metric_computation::mocked_departure = 1.5f;
 
-    // InConVirtualQueue queue with user-defined metric computation
-    ROSVirtualQueue<InConVirtualQueue> vq0(max_queue_size_f, queue_info_f, nh_f, target_metric_f,
+    // InConVirtualQueue
+    ROSVirtualQueue<InConVirtualQueue> vq0(max_queue_size_f, queue_info_f, nh_f,
                                             (ROSVirtualQueue<InConVirtualQueue>::InterfacesArgs){
-                                            .metric_computation_fptr= metric_computation::getMockedMetric});
+                                            .arrival_evaluation_fptr = metric_computation::getMockedArrival,
+                                            .departure_evaluation_fptr = metric_computation::getMockedDeparture});
     vq0.update();
-    EXPECT_FLOAT_EQ(vq0.getSize(), 1.5f);
+    EXPECT_FLOAT_EQ(vq0.getSize(), metric_computation::mocked_arrival-metric_computation::mocked_departure);
 
-    // InConVirtualQueue queue with a service to compute the metric
-    ROSVirtualQueue<InConVirtualQueue> vq1(max_queue_size_f, queue_info_f, nh_f, target_metric_f,
+    ROSVirtualQueue<InConVirtualQueue> vq1(max_queue_size_f, queue_info_f, nh_f,
                                             (ROSVirtualQueue<InConVirtualQueue>::InterfacesArgs){
-                                            .metric_computation_service_name = metric_computation_service_name_f});
+                                            .arrival_evaluation_service_name = arrival_evaluation_service_name_f,
+                                            .departure_evaluation_service_name = departure_evaluation_service_name_f});
     vq1.update();
-    EXPECT_FLOAT_EQ(vq1.getSize(), 1.8f);
+    EXPECT_FLOAT_EQ(vq1.getSize(), 3.0f-1.2f);
 
-    // EqConVirtualQueue queue with user-defined metric computation
-    ROSVirtualQueue<EqConVirtualQueue> vq2(max_queue_size_f, queue_info_f, nh_f, target_metric_f,
+    // EqConVirtualQueue
+    ROSVirtualQueue<EqConVirtualQueue> vq2(max_queue_size_f, queue_info_f, nh_f,
                                             (ROSVirtualQueue<EqConVirtualQueue>::InterfacesArgs){
-                                            .metric_computation_fptr= metric_computation::getMockedMetric});
+                                            .arrival_evaluation_fptr = metric_computation::getMockedArrival,
+                                            .departure_evaluation_fptr = metric_computation::getMockedDeparture});
     vq2.update();
-    EXPECT_FLOAT_EQ(vq2.getSize(), 1.5f);
+    EXPECT_FLOAT_EQ(vq2.getSize(), metric_computation::mocked_arrival-metric_computation::mocked_departure);
 
     // EqConVirtualQueue queue with a service to compute the metric
-    ROSVirtualQueue<EqConVirtualQueue> vq3(max_queue_size_f, queue_info_f, nh_f, target_metric_f,
-                                        (ROSVirtualQueue<EqConVirtualQueue>::InterfacesArgs){
-                                        .metric_computation_service_name = metric_computation_service_name_f});
+    ROSVirtualQueue<EqConVirtualQueue> vq3(max_queue_size_f, queue_info_f, nh_f,
+                                            (ROSVirtualQueue<EqConVirtualQueue>::InterfacesArgs){
+                                            .arrival_evaluation_service_name = arrival_evaluation_service_name_f,
+                                            .departure_evaluation_service_name = departure_evaluation_service_name_f});
     vq3.update();
-    EXPECT_FLOAT_EQ(vq3.getSize(), 1.8f);
+    EXPECT_FLOAT_EQ(vq3.getSize(), 3.0f-1.2f);
 }
 
 TEST_F(RosVirtualQueueFixture, badInitTest)
@@ -209,38 +215,21 @@ TEST_F(RosVirtualQueueFixture, badInitTest)
 
     typedef ROSVirtualQueue<InConVirtualQueue> ROSInConVirtualQUeue; 
 
-    EXPECT_THROW(ROSInConVirtualQUeue vq0(max_queue_size_f, queue_info_f, nh_f, target_metric_f,
+    EXPECT_THROW(ROSInConVirtualQUeue vq0(max_queue_size_f, queue_info_f, nh_f,
                                             (ROSInConVirtualQUeue::InterfacesArgs){
-                                            .metric_computation_fptr= nullptr})
+                                            .arrival_evaluation_fptr = nullptr,
+                                            .departure_evaluation_fptr = metric_computation::getMockedDeparture})
     , invalid_argument);
 
-    EXPECT_THROW(ROSInConVirtualQUeue vq1(max_queue_size_f, queue_info_f, nh_f, target_metric_f,
+    EXPECT_THROW(ROSInConVirtualQUeue vq1(max_queue_size_f, queue_info_f, nh_f,
                                             (ROSInConVirtualQUeue::InterfacesArgs){
-                                            .metric_computation_fptr = nullptr,
-                                            .metric_computation_service_name = ""})
+                                            .arrival_evaluation_fptr = metric_computation::getMockedArrival,
+                                            .departure_evaluation_fptr = nullptr})
     , invalid_argument);
 
-    EXPECT_THROW(ROSInConVirtualQUeue vq2(max_queue_size_f, queue_info_f, nh_f, target_metric_f,
+    EXPECT_THROW(ROSInConVirtualQUeue vq2(max_queue_size_f, queue_info_f, nh_f,
                                             (ROSInConVirtualQUeue::InterfacesArgs){})
     , invalid_argument);
-
-    typedef ROSVirtualQueue<EqConVirtualQueue> ROSEqConVirtualQUeue; 
-
-    EXPECT_THROW(ROSEqConVirtualQUeue vq3(max_queue_size_f, queue_info_f, nh_f, target_metric_f,
-                                            (ROSEqConVirtualQUeue::InterfacesArgs){
-                                            .metric_computation_fptr= nullptr})
-    , invalid_argument);
-
-    EXPECT_THROW(ROSEqConVirtualQUeue vq4(max_queue_size_f, queue_info_f, nh_f, target_metric_f,
-                                            (ROSEqConVirtualQUeue::InterfacesArgs){
-                                            .metric_computation_fptr = nullptr,
-                                            .metric_computation_service_name = ""})
-    , invalid_argument);
-
-    EXPECT_THROW(ROSEqConVirtualQUeue vq5(max_queue_size_f, queue_info_f, nh_f, target_metric_f,
-                                            (ROSEqConVirtualQUeue::InterfacesArgs){})
-    , invalid_argument);
-
 }
 
 

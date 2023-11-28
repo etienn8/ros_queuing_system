@@ -37,6 +37,13 @@ bool return1point2(ros_queue::ComputeVirtualQueueMetric::Request &req,
     return true;
 }
 
+bool return3f(ros_queue::ComputeVirtualQueueMetric::Request &req,
+                    ros_queue::ComputeVirtualQueueMetric::Response &res)
+{
+    res.value = 3.0f;
+    return true;
+}
+
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "test_service_node");
@@ -47,7 +54,9 @@ int main(int argc, char **argv)
     ros::ServiceServer service1 = nh.advertiseService("return_sent_value_plus_two",   returnValueServicePlusTwo);
     ros::ServiceServer service2 = nh.advertiseService("return_sent_value_plus_three", returnValueServicePlusPlusThree);
     ros::ServiceServer service3 = nh.advertiseService("conversion_to_bytes_service",  conversionToBytesService);
-    ros::ServiceServer service4 = nh.advertiseService("/return_sent_value_plus_1point2", return1point2);
+    ros::ServiceServer service4 = nh.advertiseService("/return_1point2", return1point2);
+    ros::ServiceServer service5 = nh.advertiseService("/return_3f", return3f);
+    
 
     ros::spin();
     return 0;
