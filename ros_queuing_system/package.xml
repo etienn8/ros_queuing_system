@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>ros_queing_system</name>
+  <name>ros_queuing_system</name>
   <version>1.0.0</version>
-  <description>The ros_queues meta package</description>
+  <description>The ros_queue meta package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
@@ -52,6 +52,7 @@
 
   <depend>ros_queue</depend>
   <depend>queue_server</depend>
+  <depend>ros_queue_msgs</depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
