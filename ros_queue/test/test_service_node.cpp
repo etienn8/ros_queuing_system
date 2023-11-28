@@ -3,8 +3,8 @@
 #include <utility>
 
 #include "ros_queue/ReturnSentValue.h"
-#include "ros_queue/ConversionTemplateService.h"
-#include "ros_queue/ComputeVirtualQueueMetric.h"
+#include "ros_queue_msgs/ConversionTemplateService.h"
+#include "ros_queue_msgs/ComputeVirtualQueueMetric.h"
 
 bool returnValueServicePlusTwo(ros_queue::ReturnSentValue::Request  &req,
                    ros_queue::ReturnSentValue::Response &res)
@@ -20,8 +20,8 @@ bool returnValueServicePlusPlusThree(ros_queue::ReturnSentValue::Request  &req,
     return true;
 }
 
-bool conversionToBytesService(ros_queue::ConversionTemplateService::Request  &req,
-                   ros_queue::ConversionTemplateService::Response &res)
+bool conversionToBytesService(ros_queue_msgs::ConversionTemplateService::Request  &req,
+                   ros_queue_msgs::ConversionTemplateService::Response &res)
 {
     for(auto it = req.queue_to_convert.begin(); it !=req.queue_to_convert.end(); ++it)
     {
@@ -30,15 +30,15 @@ bool conversionToBytesService(ros_queue::ConversionTemplateService::Request  &re
     return true;
 }
 
-bool return1point2(ros_queue::ComputeVirtualQueueMetric::Request &req,
-                    ros_queue::ComputeVirtualQueueMetric::Response &res)
+bool return1point2(ros_queue_msgs::ComputeVirtualQueueMetric::Request &req,
+                    ros_queue_msgs::ComputeVirtualQueueMetric::Response &res)
 {
     res.value = 1.2f;
     return true;
 }
 
-bool return3f(ros_queue::ComputeVirtualQueueMetric::Request &req,
-                    ros_queue::ComputeVirtualQueueMetric::Response &res)
+bool return3f(ros_queue_msgs::ComputeVirtualQueueMetric::Request &req,
+                    ros_queue_msgs::ComputeVirtualQueueMetric::Response &res)
 {
     res.value = 3.0f;
     return true;

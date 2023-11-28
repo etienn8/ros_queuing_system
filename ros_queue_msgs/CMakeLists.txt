@@ -1,8 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(ros_queue)
-
-set(QUEUE_LIB_NAME "lib_queue")
-set(ROSQUEUE_LIB_NAME "ros_queue_lib")
+project(ros_queue_msgs)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -11,10 +8,10 @@ set(ROSQUEUE_LIB_NAME "ros_queue_lib")
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  message_generation
+  message_runtime
   roscpp
   std_msgs
-  ros_queue_msgs
-  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -51,14 +48,20 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-#add_message_files(
-#   FILES
-#)
+add_message_files(
+  FILES
+  QueueIntElement.msg
+  QueueSize.msg
+  QueueStates.msg
+  QueueTransmitTemplate.msg
+)
 
-# Generate services in the 'srv' folder
+## Generate services in the 'srv' folder
 add_service_files(
   FILES
-  ReturnSentValue.srv
+  ComputeVirtualQueueMetric.srv
+  ConversionTemplateService.srv
+  QueueStatesPrediction.srv
 )
 
 ## Generate actions in the 'action' folder
@@ -71,7 +74,7 @@ add_service_files(
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
   DEPENDENCIES
-  ros_queue_msgs  # Or other packages containing msgs
+  std_msgs
 )
 
 ################################################
@@ -104,10 +107,10 @@ generate_messages(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-  INCLUDE_DIRS include
-  LIBRARIES ${QUEUE_LIB_NAME} ${ROSQUEUE_LIB_NAME}
-  CATKIN_DEPENDS roscpp message_runtime
-  #DEPENDS system_lib
+#  INCLUDE_DIRS include
+#  LIBRARIES ros_queue_msgs
+   CATKIN_DEPENDS message_generation message_runtime roscpp
+#  DEPENDS system_lib
 )
 
 ###########
@@ -117,33 +120,24 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-  include
+# include
   ${catkin_INCLUDE_DIRS}
 )
 
-# Declare a C++ library
- add_library(${QUEUE_LIB_NAME}
-   src/${QUEUE_LIB_NAME}/dynamic_queue.cpp
-   src/${QUEUE_LIB_NAME}/dynamic_virtual_queue.cpp
-   src/${QUEUE_LIB_NAME}/virtual_queue.cpp
-  )
-
-add_library(${ROSQUEUE_LIB_NAME}
-  src/ros_queue.cpp
-)
-
-add_executable(test_service_node test/test_service_node.cpp)
-target_link_libraries(test_service_node ${catkin_LIBRARIES})
+## Declare a C++ library
+# add_library(${PROJECT_NAME}
+#   src/${PROJECT_NAME}/ros_queue_msgs.cpp
+# )
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
-add_dependencies(test_service_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+# add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(queue_testing src/queue_testing.cpp)
+# add_executable(${PROJECT_NAME}_node src/ros_queue_msgs_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -155,10 +149,9 @@ add_dependencies(test_service_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_
 ## same as for the library above
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-# Specify libraries to link a library or executable target against
-# target_link_libraries(queue_testing
-#    ${catkin_LIBRARIES}
-#    ${QUEUE_LIB_NAME}
+## Specify libraries to link a library or executable target against
+# target_link_libraries(${PROJECT_NAME}_node
+#   ${catkin_LIBRARIES}
 # )
 
 #############
@@ -206,34 +199,12 @@ add_dependencies(test_service_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_
 #############
 ## Testing ##
 #############
-if(CATKIN_ENABLE_TESTING)
-  find_package(rostest REQUIRED)
 
-  ## Add gtest based cpp test target and link libraries
-  catkin_add_gtest(virtual_queues_test test/virtual_queues_test.cpp)
-  if(TARGET virtual_queues_test)
-    target_link_libraries(virtual_queues_test ${QUEUE_LIB_NAME})
-  endif()
-
-  catkin_add_gtest(dynamic_queues_test test/dynamic_queues_test.cpp)
-  if(TARGET dynamic_queues_test)
-    target_link_libraries(dynamic_queues_test ${QUEUE_LIB_NAME})
-  endif()
-
-  add_rostest_gtest(ros_queue_test test/launch/queue_prediction_server_test.test test/ros_queue_test.cpp)
-  target_link_libraries(ros_queue_test ${catkin_LIBRARIES} ${QUEUE_LIB_NAME} ${ROSQUEUE_LIB_NAME})
-
-  catkin_add_gtest(move_optimization_test test/move_optimization_tests.cpp)
-  if(TARGET dynamic_queues_test)
-    target_link_libraries(move_optimization_test ${catkin_LIBRARIES} ${QUEUE_LIB_NAME} ${ROSQUEUE_LIB_NAME})
-  endif()
-
-  #catkin_add_gtest(ros_queue_test test/ros_queue_test.cpp)
-  #if(TARGET ros_queue_test)
-  #  target_link_libraries(ros_queue_test ${QUEUE_LIB_NAME} ${ROSQUEUE_LIB_NAME})
-  #endif()
-endif()
-
+## Add gtest based cpp test target and link libraries
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_ros_queue_msgs.cpp)
+# if(TARGET ${PROJECT_NAME}-test)
+#   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
+# endif()
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)

@@ -10,11 +10,6 @@
 #include "ros_queue/lib_queue/dynamic_queue.hpp"
 #include "ros_queue/lib_queue/dynamic_converted_queue.hpp"
 
-#include "ros_queue/ReturnSentValue.h"
-#include "ros_queue/queue_transmit_template.h"
-#include "ros_queue/queue_int_element.h"
-#include "ros_queue/ConversionTemplateService.h"
-
 #include "include/dynamic_queues_test.hpp"
 
 #include "ros/ros.h"
