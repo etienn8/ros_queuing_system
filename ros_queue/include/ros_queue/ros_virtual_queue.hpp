@@ -9,7 +9,7 @@
 
 #include "ros_queue_info.hpp"
 
-#include "lib_queue/virtual_queue.hpp"
+#include "lib_queue/dynamic_virtual_queue.hpp"
 
 #include "ros_queue_msgs/ComputeVirtualQueueMetric.h"
 
@@ -201,3 +201,6 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType
         */
        std::mutex metric_manipulation_mutex_;
 };
+
+typedef ROSVirtualQueue<InConVirtualQueue> ROSInConVirtualQueue;
+typedef ROSVirtualQueue<EqConVirtualQueue> ROSEqConVirtualQueue; 
