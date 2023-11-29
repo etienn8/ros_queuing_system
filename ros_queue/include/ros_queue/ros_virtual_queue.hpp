@@ -7,11 +7,10 @@
 #include "ros/ros.h"
 #include "ros/duration.h"
 
-#include "ros_queue_info.hpp"
-
 #include "lib_queue/dynamic_virtual_queue.hpp"
 
 #include "ros_queue_msgs/ComputeVirtualQueueMetric.h"
+#include "ros_queue_msgs/QueueInfo.h"
 
 using std::string;
 using std::invalid_argument;
@@ -29,7 +28,7 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType
         /**
          * @brief Member that contains meta data for queues.
         */
-        ROSQueueInfo info_;
+        ros_queue_msgs::QueueInfo info_;
 
         /**
          * @brief Struct that contains all the options related to using pointer functions, or ROS Topics/Services for prediction, transmission and conversion. 
@@ -48,13 +47,13 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType
         };
 
         /**
-         * @brief Constructor that initialize the max queue size, the ROSQueueINfo and the different predictions methods.
+         * @brief Constructor that initialize the max queue size, the queue info and the different predictions methods.
          * @param max_queue_size Maximum size the queue can take and over which, data will be discarded.
-         * @param info ROSQueueInfo reference that contains meta data about the queue.
+         * @param info ros_queue_msgs::QueueInfo reference that contains meta data about the queue.
          * @param interfaces Struct that contains all the options for the change interfaces. See ROSVirtualQueue::InterfacesArgs.
          * @throw Throws an std::invalid_argument if one of the function pointers is null. 
         */
-        ROSVirtualQueue(int max_queue_size, ROSQueueInfo& info, ros::NodeHandle& nh, InterfacesArgs interfaces)
+        ROSVirtualQueue(int max_queue_size, ros_queue_msgs::QueueInfo& info, ros::NodeHandle& nh, InterfacesArgs interfaces)
                         :TDynamicVirtualQueueType(max_queue_size), info_(info), nh_(nh)
             {
                 // Init the arrival evaluator

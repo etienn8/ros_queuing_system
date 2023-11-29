@@ -14,7 +14,6 @@
 
 #include "ros_queue/ros_converted_queue.hpp"
 #include "ros_queue/ros_queue.hpp"
-#include "ros_queue/ros_queue_info.hpp"
 #include "ros_queue/ros_virtual_queue.hpp"
 
 #include "include/trajectory.hpp"
@@ -23,6 +22,8 @@
 #include "ros_queue/lib_queue/dynamic_queue.hpp"
 #include "ros_queue/lib_queue/dynamic_converted_queue.hpp"
 #include "ros_queue/lib_queue/queue_utils.hpp"
+
+#include "ros_queue_msgs/QueueInfo.h"
 
 using namespace std;
 
@@ -42,7 +43,7 @@ class RosVirtualQueueFixture : public testing::Test {
         string arrival_evaluation_service_name_f;
 
         ros::NodeHandle nh_f;
-        ROSQueueInfo queue_info_f;
+        ros_queue_msgs::QueueInfo queue_info_f;
 };
 
 class RosQueueFixture : public testing::Test {
@@ -77,7 +78,7 @@ class RosQueueFixture : public testing::Test {
         
         ros_queue::ReturnSentValue service_struct_test_f;
 
-        ROSQueueInfo queue_info_f;
+        ros_queue_msgs::QueueInfo queue_info_f;
 };
 
 class RosConvertedQueueFixture : public testing::Test {
@@ -113,7 +114,7 @@ class RosConvertedQueueFixture : public testing::Test {
         
         ros_queue::ReturnSentValue service_struct_test_f;
 
-        ROSQueueInfo queue_info_f;
+        ros_queue_msgs::QueueInfo queue_info_f;
 };
 
 namespace metric_computation

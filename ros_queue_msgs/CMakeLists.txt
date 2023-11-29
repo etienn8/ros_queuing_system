@@ -54,6 +54,7 @@ add_message_files(
   QueueSize.msg
   QueueStates.msg
   QueueTransmitTemplate.msg
+  QueueInfo.msg
 )
 
 ## Generate services in the 'srv' folder

@@ -8,10 +8,11 @@
 
 #include "ros/ros.h"
 
-#include "ros_queue_info.hpp"
 #include "ros_queue_utils.hpp"
 
 #include "lib_queue/dynamic_converted_queue.hpp"
+
+#include "ros_queue_msgs/QueueInfo.h"
 
 
 using std::string;
@@ -35,7 +36,7 @@ class ROSConvertedQueue: public DynamicConvertedQueue<typename QueueElementTrait
         /**
          * @brief Member that contains meta data for queues.
         */
-        ROSQueueInfo info_;
+        ros_queue_msgs::QueueInfo info_;
 
         /**
          * @brief Struct that contains all the options related to using pointer functions, or ROS Topics/Services for prediction, transmission and conversion. 
@@ -66,12 +67,12 @@ class ROSConvertedQueue: public DynamicConvertedQueue<typename QueueElementTrait
         /**
          * @brief Constructor that initialized all the prediction, transmission and conversion functions.
          * @param max_queue_size Maximum size the queue can take and over which, data will be discarded.
-         * @param info ROSQueueInfo reference that contains meta data about the queue.
+         * @param info ros_queue_msgs::QueueInfo reference that contains meta data about the queue.
          * @param nh Its ros::NodeHandle used to create the services and make sure that a node handle exists during the life time of the ROSQueue.
          * @param interfaces Struct that contains all the options for the prediction, transmission and conversion interfaces. See ROSConvertedQueue::InterfacesArgs.
          * @throw Throws an std::invalid_argument if one of the function pointers is null or if no prediction, transmission or conversion function, topic or service name is given. 
         */
-        ROSConvertedQueue(int max_queue_size, ROSQueueInfo& info, ros::NodeHandle& nh, InterfacesArgs interfaces)
+        ROSConvertedQueue(int max_queue_size, ros_queue_msgs::QueueInfo& info, ros::NodeHandle& nh, InterfacesArgs interfaces)
                             : DynamicConvertedQueue<typename QueueElementTrait<TROSMsgType>::ElementType, TPredictionServiceClass>(max_queue_size), info_(info), nh_(nh)        
         {
             // Init the arrival prediction
