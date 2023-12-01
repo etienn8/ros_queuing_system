@@ -76,6 +76,17 @@ class ROSByteConvertedQueue: public DynamicConvertedQueue<topic_tools::ShapeShif
             }
         }
 
+        /**
+         * @brief Method to transmit an amount of element in the queue. In real queue size and not in byte size.
+         * @param nb_element_to_transmit Number of element to transmit.
+         * @return Returns if the transmission succeeded or not.
+         */
+        bool transmit(int nb_element_to_transmit)
+        {
+            deque<ShapeShifterPtr> empty_queue;
+            return update(empty_queue, nb_element_to_transmit);
+        }
+
     protected:
         /**
          * @brief Method used internaly to transmit the stored queue messages. Won't send data if no data as been added to the queue.
