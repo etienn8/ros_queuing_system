@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   ros_queue_msgs
   message_generation
+  topic_tools
 )
 
 ## System dependencies are found with CMake's conventions
@@ -222,6 +223,7 @@ if(CATKIN_ENABLE_TESTING)
 
   add_rostest_gtest(ros_queue_test test/launch/queue_prediction_server_test.test test/ros_queue_test.cpp)
   target_link_libraries(ros_queue_test ${catkin_LIBRARIES} ${QUEUE_LIB_NAME} ${ROSQUEUE_LIB_NAME})
+  add_dependencies(ros_queue_test test_service_node)
 
   catkin_add_gtest(move_optimization_test test/move_optimization_tests.cpp)
   if(TARGET dynamic_queues_test)

@@ -60,6 +60,7 @@
   <exec_depend>message_runtime</exec_depend>
 
   <depend>ros_queue_msgs</depend>
+  <depend>topic_tools</depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

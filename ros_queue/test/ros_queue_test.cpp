@@ -7,23 +7,29 @@
 #include "ros/ros.h"
 
 // ROS Services and messages
-#include "ros_queue/ReturnSentValue.h"
-#include "ros_queue/queue_transmit_template.h"
-#include "ros_queue/queue_int_element.h"
-#include "ros_queue/ConversionTemplateService.h"
+#include "std_srvs/Empty.h"
 
+#include "ros_queue/ReturnSentValue.h"
+#include "ros_queue_msgs/QueueTransmitTemplate.h"
+#include "ros_queue_msgs/QueueIntElement.h"
+#include "ros_queue_msgs/ConversionTemplateService.h"
+#include "ros_queue_msgs/QueueInfo.h"
+
+// ROS Queue classes
 #include "ros_queue/ros_converted_queue.hpp"
+#include "ros_queue/ros_byte_converted_queue.hpp"
 #include "ros_queue/ros_queue.hpp"
 #include "ros_queue/ros_virtual_queue.hpp"
 
-#include "include/trajectory.hpp"
-
+// Lib queue classes
 #include "ros_queue/lib_queue/dynamic_virtual_queue.hpp"
 #include "ros_queue/lib_queue/dynamic_queue.hpp"
 #include "ros_queue/lib_queue/dynamic_converted_queue.hpp"
 #include "ros_queue/lib_queue/queue_utils.hpp"
 
-#include "ros_queue_msgs/QueueInfo.h"
+#include "include/trajectory.hpp"
+
+
 
 using namespace std;
 
@@ -48,7 +54,7 @@ class RosVirtualQueueFixture : public testing::Test {
 
 class RosQueueFixture : public testing::Test {
     public:
-        typedef ROSQueue<ros_queue::queue_transmit_template, ros_queue::ReturnSentValue> ROSIntQueue_f; 
+        typedef ROSQueue<ros_queue_msgs::QueueTransmitTemplate, ros_queue::ReturnSentValue> ROSIntQueue_f; 
 
     protected:
         void SetUp() override {
@@ -58,7 +64,7 @@ class RosQueueFixture : public testing::Test {
             max_queue_size_f = 10;
             service_struct_test_f.request.value_to_return = 1;
 
-            ros_queue::queue_int_element element_to_push;
+            ros_queue_msgs::QueueIntElement element_to_push;
             for (int i=1; i <= 4; ++i)
             {
                 element_to_push.value = i;
@@ -74,7 +80,7 @@ class RosQueueFixture : public testing::Test {
 
         ros::NodeHandle nh_f;
 
-        deque<ros_queue::queue_int_element> arrival_queue_f;
+        deque<ros_queue_msgs::QueueIntElement> arrival_queue_f;
         
         ros_queue::ReturnSentValue service_struct_test_f;
 
@@ -83,7 +89,7 @@ class RosQueueFixture : public testing::Test {
 
 class RosConvertedQueueFixture : public testing::Test {
     public:
-        typedef ROSConvertedQueue<ros_queue::queue_transmit_template, ros_queue::ReturnSentValue, ros_queue::ConversionTemplateService> ROSIntQueue_f; 
+        typedef ROSConvertedQueue<ros_queue_msgs::QueueTransmitTemplate, ros_queue::ReturnSentValue, ros_queue_msgs::ConversionTemplateService> ROSIntQueue_f; 
 
     protected:
         void SetUp() override {
@@ -94,7 +100,7 @@ class RosConvertedQueueFixture : public testing::Test {
             max_queue_size_f = 512;
             service_struct_test_f.request.value_to_return = 1;
 
-            ros_queue::queue_int_element element_to_push;
+            ros_queue_msgs::QueueIntElement element_to_push;
             for (int i=1; i <= 4; ++i)
             {
                 element_to_push.value = i;
@@ -110,9 +116,29 @@ class RosConvertedQueueFixture : public testing::Test {
 
         ros::NodeHandle nh_f;
 
-        deque<ros_queue::queue_int_element> arrival_queue_f;
+        deque<ros_queue_msgs::QueueIntElement> arrival_queue_f;
         
         ros_queue::ReturnSentValue service_struct_test_f;
+
+        ros_queue_msgs::QueueInfo queue_info_f;
+};
+
+class RosByteConvertedQueueFixture : public testing::Test {
+
+    protected:
+        void SetUp() override {
+            arrival_topic_name_f = "/queue_arrival_topic";
+            transmission_topic_name_f = QUEUE_TOPIC_TRANSMISSION_NAME;
+            max_queue_size_f = 512;
+        }
+
+        int max_queue_size_f;
+
+        string arrival_topic_name_f;
+        string transmission_topic_name_f;
+        string trigger_arrival_service_f;
+
+        ros::NodeHandle nh_f;
 
         ros_queue_msgs::QueueInfo queue_info_f;
 };
@@ -148,9 +174,9 @@ namespace prediction
 
 namespace transmission
 {
-    deque<ros_queue::queue_int_element> output_int_dequeue_1;
+    deque<ros_queue_msgs::QueueIntElement> output_int_dequeue_1;
 
-    bool transmission_on_dequeue1(deque<ros_queue::queue_int_element>&& queue_to_transmit)
+    bool transmission_on_dequeue1(deque<ros_queue_msgs::QueueIntElement>&& queue_to_transmit)
     {
         queue_utils::concatenate_queues(transmission::output_int_dequeue_1, std::move(queue_to_transmit));
         return true;
@@ -159,13 +185,13 @@ namespace transmission
 
 namespace conversion
 {
-    void conversion_int_to_byte(deque<ros_queue::queue_int_element>&& arriving_queue,  deque<ElementWithConvertedSize<ros_queue::queue_int_element>>& converted_queue)
+    void conversion_int_to_byte(deque<ros_queue_msgs::QueueIntElement>&& arriving_queue,  deque<ElementWithConvertedSize<ros_queue_msgs::QueueIntElement>>& converted_queue)
     {
-        for(deque<ros_queue::queue_int_element>::iterator it = arriving_queue.begin(); it != arriving_queue.end(); ++it)
+        for(deque<ros_queue_msgs::QueueIntElement>::iterator it = arriving_queue.begin(); it != arriving_queue.end(); ++it)
         {
             int converted_size = sizeof(it->value);
 
-            ElementWithConvertedSize<ros_queue::queue_int_element> convertedElement(std::move(*it), converted_size);
+            ElementWithConvertedSize<ros_queue_msgs::QueueIntElement> convertedElement(std::move(*it), converted_size);
             converted_queue.push_back(convertedElement);
         }
     }
@@ -357,8 +383,8 @@ TEST_F(RosQueueFixture, transmissionTest)
     EXPECT_EQ(vq0.getSize(), 6);
 
     
-    deque<ros_queue::queue_int_element> compared_queue;
-    ros_queue::queue_int_element int_element;
+    deque<ros_queue_msgs::QueueIntElement> compared_queue;
+    ros_queue_msgs::QueueIntElement int_element;
     int_element.value =1;
     compared_queue.push_back(int_element);
     int_element.value = 2;
@@ -619,8 +645,8 @@ TEST_F(RosConvertedQueueFixture, initOverrideTest)
 
     vq0.update(arrival_queue_f, 2);
     
-    deque<ros_queue::queue_int_element> compared_queue;
-    ros_queue::queue_int_element int_element;
+    deque<ros_queue_msgs::QueueIntElement> compared_queue;
+    ros_queue_msgs::QueueIntElement int_element;
     int_element.value =1;
     compared_queue.push_back(int_element);
     int_element.value = 2;
@@ -651,8 +677,8 @@ TEST_F(RosConvertedQueueFixture, transmissionTest)
     EXPECT_EQ(vq0.getSize(), 24);
 
     
-    deque<ros_queue::queue_int_element> compared_queue;
-    ros_queue::queue_int_element int_element;
+    deque<ros_queue_msgs::QueueIntElement> compared_queue;
+    ros_queue_msgs::QueueIntElement int_element;
     int_element.value =1;
     compared_queue.push_back(int_element);
     int_element.value = 2;
@@ -680,7 +706,7 @@ TEST_F(RosConvertedQueueFixture, conversionTest)
     });
     vq0.update(arrival_queue_f,0);
     // Since the conversion::convserion_int_to_byte computes the size in bytes, we can compared it with sizeof()
-    EXPECT_EQ(vq0.getSize(), arrival_queue_f.size() * sizeof(ros_queue::queue_int_element));
+    EXPECT_EQ(vq0.getSize(), arrival_queue_f.size() * sizeof(ros_queue_msgs::QueueIntElement));
 
     //Test the service conversion
     RosConvertedQueueFixture::ROSIntQueue_f vq1(max_queue_size_f, queue_info_f, nh_f, 
@@ -691,7 +717,33 @@ TEST_F(RosConvertedQueueFixture, conversionTest)
         .conversion_service_name = conversion_service_name_f
     });
     vq1.update(arrival_queue_f,0);
-    EXPECT_EQ(vq1.getSize(), arrival_queue_f.size() * sizeof(ros_queue::queue_int_element));
+    EXPECT_EQ(vq1.getSize(), arrival_queue_f.size() * sizeof(ros_queue_msgs::QueueIntElement));
+}
+
+
+/*******************************************************************************************
+ * ROSByteConvertedQueue test
+*******************************************************************************************/
+
+TEST_F(RosByteConvertedQueueFixture, badInitTest)
+{
+    EXPECT_NO_THROW(ROSByteConvertedQueue q0(max_queue_size_f, queue_info_f, nh_f,
+    (struct ROSByteConvertedQueue::InterfacesArgs){
+        .arrival_topic_name = arrival_topic_name_f,
+        .transmission_topic_name = transmission_topic_name_f
+    }));
+
+    EXPECT_THROW(ROSByteConvertedQueue q1(max_queue_size_f, queue_info_f, nh_f,
+    (struct ROSByteConvertedQueue::InterfacesArgs){
+        .transmission_topic_name = transmission_topic_name_f
+    })
+    , std::invalid_argument);
+
+    EXPECT_THROW(ROSByteConvertedQueue q2(max_queue_size_f, queue_info_f, nh_f,
+    (struct ROSByteConvertedQueue::InterfacesArgs){
+        .arrival_topic_name = arrival_topic_name_f,
+    })
+    , std::invalid_argument);
 }
 
 // Run all the tests that were declared with TEST()
