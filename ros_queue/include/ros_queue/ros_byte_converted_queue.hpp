@@ -62,7 +62,6 @@ class ROSByteConvertedQueue: public DynamicConvertedQueue<topic_tools::ShapeShif
         {
             if (!interfaces.arrival_topic_name.empty())
             {
-                ROS_WARN_STREAM("Created subscriber with name: "<< interfaces.arrival_topic_name);
                 arrival_sub_ = nh_.subscribe(interfaces.arrival_topic_name, MAX_TOPIC_QUEUE_SIZE, &ROSByteConvertedQueue::arrivalCallback, this);
             }
             else
@@ -103,8 +102,6 @@ class ROSByteConvertedQueue: public DynamicConvertedQueue<topic_tools::ShapeShif
                 }
                 return true;
             }
-
-            ROS_WARN("Tried to transmit data but publisher is not initialized. Data is discarded.");
             return false;
         }
 
@@ -140,7 +137,6 @@ class ROSByteConvertedQueue: public DynamicConvertedQueue<topic_tools::ShapeShif
         */
         void arrivalCallback(const topic_tools::ShapeShifter::ConstPtr& msg)
         {
-            ROS_WARN("Callback called");
             if(!is_publisher_initialized)
             {
                 /** Only could start publishing if we know the type of the msg,
@@ -149,14 +145,12 @@ class ROSByteConvertedQueue: public DynamicConvertedQueue<topic_tools::ShapeShif
 
                 transmission_pub_ = msg->advertise(nh_, transmission_topic_name_, MAX_TOPIC_QUEUE_SIZE);
                 is_publisher_initialized = true;
-                ROS_WARN("Publisher initialized");
             }
 
             deque<ShapeShifterPtr> single_msg_deque;
             single_msg_deque.push_back(msg);
 
             // Insert an element in the queue and transmit nothing.
-            ROS_WARN("Added new element to the queue");
             update(std::move(single_msg_deque), 0);
         }
 
