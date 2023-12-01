@@ -7,23 +7,29 @@
 #include "ros/ros.h"
 
 // ROS Services and messages
+#include "std_srvs/Empty.h"
+
 #include "ros_queue/ReturnSentValue.h"
 #include "ros_queue_msgs/QueueTransmitTemplate.h"
 #include "ros_queue_msgs/QueueIntElement.h"
 #include "ros_queue_msgs/ConversionTemplateService.h"
+#include "ros_queue_msgs/QueueInfo.h"
 
+// ROS Queue classes
 #include "ros_queue/ros_converted_queue.hpp"
+#include "ros_queue/ros_byte_converted_queue.hpp"
 #include "ros_queue/ros_queue.hpp"
 #include "ros_queue/ros_virtual_queue.hpp"
 
-#include "include/trajectory.hpp"
-
+// Lib queue classes
 #include "ros_queue/lib_queue/dynamic_virtual_queue.hpp"
 #include "ros_queue/lib_queue/dynamic_queue.hpp"
 #include "ros_queue/lib_queue/dynamic_converted_queue.hpp"
 #include "ros_queue/lib_queue/queue_utils.hpp"
 
-#include "ros_queue_msgs/QueueInfo.h"
+#include "include/trajectory.hpp"
+
+
 
 using namespace std;
 
@@ -113,6 +119,26 @@ class RosConvertedQueueFixture : public testing::Test {
         deque<ros_queue_msgs::QueueIntElement> arrival_queue_f;
         
         ros_queue::ReturnSentValue service_struct_test_f;
+
+        ros_queue_msgs::QueueInfo queue_info_f;
+};
+
+class RosByteConvertedQueueFixture : public testing::Test {
+
+    protected:
+        void SetUp() override {
+            arrival_topic_name_f = "/queue_arrival_topic";
+            transmission_topic_name_f = QUEUE_TOPIC_TRANSMISSION_NAME;
+            max_queue_size_f = 512;
+        }
+
+        int max_queue_size_f;
+
+        string arrival_topic_name_f;
+        string transmission_topic_name_f;
+        string trigger_arrival_service_f;
+
+        ros::NodeHandle nh_f;
 
         ros_queue_msgs::QueueInfo queue_info_f;
 };
@@ -692,6 +718,32 @@ TEST_F(RosConvertedQueueFixture, conversionTest)
     });
     vq1.update(arrival_queue_f,0);
     EXPECT_EQ(vq1.getSize(), arrival_queue_f.size() * sizeof(ros_queue_msgs::QueueIntElement));
+}
+
+
+/*******************************************************************************************
+ * ROSByteConvertedQueue test
+*******************************************************************************************/
+
+TEST_F(RosByteConvertedQueueFixture, badInitTest)
+{
+    EXPECT_NO_THROW(ROSByteConvertedQueue q0(max_queue_size_f, queue_info_f, nh_f,
+    (struct ROSByteConvertedQueue::InterfacesArgs){
+        .arrival_topic_name = arrival_topic_name_f,
+        .transmission_topic_name = transmission_topic_name_f
+    }));
+
+    EXPECT_THROW(ROSByteConvertedQueue q1(max_queue_size_f, queue_info_f, nh_f,
+    (struct ROSByteConvertedQueue::InterfacesArgs){
+        .transmission_topic_name = transmission_topic_name_f
+    })
+    , std::invalid_argument);
+
+    EXPECT_THROW(ROSByteConvertedQueue q2(max_queue_size_f, queue_info_f, nh_f,
+    (struct ROSByteConvertedQueue::InterfacesArgs){
+        .arrival_topic_name = arrival_topic_name_f,
+    })
+    , std::invalid_argument);
 }
 
 // Run all the tests that were declared with TEST()
