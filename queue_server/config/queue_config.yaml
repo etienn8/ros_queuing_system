@@ -1,0 +1,20 @@
+# Configuration of a queue. Mainly used as a template for the queue list in queue_server_config_template.
+Queue0:
+  - queue_name:
+
+    # Existing types of queues: 
+    # - real_queue: Queues that store ROS messages and its size is equal to sum of all its messages in bytes.
+    # - inequality_constraint_virtual_queue: Virtual queues that can't go below a 0 value.
+    # - equality_constraint_virtual_queue:  Virtual queues that can go below a 0 value.
+  - type_of_queue:
+    
+    # A float value for virtual queues and value in bytes for real_queues
+  - max_queue_size: 
+  
+    # === Services calls for virtual queues to evaluate the change in their size. Only used for virtual queues. ===
+  - arrival_evaluation_service_name: 
+  - departure_evaluation_service_name:
+    
+    # === Topic name from which data will be stored and on which to publish data. Only used for real queues. ===
+  - arrival_topic_name: 
+  - tranmission_topic_name:

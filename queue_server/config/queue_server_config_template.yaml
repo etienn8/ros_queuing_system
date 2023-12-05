@@ -1,0 +1,35 @@
+# Template a of configurations for the queue server. See the queue_config.yaml to copy the configuration of queues.
+queue_server_name: "Queue server template"
+virtual_queue_list:
+  - VirtualQueue0:
+    - queue_name: "virtual_queue_0"
+
+      # Existing types of queues: 
+      # - real_queue: Queues that store ROS messages and its size is equal to sum of all its messages in bytes.
+      # - inequality_constraint_virtual_queue: Virtual queues that can't go below a 0 value.
+      # - equality_constraint_virtual_queue:  Virtual queues that can go below a 0 value.
+    - type_of_queue: inequality_constraint_virtual_queue
+
+      # A float value for virtual queues and value in bytes for real_queues
+    - max_queue_size: 1000.0
+      
+      # === Services calls for virtual queues to evaluate the change in their size. Only used for virtual queues. ===
+    - arrival_evaluation_service_name: "arrival_evaluation_service_0"
+    - departure_evaluation_service_name: "departure_evaluation_service_0"
+
+  - VirtualQueue1:
+    - queue_name: "virtual_queue_1"
+
+      # Existing types of queues: 
+      # - real_queue: Queues that store ROS messages and its size is equal to sum of all its messages in bytes.
+      # - inequality_constraint_virtual_queue: Virtual queues that can't go below a 0 value.
+      # - equality_constraint_virtual_queue:  Virtual queues that can go below a 0 value.
+    - type_of_queue: inequality_constraint_virtual_queue
+
+      # A float value for virtual queues and value in bytes for real_queues
+    - max_queue_size: 2000.0
+      
+      # === Services calls for virtual queues to evaluate the change in their size. Only used for virtual queues. ===
+    - arrival_evaluation_service_name: "arrival_evaluation_service_1"
+    - departure_evaluation_service_name: "departure_evaluation_service_1"
+
