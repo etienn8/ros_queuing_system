@@ -58,8 +58,8 @@ class ROSQueue: public DynamicQueue<typename QueueElementTrait<TROSMsgType>::Ele
          * @param interfaces Struct that contains all the options for the prediction and transmission interfaces. See ROSQueue::InterfacesArgs.
          * @throw Throws an std::invalid_argument if one of the function pointers is null. 
         */
-        ROSQueue(int max_queue_size, ros_queue_msgs::QueueInfo& info, ros::NodeHandle& nh, InterfacesArgs interfaces)
-                :DynamicQueue<typename QueueElementTrait<TROSMsgType>::ElementType, TPredictionServiceClass>(max_queue_size), info_(info)
+        ROSQueue(int max_queue_size, ros_queue_msgs::QueueInfo&& info, ros::NodeHandle& nh, InterfacesArgs interfaces)
+                :DynamicQueue<typename QueueElementTrait<TROSMsgType>::ElementType, TPredictionServiceClass>(max_queue_size), info_(std::move(info))
         {
             // Init the arrival prediction
             if (interfaces.arrival_prediction_fptr)

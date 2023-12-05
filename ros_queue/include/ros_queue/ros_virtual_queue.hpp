@@ -53,8 +53,8 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType
          * @param interfaces Struct that contains all the options for the change interfaces. See ROSVirtualQueue::InterfacesArgs.
          * @throw Throws an std::invalid_argument if one of the function pointers is null. 
         */
-        ROSVirtualQueue(int max_queue_size, ros_queue_msgs::QueueInfo& info, ros::NodeHandle& nh, InterfacesArgs interfaces)
-                        :TDynamicVirtualQueueType(max_queue_size), info_(info), nh_(nh)
+        ROSVirtualQueue(int max_queue_size, ros_queue_msgs::QueueInfo&& info, ros::NodeHandle& nh, InterfacesArgs interfaces)
+                        :TDynamicVirtualQueueType(max_queue_size), info_(std::move(info)), nh_(nh)
             {
                 // Init the arrival evaluator
                 if (interfaces.arrival_evaluation_fptr)
