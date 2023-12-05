@@ -51,13 +51,13 @@ class ROSByteConvertedQueue: public DynamicConvertedQueue<topic_tools::ShapeShif
         /**
          * @brief Constructor that initialized all the prediction, transmission and conversion functions.
          * @param max_queue_size Maximum size the queue can take and over which, data will be discarded.
-         * @param info ros_queue_msgs::QueueInfo reference that contains meta data about the queue.
+         * @param info ros_queue_msgs::QueueInfo rvalue that contains meta data about the queue.
          * @param nh Its ros::NodeHandle used to create the services and make sure that a node handle exists during the life time of the ROSQueue.
          * @param interfaces Struct that contains all the options for the prediction, transmission and conversion interfaces. See ROSConvertedQueue::InterfacesArgs.
          * @throw Throws an std::invalid_argument if one of the topic name is empty.
         */
-        ROSByteConvertedQueue(int max_queue_size, ros_queue_msgs::QueueInfo& info, ros::NodeHandle& nh, InterfacesArgs interfaces)
-                            : DynamicConvertedQueue<ShapeShifterPtr>(max_queue_size), info_(info), nh_(nh),
+        ROSByteConvertedQueue(int max_queue_size, ros_queue_msgs::QueueInfo&& info, ros::NodeHandle& nh, InterfacesArgs interfaces)
+                            : DynamicConvertedQueue<ShapeShifterPtr>(max_queue_size), info_(std::move(info)), nh_(nh),
                              transmission_topic_name_(interfaces.transmission_topic_name)       
         {
             if (!interfaces.arrival_topic_name.empty())

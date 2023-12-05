@@ -727,19 +727,19 @@ TEST_F(RosConvertedQueueFixture, conversionTest)
 
 TEST_F(RosByteConvertedQueueFixture, badInitTest)
 {
-    EXPECT_NO_THROW(ROSByteConvertedQueue q0(max_queue_size_f, queue_info_f, nh_f,
+    EXPECT_NO_THROW(ROSByteConvertedQueue q0(max_queue_size_f, std::move(queue_info_f), nh_f,
     (struct ROSByteConvertedQueue::InterfacesArgs){
         .arrival_topic_name = arrival_topic_name_f,
         .transmission_topic_name = transmission_topic_name_f
     }));
 
-    EXPECT_THROW(ROSByteConvertedQueue q1(max_queue_size_f, queue_info_f, nh_f,
+    EXPECT_THROW(ROSByteConvertedQueue q1(max_queue_size_f, std::move(queue_info_f), nh_f,
     (struct ROSByteConvertedQueue::InterfacesArgs){
         .transmission_topic_name = transmission_topic_name_f
     })
     , std::invalid_argument);
 
-    EXPECT_THROW(ROSByteConvertedQueue q2(max_queue_size_f, queue_info_f, nh_f,
+    EXPECT_THROW(ROSByteConvertedQueue q2(max_queue_size_f, std::move(queue_info_f), nh_f,
     (struct ROSByteConvertedQueue::InterfacesArgs){
         .arrival_topic_name = arrival_topic_name_f,
     })
