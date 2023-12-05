@@ -107,7 +107,7 @@ generate_messages(
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES ${QUEUE_LIB_NAME} ${ROSQUEUE_LIB_NAME}
-  CATKIN_DEPENDS roscpp message_runtime
+  CATKIN_DEPENDS roscpp message_runtime topic_tools ros_queue_msgs
   #DEPENDS system_lib
 )
 
