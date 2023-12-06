@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<launch>
+  <node name="queue_server_template_node" pkg="queue_server" type="queue_server_node">
+    <rosparam file="$(find queue_server)/config/queue_server_config_template.yaml" command="load"/>
+  </node>
+</launch>
