@@ -1,6 +1,5 @@
 #pragma once
 
-#include <mutex>
 #include <string>
 #include <stdexcept>
 
@@ -194,11 +193,6 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType
          * @brief Duration to wait for the existence of services at each call.
         */
         const ros::Duration WAIT_DURATION_FOR_SERVICE_EXISTENCE = ros::Duration(0.5);
-
-        /**
-         * @brief Mutex to protect the metric target change.
-        */
-       std::mutex metric_manipulation_mutex_;
 };
 
 typedef ROSVirtualQueue<InConVirtualQueue> ROSInConVirtualQueue;
