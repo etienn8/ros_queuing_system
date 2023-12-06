@@ -4,7 +4,7 @@
 
 #include "ros_queue/ReturnSentValue.h"
 #include "ros_queue_msgs/ConversionTemplateService.h"
-#include "ros_queue_msgs/ComputeVirtualQueueMetric.h"
+#include "ros_queue_msgs/FloatRequest.h"
 
 bool returnValueServicePlusTwo(ros_queue::ReturnSentValue::Request  &req,
                    ros_queue::ReturnSentValue::Response &res)
@@ -30,15 +30,15 @@ bool conversionToBytesService(ros_queue_msgs::ConversionTemplateService::Request
     return true;
 }
 
-bool return1point2(ros_queue_msgs::ComputeVirtualQueueMetric::Request &req,
-                    ros_queue_msgs::ComputeVirtualQueueMetric::Response &res)
+bool return1point2(ros_queue_msgs::FloatRequest::Request &req,
+                    ros_queue_msgs::FloatRequest::Response &res)
 {
     res.value = 1.2f;
     return true;
 }
 
-bool return3f(ros_queue_msgs::ComputeVirtualQueueMetric::Request &req,
-                    ros_queue_msgs::ComputeVirtualQueueMetric::Response &res)
+bool return3f(ros_queue_msgs::FloatRequest::Request &req,
+                    ros_queue_msgs::FloatRequest::Response &res)
 {
     res.value = 3.0f;
     return true;

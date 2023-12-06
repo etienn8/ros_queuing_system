@@ -9,7 +9,7 @@
 
 #include "lib_queue/dynamic_virtual_queue.hpp"
 
-#include "ros_queue_msgs/ComputeVirtualQueueMetric.h"
+#include "ros_queue_msgs/FloatRequest.h"
 #include "ros_queue_msgs/QueueInfo.h"
 
 using std::string;
@@ -68,7 +68,7 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType
                 }
                 else if (!interfaces.arrival_evaluation_service_name.empty())
                 {
-                    arrival_evaluation_service_client_ = nh_.serviceClient<ros_queue_msgs::ComputeVirtualQueueMetric>(interfaces.arrival_evaluation_service_name);
+                    arrival_evaluation_service_client_ = nh_.serviceClient<ros_queue_msgs::FloatRequest>(interfaces.arrival_evaluation_service_name);
                 }
                 else
                 {
@@ -87,7 +87,7 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType
                 }
                 else if (!interfaces.departure_evaluation_service_name.empty())
                 {
-                    departure_evaluation_service_client_ = nh_.serviceClient<ros_queue_msgs::ComputeVirtualQueueMetric>(interfaces.departure_evaluation_service_name);
+                    departure_evaluation_service_client_ = nh_.serviceClient<ros_queue_msgs::FloatRequest>(interfaces.departure_evaluation_service_name);
                 }
                 else
                 {
@@ -115,7 +115,7 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType
             }
             else
             {
-                ros_queue_msgs::ComputeVirtualQueueMetric local_service; 
+                ros_queue_msgs::FloatRequest local_service; 
 
                 // Service ROS call
                 if (arrival_evaluation_service_client_.waitForExistence(WAIT_DURATION_FOR_SERVICE_EXISTENCE))
@@ -139,7 +139,7 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType
             }
             else
             {
-                ros_queue_msgs::ComputeVirtualQueueMetric local_service; 
+                ros_queue_msgs::FloatRequest local_service; 
 
                 // Service ROS call
                 if (departure_evaluation_service_client_.waitForExistence(WAIT_DURATION_FOR_SERVICE_EXISTENCE))
