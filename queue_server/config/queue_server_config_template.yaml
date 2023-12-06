@@ -1,35 +1,45 @@
 # Template a of configurations for the queue server. See the queue_config.yaml to copy the configuration of queues.
 queue_server_name: "Queue server template"
-virtual_queue_list:
-  - VirtualQueue0:
-    - queue_name: "virtual_queue_0"
-
+queue_list:
+  - VirtualQueue0: # Queue name
       # Existing types of queues: 
       # - real_queue: Queues that store ROS messages and its size is equal to sum of all its messages in bytes.
       # - inequality_constraint_virtual_queue: Virtual queues that can't go below a 0 value.
       # - equality_constraint_virtual_queue:  Virtual queues that can go below a 0 value.
-    - type_of_queue: inequality_constraint_virtual_queue
+    - type_of_queue: "inequality_constraint_virtual_queue"
 
-      # A float value for virtual queues and value in bytes for real_queues
+      # A float value for virtual queues and value in bytes for real_queues. Don't forget to put a decimal, otherwise an error might occur.
     - max_queue_size: 1000.0
       
       # === Services calls for virtual queues to evaluate the change in their size. Only used for virtual queues. ===
     - arrival_evaluation_service_name: "arrival_evaluation_service_0"
     - departure_evaluation_service_name: "departure_evaluation_service_0"
 
-  - VirtualQueue1:
-    - queue_name: "virtual_queue_1"
-
+  - VirtualQueue1: # Queue name
       # Existing types of queues: 
       # - real_queue: Queues that store ROS messages and its size is equal to sum of all its messages in bytes.
       # - inequality_constraint_virtual_queue: Virtual queues that can't go below a 0 value.
       # - equality_constraint_virtual_queue:  Virtual queues that can go below a 0 value.
-    - type_of_queue: inequality_constraint_virtual_queue
+    - type_of_queue: "equality_constraint_virtual_queue"
 
-      # A float value for virtual queues and value in bytes for real_queues
+      # A float value for virtual queues and value in bytes for real_queues. Don't forget to put a decimal, otherwise an error might occur.
     - max_queue_size: 2000.0
       
       # === Services calls for virtual queues to evaluate the change in their size. Only used for virtual queues. ===
     - arrival_evaluation_service_name: "arrival_evaluation_service_1"
     - departure_evaluation_service_name: "departure_evaluation_service_1"
+  
+  - Queue0: # Queue name
+      # Existing types of queues: 
+      # - real_queue: Queues that store ROS messages and its size is equal to sum of all its messages in bytes.
+      # - inequality_constraint_virtual_queue: Virtual queues that can't go below a 0 value.
+      # - equality_constraint_virtual_queue:  Virtual queues that can go below a 0 value.
+    - type_of_queue: "real_queue"
+      
+      # A float value for virtual queues and value in bytes for real_queues. Don't forget to put a decimal, otherwise an error might occur.
+    - max_queue_size: 6250000.0  # 50 mb
+      
+      # === Topic name from which data will be stored and on which to publish data. Only used for real queues. ===
+    - arrival_topic_name: "arrival_topic"
+    - tranmission_topic_name: "transmission_topic"
 

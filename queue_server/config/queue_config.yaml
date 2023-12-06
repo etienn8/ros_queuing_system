@@ -1,7 +1,5 @@
 # Configuration of a queue. Mainly used as a template for the queue list in queue_server_config_template.
-Queue0:
-  - queue_name:
-
+Queue_name: #Queue_name
     # Existing types of queues: 
     # - real_queue: Queues that store ROS messages and its size is equal to sum of all its messages in bytes.
     # - inequality_constraint_virtual_queue: Virtual queues that can't go below a 0 value.
