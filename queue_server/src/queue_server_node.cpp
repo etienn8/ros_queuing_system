@@ -6,5 +6,10 @@
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "ros_queue");
-    ros::NodeHandle nh;
+    ros::NodeHandle nh("~");
+
+    // Initialize a queue server
+    QueueServer queue_server(nh);
+
+    ros::spin();
 }
