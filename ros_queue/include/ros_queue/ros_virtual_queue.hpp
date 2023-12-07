@@ -54,46 +54,55 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType
         */
         ROSVirtualQueue(int max_queue_size, ros_queue_msgs::QueueInfo&& info, ros::NodeHandle& nh, InterfacesArgs interfaces)
                         :TDynamicVirtualQueueType(max_queue_size), info_(std::move(info)), nh_(nh)
+        {
+            // Init the arrival evaluator
+            if (interfaces.arrival_evaluation_fptr)
             {
-                // Init the arrival evaluator
-                if (interfaces.arrival_evaluation_fptr)
-                {
-                    arrival_evaluation_fptr_ = interfaces.arrival_evaluation_fptr;
+                arrival_evaluation_fptr_ = interfaces.arrival_evaluation_fptr;
 
-                    if (!interfaces.arrival_evaluation_service_name.empty())
-                    {
-                        ROS_WARN("An arrival evaluator function pointer and a service name has been provided. The function pointer will be used.");
-                    }
-                }
-                else if (!interfaces.arrival_evaluation_service_name.empty())
+                if (!interfaces.arrival_evaluation_service_name.empty())
                 {
-                    arrival_evaluation_service_client_ = nh_.serviceClient<ros_queue_msgs::FloatRequest>(interfaces.arrival_evaluation_service_name);
+                    ROS_WARN("An arrival evaluator function pointer and a service name has been provided. The function pointer will be used.");
                 }
-                else
-                {
-                    throw invalid_argument("No arrival evaluator function pointer or service name provided.");
-                }
+            }
+            else if (!interfaces.arrival_evaluation_service_name.empty())
+            {
+                arrival_evaluation_service_client_ = nh_.serviceClient<ros_queue_msgs::FloatRequest>(interfaces.arrival_evaluation_service_name);
+            }
+            else
+            {
+                throw invalid_argument("No arrival evaluator function pointer or service name provided.");
+            }
 
-                // Init the departure evaluator
-                if (interfaces.departure_evaluation_fptr)
-                {
-                    departure_evaluation_fptr_ = interfaces.departure_evaluation_fptr;
+            // Init the departure evaluator
+            if (interfaces.departure_evaluation_fptr)
+            {
+                departure_evaluation_fptr_ = interfaces.departure_evaluation_fptr;
 
-                    if (!interfaces.departure_evaluation_service_name.empty())
-                    {
-                        ROS_WARN("A departure evaluator function pointer and a service name has been provided. The function pointer will be used.");
-                    }
-                }
-                else if (!interfaces.departure_evaluation_service_name.empty())
+                if (!interfaces.departure_evaluation_service_name.empty())
                 {
-                    departure_evaluation_service_client_ = nh_.serviceClient<ros_queue_msgs::FloatRequest>(interfaces.departure_evaluation_service_name);
+                    ROS_WARN("A departure evaluator function pointer and a service name has been provided. The function pointer will be used.");
                 }
-                else
-                {
-                    throw invalid_argument("No departure evaluator function pointer or service name provided.");
-                }
-                            
+            }
+            else if (!interfaces.departure_evaluation_service_name.empty())
+            {
+                departure_evaluation_service_client_ = nh_.serviceClient<ros_queue_msgs::FloatRequest>(interfaces.departure_evaluation_service_name);
+            }
+            else
+            {
+                throw invalid_argument("No departure evaluator function pointer or service name provided.");
+            }
 
+            // Init the service to get the size of the queue on demand.
+            if (!info_.queue_name.empty())
+            {
+                string queue_size_service_name = info_.queue_name + "/getQueueSize";
+                queue_size_service_ = nh_.advertiseService(queue_size_service_name, &ROSVirtualQueue::getSizeServiceCallback, this);
+            }
+            else 
+            {
+                throw invalid_argument("No queue name was provided.");
+            }
         }
 
         /**
@@ -166,6 +175,18 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType
         }
 
     private:
+
+        /**
+         * @brief Callback of FloatRequest service to return the size of the queue.
+         * @return Return true to indicate that the service request worked.
+        */
+        bool getSizeServiceCallback(ros_queue_msgs::FloatRequest::Request & req,
+                                    ros_queue_msgs::FloatRequest::Response& res)
+        {
+            res.value = this->getSize();
+            return true;     
+        }
+
         /**
          * @brief ROS Node handle used for the service call and make sure that a node handle exist for the life time of the ROSQueue.
         */
@@ -188,6 +209,11 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType
          * @brief Function pointer used to compute the decrease of the virtual queue.
          */
         float (*departure_evaluation_fptr_)() = nullptr;
+
+        /**
+         * @brief ROS service server to provide the state of the queue.
+        */
+        ros::ServiceServer queue_size_service_;
 
         /**
          * @brief Duration to wait for the existence of services at each call.

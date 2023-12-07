@@ -13,6 +13,7 @@
 #include "lib_queue/dynamic_converted_queue.hpp"
 #include "topic_tools/shape_shifter.h"
 
+#include "ros_queue_msgs/FloatRequest.h"
 #include "ros_queue_msgs/QueueInfo.h"
 
 
@@ -72,6 +73,16 @@ class ROSByteConvertedQueue: public DynamicConvertedQueue<topic_tools::ShapeShif
             if (interfaces.transmission_topic_name.empty())
             {
                 throw invalid_argument("No transmission topic name provided.");
+            }
+
+            if (!info_.queue_name.empty())
+            {
+                string queue_size_service_name = info_.queue_name + "/getQueueSize";
+                queue_size_service_ = nh_.advertiseService(queue_size_service_name, &ROSByteConvertedQueue::getSizeServiceCallback, this);
+            }
+            else 
+            {
+                throw invalid_argument("No queue name was provided.");
             }
         }
 
@@ -154,6 +165,13 @@ class ROSByteConvertedQueue: public DynamicConvertedQueue<topic_tools::ShapeShif
             update(std::move(single_msg_deque), 0);
         }
 
+        bool getSizeServiceCallback(ros_queue_msgs::FloatRequest::Request & req,
+                                    ros_queue_msgs::FloatRequest::Response& res)
+        {
+            res.value = (float)getSize();
+            return true;            
+        }
+
         /**
          * @brief ROS Node handle used for the service call and make sure that a node handle exist for the life time of the ROSQueue.
         */
@@ -178,6 +196,11 @@ class ROSByteConvertedQueue: public DynamicConvertedQueue<topic_tools::ShapeShif
          * @brief Subsciber used to received data in the queue.
         */
         ros::Subscriber arrival_sub_;
+
+        /**
+         * @brief ROS service server to provide the state of the queue.
+        */
+        ros::ServiceServer queue_size_service_;
 
         /**
          * @brief Duration to wait for the existence of services at each call.
