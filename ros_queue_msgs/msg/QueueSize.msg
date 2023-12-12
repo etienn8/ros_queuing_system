@@ -1,2 +1,0 @@
-string queue_name
-uint32 current_size

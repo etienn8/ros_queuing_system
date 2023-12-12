@@ -1,0 +1,2 @@
+string queue_name
+float32 current_size

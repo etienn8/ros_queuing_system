@@ -1,0 +1,2 @@
+string queue_server_name
+ros_queue_msgs/QueueState[] queue_sizes
