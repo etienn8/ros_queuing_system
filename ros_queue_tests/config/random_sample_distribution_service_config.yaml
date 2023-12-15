@@ -1,0 +1,15 @@
+distributions:
+  - distribution1:
+    - service_name: "poisson_lambda_2_0"
+    - distribution_type: "poisson"
+    - lambda: 2.0
+
+  - distribution2:
+    - service_name: "poisson_lambda_1_5"
+    - distribution_type: "poisson"
+    - lambda: 1.5
+
+  - distribution3:
+    - service_name: "poisson_lambda_3_0"
+    - distribution_type: "poisson"
+    - lambda: 3.0
