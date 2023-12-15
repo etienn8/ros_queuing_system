@@ -55,6 +55,7 @@
   <build_export_depend>roscpp</build_export_depend>
   <exec_depend>ros_queue_msgs</exec_depend>
   <exec_depend>roscpp</exec_depend>
+  <exec_depend>queue_server</exec_depend>
 
   <build_depend>rosparam_utils</build_depend>
 </package>

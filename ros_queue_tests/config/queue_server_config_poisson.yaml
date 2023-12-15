@@ -1,0 +1,38 @@
+# Template a of configurations for the queue server. See the queue_config.yaml to copy the configuration of queues.
+queue_server_name: "$(arg server_name)"
+update_trigger_service_name: "trigger_service"
+server_state_topic_name: "server_state"
+
+# The frquency in loops/sec at which the queue sizes will be published, the real queue will be checked for transmission and the ROS callbacks will be executed.
+server_spin_rate: 20.0 
+
+queue_list:
+  - VirtualQueue0: # Queue name
+      # Existing types of queues: 
+      # - real_queue: Queues that store ROS messages and its size is equal to sum of all its messages in bytes.
+      # - inequality_constraint_virtual_queue: Virtual queues that can't go below a 0 value.
+      # - equality_constraint_virtual_queue:  Virtual queues that can go below a 0 value.
+    - type_of_queue: "inequality_constraint_virtual_queue"
+
+      # A float value for virtual queues and value in bytes for real_queues. Don't forget to put a decimal, otherwise an error might occur.
+    - max_queue_size: 1000.0
+      
+      # === Services calls for virtual queues to evaluate the change in their size. Only used for virtual queues. ===
+    - arrival_evaluation_service_name: "/poisson_distribution_sample_server/poisson_lambda_15_0"
+    - departure_evaluation_service_name: "/poisson_distribution_sample_server/poisson_lambda_20_0"
+
+  - VirtualQueue1: # Queue name
+      # Existing types of queues: 
+      # - real_queue: Queues that store ROS messages and its size is equal to sum of all its messages in bytes.
+      # - inequality_constraint_virtual_queue: Virtual queues that can't go below a 0 value.
+      # - equality_constraint_virtual_queue:  Virtual queues that can go below a 0 value.
+    - type_of_queue: "inequality_constraint_virtual_queue"
+
+      # A float value for virtual queues and value in bytes for real_queues. Don't forget to put a decimal, otherwise an error might occur.
+    - max_queue_size: 2000.0
+      
+      # === Services calls for virtual queues to evaluate the change in their size. Only used for virtual queues. ===
+    - arrival_evaluation_service_name: "/poisson_distribution_sample_server/poisson_lambda_3_0"
+    - departure_evaluation_service_name: "/poisson_distribution_sample_server/poisson_lambda_4_0"
+  
+
