@@ -11,8 +11,12 @@
 #include "ros_queue/ros_virtual_queue.hpp"
 #include "ros_queue/lib_queue/dynamic_virtual_queue.hpp"
 
-#include "ros_queue_msgs/QueueStates.h"
+#include "ros_queue_msgs/QueueState.h"
 #include "ros_queue_msgs/QueueStatesPrediction.h"
+#include "ros_queue_msgs/QueueServerStateFetch.h"
+
+#include "std_srvs/Empty.h"
+
 
 using std::string;
 
@@ -49,6 +53,11 @@ class QueueServer
         */
         void addRealQueue(std::unique_ptr<ROSByteConvertedQueue>&& new_queue);
 
+        /**
+         * @brief Executes all the periodic tasks of the server like publishing the server state.
+        */
+        void serverSpin();
+
     private:
 
         /**
@@ -60,7 +69,7 @@ class QueueServer
         {
             string queue_name_ = "";
             string type_of_queue_ = "";
-            float max_queue_size_ = -1.0f;
+            float max_queue_size_ = 0.0f;
 
             string arrival_evaluation_service_name_ = "";
             string departure_evaluation_service_name_ = "";
@@ -68,24 +77,18 @@ class QueueServer
             string arrival_topic_name_ = "";
             string tranmission_topic_name_ = "";
         };
-
-        /**
-         * @brief Checks if the parameter's name matches a given parameter name and parses the value of the parameter 
-         * in the output if its the case.
-         * @param parameter Struct parameter from a config that contains a name and a XmlRpcValue.
-         * @param parameter_name_to_check_against String to match the parameter name against.
-         * @param output Reference to an output that is set to the parameter's value if their is a match. Not modify otherwise.
-         * @tparam Type of the variable to parse from the parameter.
-        */
-        template<typename T>
-        bool paramMatchAndParse(const XmlRpc::XmlRpcValue parameter, const string& parameter_name_to_check_against, T& output);
-
+        
         /**
          * @brief Checks if the required parameters for a given queue type are defined,
          *  logs if a parameter is missing and creates a queue in its respective map if they are all defined.
          * @param queue_param_struct Structure that contains all the possible queue configs.
         */
         void checkAndCreateQueue(QueueParamStruct& queue_param_struct);
+
+        /**
+         * @brief Loads the parameters of the queues from the ROS param server and call methods to create the queues.
+        */
+        void loadQueueParametersAndCreateQueues();
 
         /**
          * @brief Map of inequality constraint virtual queues with the name of the queues as their keys. 
@@ -112,10 +115,38 @@ class QueueServer
         */
         string queue_server_name_;
 
+        /****************************************************************************
+         *  ROS interfaces.
+        */
+
         /**
          * @brief Publisher that periodically publish and table of all the size of the queues.
         */
         ros::Publisher queue_server_states_pub_;
+
+        /**
+         * @brief Adds all the name of the queues and their size to a server state ROS message.
+         * @tparam TQueueType Type of the queue that has a getSize() method and a member info_.queue_name.
+         * @param internal_queues Map of queues from which to iterate and add the queue's name and size to the ros message.
+         * @param server_state_msg reference to the message to which the queue state will be append. Serves as an ouptut. 
+        */
+        template <typename TQueueType>
+        void appendQueueSizesToMsg(TQueueType& internal_queues, ros_queue_msgs::QueueServerState& server_state_msg)
+        {
+            for(auto it = internal_queues.begin(); it != internal_queues.end(); ++it)
+            {
+                ros_queue_msgs::QueueState new_queue_size_msg;
+                new_queue_size_msg.queue_name = it->second->info_.queue_name;
+                new_queue_size_msg.current_size = it->second->getSize();
+
+                server_state_msg.queue_sizes.push_back(std::move(new_queue_size_msg));
+            }
+        }
+
+        /**
+         * @brief Publishes a ROS message with the queue_server_states_pub_ to indicate the server state and the size of the queues.
+        */
+        void publishServerStates();
 
         /**
          * @brief Service server that provides on demand the size of the queues
@@ -131,5 +162,11 @@ class QueueServer
          * @brief Service server that updates all the virtual queues on demand.
         */
         ros::ServiceServer queue_server_update_virtual_queues_service;
+
+        /**
+         * @brief Callback function of an empty service that updates all the virtual queues. 
+         * Since the virtual queues call services, the called serviced should be short.
+        */
+        bool queueUpdateCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Request& res);
 };
 

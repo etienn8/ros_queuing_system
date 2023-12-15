@@ -1,5 +1,11 @@
 # Template a of configurations for the queue server. See the queue_config.yaml to copy the configuration of queues.
-queue_server_name: "Queue server template"
+queue_server_name: "$(arg server_name)"
+update_trigger_service_name: "trigger_service"
+server_state_topic_name: "server_state"
+
+# The frquency in loops/sec at which the queue sizes will be published, the real queue will be checked for transmission and the ROS callbacks will be executed.
+server_spin_rate: 20.0 
+
 queue_list:
   - VirtualQueue0: # Queue name
       # Existing types of queues: 

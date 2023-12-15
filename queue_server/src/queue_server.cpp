@@ -9,49 +9,17 @@
 #include "ros_queue/lib_queue/dynamic_virtual_queue.hpp"
 #include "ros_queue/lib_queue/float_compare.hpp"
 
+#include "rosparam_utils/xmlrpc_utils.hpp"
+
+// ROS msgs
 #include "ros_queue_msgs/QueueInfo.h"
+#include "ros_queue_msgs/QueueServerState.h"
+
+// ROS services
+#include "ros_queue_msgs/QueueServerStateFetch.h"
 
 using std::string;
 
-template<>
-bool QueueServer::paramMatchAndParse<string>(const XmlRpc::XmlRpcValue parameter, const string& parameter_name_to_check_against, string& output)
-{
-    auto parameter_it = parameter.begin();
-
-    const string& parameter_name = parameter_it->first;
-    const XmlRpc::XmlRpcValue& parameter_value = parameter_it->second;
-    
-    if (parameter_name == parameter_name_to_check_against && parameter_value.getType() ==
-        XmlRpc::XmlRpcValue::TypeString)
-    {
-        output= static_cast<string>(parameter_value);
-        return true;
-    }
-    else
-    {
-        return false;
-    }
-}
-
-template<>
-bool QueueServer::paramMatchAndParse<float>(const XmlRpc::XmlRpcValue parameter, const string& parameter_name_to_check_against, float& output)
-{
-    auto parameter_it = parameter.begin();
-
-    const string& parameter_name = parameter_it->first;
-    const XmlRpc::XmlRpcValue& parameter_value = parameter_it->second;
-    
-    if (parameter_name == parameter_name_to_check_against && parameter_value.getType() ==
-        XmlRpc::XmlRpcValue::TypeDouble)
-    {
-        output  = static_cast<float>(static_cast<double>(parameter_value));
-        return true;
-    }
-    else
-    {
-        return false;
-    }
-}
 
 QueueServer::QueueServer(ros::NodeHandle& nh): nh_(nh)
 {
@@ -59,7 +27,37 @@ QueueServer::QueueServer(ros::NodeHandle& nh): nh_(nh)
     {
         ROS_INFO_STREAM("Initializing queue server named "<< queue_server_name_);
     }
+    else
+    {
+        ROS_INFO_STREAM("Queue server doesn't a name from the param queue_server_name. Queue serve will be initialized with an empty name.");
+    }
 
+    loadQueueParametersAndCreateQueues();
+
+    string update_trigger_service_name="";
+    if (nh_.getParam("update_trigger_service_name", update_trigger_service_name) && !update_trigger_service_name.empty())
+    {
+        queue_server_update_virtual_queues_service = nh_.advertiseService(update_trigger_service_name, 
+                                                                         &QueueServer::queueUpdateCallback, this);
+    }
+    else
+    {
+        ROS_ERROR_STREAM("Queue server expected an update_trigger_service_name parameter to be defined. The virtual queues can't be updated.");
+    }
+
+    string server_state_topic_name="";
+    if (nh_.getParam("server_state_topic_name", server_state_topic_name) && !server_state_topic_name.empty())
+    {
+        queue_server_states_pub_ = nh_.advertise<ros_queue_msgs::QueueServerState>(server_state_topic_name,1000);
+    }
+    else
+    {
+        ROS_ERROR_STREAM("Queue server expected a server_state_topic_name parameter to be defined. The server states can't be published.");
+    }
+}
+
+void QueueServer::loadQueueParametersAndCreateQueues()
+{
     // Initialization of queues based on a config file
     XmlRpc::XmlRpcValue queue_list;
 
@@ -86,12 +84,12 @@ QueueServer::QueueServer(ros::NodeHandle& nh): nh_(nh)
                             XmlRpc::XmlRpcValue parameter = queue_parameters[index_param];
                             if(parameter.getType() == XmlRpc::XmlRpcValue::TypeStruct)
                             {
-                                if (!(paramMatchAndParse(parameter, "type_of_queue", queue_param_struct.type_of_queue_) || 
-                                      paramMatchAndParse(parameter, "max_queue_size", queue_param_struct.max_queue_size_) ||
-                                      paramMatchAndParse(parameter, "arrival_evaluation_service_name", queue_param_struct.arrival_evaluation_service_name_)||
-                                      paramMatchAndParse(parameter, "departure_evaluation_service_name", queue_param_struct.departure_evaluation_service_name_)||
-                                      paramMatchAndParse(parameter, "arrival_topic_name", queue_param_struct.arrival_topic_name_)||
-                                      paramMatchAndParse(parameter, "tranmission_topic_name", queue_param_struct.tranmission_topic_name_)))
+                                if (!(xmlrpc_utils::paramMatchAndParse(parameter, "type_of_queue", queue_param_struct.type_of_queue_) || 
+                                      xmlrpc_utils::paramMatchAndParse(parameter, "max_queue_size", queue_param_struct.max_queue_size_) ||
+                                      xmlrpc_utils::paramMatchAndParse(parameter, "arrival_evaluation_service_name", queue_param_struct.arrival_evaluation_service_name_)||
+                                      xmlrpc_utils::paramMatchAndParse(parameter, "departure_evaluation_service_name", queue_param_struct.departure_evaluation_service_name_)||
+                                      xmlrpc_utils::paramMatchAndParse(parameter, "arrival_topic_name", queue_param_struct.arrival_topic_name_)||
+                                      xmlrpc_utils::paramMatchAndParse(parameter, "tranmission_topic_name", queue_param_struct.tranmission_topic_name_)))
                                 {
                                     string parameter_name = parameter.begin()->first;
 
@@ -142,6 +140,15 @@ void QueueServer::addRealQueue(std::unique_ptr<ROSByteConvertedQueue>&& new_queu
     real_queues_.emplace(new_queue->info_.queue_name, std::move(new_queue));
 }
 
+void QueueServer::serverSpin()
+{
+    // Verify that the publisher was initialized
+    if (!queue_server_states_pub_.getTopic().empty())
+    {
+        publishServerStates();
+    }
+}
+
 void QueueServer::checkAndCreateQueue(QueueParamStruct& queue_param_struct)
 {
     bool is_a_parameter_missing = false;
@@ -152,9 +159,14 @@ void QueueServer::checkAndCreateQueue(QueueParamStruct& queue_param_struct)
         is_a_parameter_missing = true;
     }
 
-    if (float_compare(queue_param_struct.max_queue_size_, -1.0f))
+    if (float_compare(queue_param_struct.max_queue_size_, 0.0f))
     {
         ROS_ERROR_STREAM("CONFIG: Queue named " << queue_param_struct.queue_name_ <<" is missing its max_queue_size.");
+        is_a_parameter_missing = true;
+    }
+    else if (queue_param_struct.max_queue_size_< 0.0f)
+    {
+        ROS_ERROR_STREAM("CONFIG: Queue named " << queue_param_struct.queue_name_ <<" was configured with a negative max_queue_size of " << queue_param_struct.max_queue_size_<<". Queues expect a positive max queue size.");
         is_a_parameter_missing = true;
     }
     
@@ -290,4 +302,32 @@ void QueueServer::checkAndCreateQueue(QueueParamStruct& queue_param_struct)
             is_a_parameter_missing = true;
         }
     }
+}
+
+bool QueueServer::queueUpdateCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Request& res)
+{
+    // Updates all the inequality constraint virtual queues.
+    for(auto it = inequality_constraint_virtual_queues_.begin(); it != inequality_constraint_virtual_queues_.end(); ++it)
+    {
+        it->second->update();
+    }
+
+    // Updates all the equality constraint virtual queues.
+    for(auto it = equality_constraint_virtual_queues_.begin(); it != equality_constraint_virtual_queues_.end(); ++it)
+    {
+        it->second->update();
+    }
+}
+
+void QueueServer::publishServerStates()
+{
+    ros_queue_msgs::QueueServerState server_state_msg;
+
+    server_state_msg.queue_server_name = queue_server_name_;
+    
+    appendQueueSizesToMsg(real_queues_, server_state_msg);
+    appendQueueSizesToMsg(inequality_constraint_virtual_queues_, server_state_msg);
+    appendQueueSizesToMsg(equality_constraint_virtual_queues_, server_state_msg);
+    
+    queue_server_states_pub_.publish(server_state_msg);
 }
