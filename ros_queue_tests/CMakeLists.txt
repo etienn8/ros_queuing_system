@@ -85,7 +85,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
   INCLUDE_DIRS include
 #  LIBRARIES ros_queue_tests
-  CATKIN_DEPENDS ros_queue_msgs roscpp
+  CATKIN_DEPENDS ros_queue_msgs roscpp queue_server
 #  DEPENDS system_lib
 )
 

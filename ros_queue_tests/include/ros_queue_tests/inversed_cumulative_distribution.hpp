@@ -1,5 +1,7 @@
 #pragma once
 
+#include <random>
+
 class InversedCumulativeDistribution
 {
     public:
@@ -14,4 +16,7 @@ class InversedCumulativeDistribution
          * @return Random variable value corresponding to the cumulative input value.
         */
         virtual float invertedCumulativeDistributionFunction(float random_input) = 0;
+    
+    protected:
+        std::default_random_engine random_engine_;
 };

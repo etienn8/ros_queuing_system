@@ -1,15 +1,20 @@
 distributions:
   - distribution1:
-    - service_name: "poisson_lambda_2_0"
+    - service_name: "poisson_lambda_20_0"
     - distribution_type: "poisson"
-    - lambda: 2.0
+    - lambda: 20.0   #Mean of number of events per timestep
 
   - distribution2:
-    - service_name: "poisson_lambda_1_5"
+    - service_name: "poisson_lambda_15_0"
     - distribution_type: "poisson"
-    - lambda: 1.5
+    - lambda: 15.0   #Mean of number of events per timestep
 
   - distribution3:
     - service_name: "poisson_lambda_3_0"
     - distribution_type: "poisson"
-    - lambda: 3.0
+    - lambda: 3.0   #Mean of number of events per timestep
+
+  - distribution4:
+    - service_name: "poisson_lambda_4_0"
+    - distribution_type: "poisson"
+    - lambda: 4.0   #Mean of number of events per timestep

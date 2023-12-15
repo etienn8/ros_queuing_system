@@ -1,9 +1,14 @@
 #include "ros_queue_tests/inverted_poisson.hpp"
 
-#include <cmath> 
+#include <cmath>
+#include <random>
+
+InvertedPoisson::InvertedPoisson(float lambda): lambda_(lambda)
+{
+    distribution_ = std::poisson_distribution<int>(lambda_);
+}
 
 float InvertedPoisson::invertedCumulativeDistributionFunction(float random_input)
 {
-    // https://web.mit.edu/urban_or_book/www/book/chapter7/7.1.3.html
-    return -static_cast<float>(log(random_input)/lambda_);
+    return static_cast<float>(distribution_(random_engine_));
 }
