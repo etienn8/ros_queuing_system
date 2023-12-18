@@ -6,6 +6,8 @@
 #include "ros/ros.h"
 #include "ros/duration.h"
 
+#include "ros_queue_common_interfaces.hpp"
+
 #include "lib_queue/dynamic_virtual_queue.hpp"
 
 #include "ros_queue_msgs/FloatRequest.h"
@@ -19,15 +21,10 @@ using std::invalid_argument;
  * @tparam TDynamicVirtualQueueType Type of the virtual queue used. Queue that could be used: InConVirtualQueue or EqConVirtualQueue
  */
 template <typename TDynamicVirtualQueueType>
-class ROSVirtualQueue: public TDynamicVirtualQueueType
+class ROSVirtualQueue: public TDynamicVirtualQueueType, public ROSQueueCommonInterfaces
 {
     public:
         using TDynamicVirtualQueueType::update;
-
-        /**
-         * @brief Member that contains meta data for queues.
-        */
-        ros_queue_msgs::QueueInfo info_;
 
         /**
          * @brief Struct that contains all the options related to using pointer functions, or ROS Topics/Services for prediction, transmission and conversion. 
@@ -53,7 +50,7 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType
          * @throw Throws an std::invalid_argument if one of the function pointers is null. 
         */
         ROSVirtualQueue(int max_queue_size, ros_queue_msgs::QueueInfo&& info, ros::NodeHandle& nh, InterfacesArgs interfaces)
-                        :TDynamicVirtualQueueType(max_queue_size), info_(std::move(info)), nh_(nh)
+                        :TDynamicVirtualQueueType(max_queue_size), ROSQueueCommonInterfaces(nh, std::move(info))
         {
             // Init the arrival evaluator
             if (interfaces.arrival_evaluation_fptr)
@@ -91,17 +88,6 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType
             else
             {
                 throw invalid_argument("No departure evaluator function pointer or service name provided.");
-            }
-
-            // Init the service to get the size of the queue on demand.
-            if (!info_.queue_name.empty())
-            {
-                string queue_size_service_name = info_.queue_name + "/getQueueSize";
-                queue_size_service_ = nh_.advertiseService(queue_size_service_name, &ROSVirtualQueue::getSizeServiceCallback, this);
-            }
-            else 
-            {
-                throw invalid_argument("No queue name was provided.");
             }
         }
 
@@ -175,22 +161,16 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType
         }
 
     private:
-
+        
         /**
-         * @brief Callback of FloatRequest service to return the size of the queue.
-         * @return Return true to indicate that the service request worked.
+         * @brief Internal call for the queue size service that needs 
+         * to be overriden and that returns the size of the queue.
+         * @return Size of the queue.
         */
-        bool getSizeServiceCallback(ros_queue_msgs::FloatRequest::Request & req,
-                                    ros_queue_msgs::FloatRequest::Response& res)
+        virtual float getSizeForService() override
         {
-            res.value = this->getSize();
-            return true;     
+            return this->getSize();
         }
-
-        /**
-         * @brief ROS Node handle used for the service call and make sure that a node handle exist for the life time of the ROSQueue.
-        */
-        ros::NodeHandle nh_;
 
         /**
          * @brief Service client used to compute the increase of the virtual queue.
@@ -209,11 +189,6 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType
          * @brief Function pointer used to compute the decrease of the virtual queue.
          */
         float (*departure_evaluation_fptr_)() = nullptr;
-
-        /**
-         * @brief ROS service server to provide the state of the queue.
-        */
-        ros::ServiceServer queue_size_service_;
 
         /**
          * @brief Duration to wait for the existence of services at each call.

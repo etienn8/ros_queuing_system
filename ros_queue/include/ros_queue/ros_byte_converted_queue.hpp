@@ -8,6 +8,7 @@
 
 #include "ros/ros.h"
 
+#include "ros_queue_common_interfaces.hpp"
 #include "ros_queue_utils.hpp"
 
 #include "lib_queue/dynamic_converted_queue.hpp"
@@ -25,18 +26,14 @@ using std::deque;
  * @brief Queue of a generic ROS messages with some ROS interface to interact with the queue via services and topics. 
  * The queue stores ROS messages alongside its size in bytes. The size of the queue is the sum of all the bytes in the queue. 
  */
-class ROSByteConvertedQueue: public DynamicConvertedQueue<topic_tools::ShapeShifter::ConstPtr>
+class ROSByteConvertedQueue: public DynamicConvertedQueue<topic_tools::ShapeShifter::ConstPtr>,
+                             public ROSQueueCommonInterfaces
 {
     public:
         /**
          * @brief Type definition of the shapeshifter pointer for clarity.
         */
         typedef topic_tools::ShapeShifter::ConstPtr ShapeShifterPtr;
-
-        /**
-         * @brief Member that contains meta data for queues.
-        */
-        ros_queue_msgs::QueueInfo info_;
 
         /**
          * @brief Struct that contains all the options related to using pointer functions, or ROS Topics/Services for prediction, transmission and conversion. 
@@ -58,7 +55,8 @@ class ROSByteConvertedQueue: public DynamicConvertedQueue<topic_tools::ShapeShif
          * @throw Throws an std::invalid_argument if one of the topic name is empty.
         */
         ROSByteConvertedQueue(int max_queue_size, ros_queue_msgs::QueueInfo&& info, ros::NodeHandle& nh, InterfacesArgs interfaces)
-                            : DynamicConvertedQueue<ShapeShifterPtr>(max_queue_size), info_(std::move(info)), nh_(nh),
+                            : DynamicConvertedQueue<ShapeShifterPtr>(max_queue_size),
+                             ROSQueueCommonInterfaces(nh, std::move(info)),
                              transmission_topic_name_(interfaces.transmission_topic_name)       
         {
             if (!interfaces.arrival_topic_name.empty())
@@ -73,16 +71,6 @@ class ROSByteConvertedQueue: public DynamicConvertedQueue<topic_tools::ShapeShif
             if (interfaces.transmission_topic_name.empty())
             {
                 throw invalid_argument("No transmission topic name provided.");
-            }
-
-            if (!info_.queue_name.empty())
-            {
-                string queue_size_service_name = info_.queue_name + "/getQueueSize";
-                queue_size_service_ = nh_.advertiseService(queue_size_service_name, &ROSByteConvertedQueue::getSizeServiceCallback, this);
-            }
-            else 
-            {
-                throw invalid_argument("No queue name was provided.");
             }
         }
 
@@ -116,7 +104,6 @@ class ROSByteConvertedQueue: public DynamicConvertedQueue<topic_tools::ShapeShif
             return false;
         }
 
-
         /**
          * @brief Method to convert a queue in a another queue where each element is stored with its size in bytes.
          * @param arriving_queue Rvalue of a deque of elements that needs to be converted.
@@ -138,6 +125,16 @@ class ROSByteConvertedQueue: public DynamicConvertedQueue<topic_tools::ShapeShif
                     converted_queue.push_back(std::move(convertedElement));
                 }
             }
+        }
+
+        /**
+         * @brief Internal call for the queue size service that needs 
+         * to be overriden and that returns the size of the queue.
+         * @return Size of the queue.
+        */
+        virtual float getSizeForService() override
+        {
+            return getSize();
         }
 
     private:
@@ -165,18 +162,6 @@ class ROSByteConvertedQueue: public DynamicConvertedQueue<topic_tools::ShapeShif
             update(std::move(single_msg_deque), 0);
         }
 
-        bool getSizeServiceCallback(ros_queue_msgs::FloatRequest::Request & req,
-                                    ros_queue_msgs::FloatRequest::Response& res)
-        {
-            res.value = (float)getSize();
-            return true;            
-        }
-
-        /**
-         * @brief ROS Node handle used for the service call and make sure that a node handle exist for the life time of the ROSQueue.
-        */
-        ros::NodeHandle nh_;
-
         /**
          * @brief Name of the topic to transmit the queue elements.
         */
@@ -196,11 +181,6 @@ class ROSByteConvertedQueue: public DynamicConvertedQueue<topic_tools::ShapeShif
          * @brief Subsciber used to received data in the queue.
         */
         ros::Subscriber arrival_sub_;
-
-        /**
-         * @brief ROS service server to provide the state of the queue.
-        */
-        ros::ServiceServer queue_size_service_;
 
         /**
          * @brief Duration to wait for the existence of services at each call.

@@ -6,6 +6,7 @@
 
 #include "ros/ros.h"
 
+#include "ros_queue_common_interfaces.hpp"
 #include "ros_queue_utils.hpp"
 
 #include "lib_queue/dynamic_queue.hpp"
@@ -22,14 +23,9 @@ using std::deque;
  * @tparam TPredictionServiceClass Type of the service used for the evaluation and prediction step. The response must have an int32 named "prediction".
  */
 template <typename TROSMsgType, typename TPredictionServiceClass>
-class ROSQueue: public DynamicQueue<typename QueueElementTrait<TROSMsgType>::ElementType, TPredictionServiceClass>
+class ROSQueue: public DynamicQueue<typename QueueElementTrait<TROSMsgType>::ElementType, TPredictionServiceClass>, public ROSQueueCommonInterfaces
 {
     public:
-        /**
-         * @brief Member that contains meta data for queues.
-        */
-        ros_queue_msgs::QueueInfo info_;
-
         /**
          * @brief Struct that contains all the options related to using pointer functions, or ROS Topics/Services for prediction, transmission and conversion. 
          * @param arrival_prediction_fptr Pointer to a user-defined function that is called to predict the number of arrivals. If defined, arrival_prediction_service_name won't be used.
@@ -59,7 +55,8 @@ class ROSQueue: public DynamicQueue<typename QueueElementTrait<TROSMsgType>::Ele
          * @throw Throws an std::invalid_argument if one of the function pointers is null. 
         */
         ROSQueue(int max_queue_size, ros_queue_msgs::QueueInfo&& info, ros::NodeHandle& nh, InterfacesArgs interfaces)
-                :DynamicQueue<typename QueueElementTrait<TROSMsgType>::ElementType, TPredictionServiceClass>(max_queue_size), info_(std::move(info))
+                :DynamicQueue<typename QueueElementTrait<TROSMsgType>::ElementType, TPredictionServiceClass>(max_queue_size),
+                 ROSQueueCommonInterfaces(nh, std::move(info))
         {
             // Init the arrival prediction
             if (interfaces.arrival_prediction_fptr)
@@ -211,12 +208,17 @@ class ROSQueue: public DynamicQueue<typename QueueElementTrait<TROSMsgType>::Ele
             return true;
         }
 
-    private:
         /**
-         * @brief ROS Node handle used for the service call and make sure that a node handle exist for the life time of the ROSQueue.
+         * @brief Internal call for the queue size service that needs 
+         * to be overriden and that returns the size of the queue.
+         * @return Size of the queue.
         */
-        ros::NodeHandle nh_;
+        virtual float getSizeForService() override
+        {
+            return this->getSize();
+        }
 
+    private:
         /**
          * @brief Service client used for the arrival prediction service calls.
          */

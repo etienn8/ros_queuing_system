@@ -8,6 +8,7 @@
 
 #include "ros/ros.h"
 
+#include "ros_queue_common_interfaces.hpp"
 #include "ros_queue_utils.hpp"
 
 #include "lib_queue/dynamic_converted_queue.hpp"
@@ -30,14 +31,10 @@ using std::deque;
  * same size as the input queue size and elements should have non-zero positive converted size.
  */
 template <typename TROSMsgType, typename TPredictionServiceClass, typename TConversionServiceClass>
-class ROSConvertedQueue: public DynamicConvertedQueue<typename QueueElementTrait<TROSMsgType>::ElementType, TPredictionServiceClass>
+class ROSConvertedQueue: public DynamicConvertedQueue<typename QueueElementTrait<TROSMsgType>::ElementType, TPredictionServiceClass>,
+                         public ROSQueueCommonInterfaces
 {
     public:
-        /**
-         * @brief Member that contains meta data for queues.
-        */
-        ros_queue_msgs::QueueInfo info_;
-
         /**
          * @brief Struct that contains all the options related to using pointer functions, or ROS Topics/Services for prediction, transmission and conversion. 
          * @param arrival_prediction_fptr Pointer to a user-defined function that is called to predict the number of arrivals. If defined, arrival_prediction_service_name won't be used.
@@ -73,7 +70,8 @@ class ROSConvertedQueue: public DynamicConvertedQueue<typename QueueElementTrait
          * @throw Throws an std::invalid_argument if one of the function pointers is null or if no prediction, transmission or conversion function, topic or service name is given. 
         */
         ROSConvertedQueue(int max_queue_size, ros_queue_msgs::QueueInfo&& info, ros::NodeHandle&& nh, InterfacesArgs interfaces)
-                            : DynamicConvertedQueue<typename QueueElementTrait<TROSMsgType>::ElementType, TPredictionServiceClass>(max_queue_size), info_(std::move(info)), nh_(nh)        
+                            : DynamicConvertedQueue<typename QueueElementTrait<TROSMsgType>::ElementType, TPredictionServiceClass>(max_queue_size),
+                              ROSQueueCommonInterfaces(nh, std::move(info))    
         {
             // Init the arrival prediction
             if (interfaces.arrival_prediction_fptr)
@@ -300,12 +298,17 @@ class ROSConvertedQueue: public DynamicConvertedQueue<typename QueueElementTrait
             }
         }
 
-    private:
         /**
-         * @brief ROS Node handle used for the service call and make sure that a node handle exist for the life time of the ROSQueue.
+         * @brief Internal call for the queue size service that needs 
+         * to be overriden and that returns the size of the queue.
+         * @return Size of the queue.
         */
-        ros::NodeHandle nh_;
+        virtual float getSizeForService() override
+        {
+            return this->getSize();
+        }
 
+    private:
         /**
          * @brief Service client used for the arrival prediction service calls.
          */
