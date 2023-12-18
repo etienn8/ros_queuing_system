@@ -6,6 +6,7 @@
 #include "ros_queue_msgs/FloatRequest.h"
 
 #include "ros_queue_msgs/QueueInfo.h"
+#include "ros_queue_msgs/QueueInfoFetch.h"
 
 using std::string;
 using std::invalid_argument;
@@ -23,7 +24,10 @@ class ROSQueueCommonInterfaces
             if (!info_.queue_name.empty())
             {
                 string queue_size_service_name = info_.queue_name + "/getQueueSize";
+                string queue_info_service_name = info_.queue_name + "/getQueueInfo";
+
                 queue_size_service_ = nh_.advertiseService(queue_size_service_name, &ROSQueueCommonInterfaces::getSizeServiceCallback, this);
+                queue_info_service_ = nh_.advertiseService(queue_info_service_name, &ROSQueueCommonInterfaces::getQueueInfoCallback, this);
             }
             else 
             {
@@ -48,6 +52,11 @@ class ROSQueueCommonInterfaces
         ros::ServiceServer queue_size_service_;
 
         /**
+         * @brief ROS service server to provide the queue information.
+        */
+        ros::ServiceServer queue_info_service_;
+
+        /**
          * @brief Callback method that returns the size of the queue.
          * @param req Request of the FloatRequest service definition. Which is empty.
          * @param res Response of th
@@ -56,6 +65,18 @@ class ROSQueueCommonInterfaces
                                     ros_queue_msgs::FloatRequest::Response& res)
         {
             res.value = (float)getSizeForService();
+            return true;            
+        }
+
+        /**
+         * @brief Callback method that returns the QueueInfo.
+         * @param req Request of the QueueInfoFetch service definition. Which is empty.
+         * @param res Response of the QueueInfoFetch service definition. Contains a ros_queue_msgs::QueueInfo
+        */
+        bool getQueueInfoCallback(ros_queue_msgs::QueueInfoFetch::Request & req,
+                                    ros_queue_msgs::QueueInfoFetch::Response& res)
+        {
+            res.info = info_;
             return true;            
         }
 
