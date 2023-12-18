@@ -317,6 +317,8 @@ bool QueueServer::queueUpdateCallback(std_srvs::Empty::Request& req, std_srvs::E
     {
         it->second->update();
     }
+
+    return true;
 }
 
 void QueueServer::publishServerStates()
