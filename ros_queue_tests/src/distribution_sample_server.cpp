@@ -2,6 +2,7 @@
 
 #include <ros/console.h>
 
+#include "ros_queue_tests/distribution_sample_topic_size.hpp"
 #include "ros_queue_tests/inverted_poisson.hpp"
 
 #include "rosparam_utils/xmlrpc_utils.hpp"
@@ -12,6 +13,14 @@ DistributionSampleServer::DistributionSampleServer(ros::NodeHandle& nh):nh_(nh)
 
     loadROSParamsAndCreateServices();
 };
+
+void DistributionSampleServer::serverSpin()
+{
+    for (auto it = distribution_sample_publishers_.begin(); it != distribution_sample_publishers_.end(); ++it)
+    {
+        it->get()->publishFromRamdomSample();
+    }
+}
 
 void DistributionSampleServer::loadROSParamsAndCreateServices()
 {
@@ -43,7 +52,10 @@ void DistributionSampleServer::loadROSParamsAndCreateServices()
                                xmlrpc_utils::paramMatchAndParse(parameters[parameter_index],"distribution_type",
                                                                 distribution_service_param_struct.distribution_type) ||
                                xmlrpc_utils::paramMatchAndParse(parameters[parameter_index],"lambda",
-                                                                distribution_service_param_struct.lambda)))
+                                                                distribution_service_param_struct.lambda)||
+                               xmlrpc_utils::paramMatchAndParse(parameters[parameter_index],"topic_name",
+                                                                distribution_service_param_struct.topic_name)
+                                                                ))
                             {
                                 ROS_WARN_STREAM("CONFIG: Unexpected parameter " << distribution_name <<" in a distribution parameters.");
                             }
@@ -67,12 +79,16 @@ void DistributionSampleServer::checkAndCreateDistributionService(const Distribut
 
     string logging_prefix = string("CONFIG of " + distribution_config_name +":");
 
-    if(params.service_name.empty())
+    if(params.service_name.empty() && params.topic_name.empty())
     {
-        ROS_ERROR_STREAM(logging_prefix <<": No service_name is defined.");
+        ROS_ERROR_STREAM(logging_prefix <<": No service_name or topic_name are defined.");
         is_a_parameter_invalid = true;
-    } 
-    
+    }
+    else if(!params.service_name.empty() && !params.topic_name.empty())
+    {
+        ROS_WARN_STREAM(logging_prefix <<": service_name and topic_name are defined. The topic will be ignored");
+    }
+
     if(params.distribution_type == "poisson")
     {
         if(params.lambda < 0.0f)
@@ -84,11 +100,21 @@ void DistributionSampleServer::checkAndCreateDistributionService(const Distribut
         if(!is_a_parameter_invalid)
         {
             std::unique_ptr<InversedCumulativeDistribution> new_inverted_poisson = std::make_unique<InvertedPoisson>(params.lambda);
-            std::unique_ptr<DistributionSampleService> new_sampling_service = std::make_unique<DistributionSampleService>(std::move(new_inverted_poisson),
-                                                                                                                            params.service_name,
-                                                                                                                            nh_);
-            //new_sampling_service->initROSService();
-            distribution_sample_services_.push_back(std::move(new_sampling_service));
+            
+            if (!params.service_name.empty())
+            {
+                std::unique_ptr<DistributionSampleService> new_sampling_service = std::make_unique<DistributionSampleService>(std::move(new_inverted_poisson),
+                                                                                                                                params.service_name,
+                                                                                                                                nh_);
+                distribution_sample_services_.push_back(std::move(new_sampling_service));
+            }
+            else if (!params.topic_name.empty())
+            {
+                std::unique_ptr<DistributionSampleTopicSize> new_sampling_publisher = std::make_unique<DistributionSampleTopicSize>(std::move(new_inverted_poisson),
+                                                                                                                                    params.topic_name,
+                                                                                                                                    nh_);
+                distribution_sample_publishers_.push_back(std::move(new_sampling_publisher));
+            }
         }
     }
     else if(params.distribution_type.empty())

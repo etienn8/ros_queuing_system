@@ -1,3 +1,6 @@
+# Rate at which the ramdom sampled sized topics are sent.
+publisher_rate: 2.0 
+
 distributions:
   - distribution1:
     - service_name: "poisson_lambda_20_0"
@@ -18,3 +21,8 @@ distributions:
     - service_name: "poisson_lambda_4_0"
     - distribution_type: "poisson"
     - lambda: 4.0   #Mean of number of events per timestep
+  
+  - distribution5:
+    - topic_name: "topic_poisson_lambda_5_0"
+    - distribution_type: "poisson"
+    - lambda: 5.0   #Mean of number of events per timestep

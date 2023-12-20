@@ -3,7 +3,9 @@
 #include <string>
 
 #include "ros/ros.h"
+
 #include "distribution_sample_service.hpp"
+#include "distribution_sample_topic_size.hpp"
 
 using std::string;
 
@@ -11,6 +13,11 @@ class DistributionSampleServer
 {
     public:
         DistributionSampleServer(ros::NodeHandle& nh);
+
+        /**
+         * @brief Publishes all generated samples that need to send over topics.  
+         */
+        void serverSpin();
 
     private:
         ros::NodeHandle nh_;
@@ -28,6 +35,7 @@ class DistributionSampleServer
             string service_name ="";
             string distribution_type="";
             float lambda=-1.0f;
+            string topic_name ="";
         };
 
         /**
@@ -48,4 +56,6 @@ class DistributionSampleServer
          * @brief Vectors of all the service objects that hold a ROS service that send a sample of given distribtion function.
         */
         std::vector<std::unique_ptr<DistributionSampleService>> distribution_sample_services_;
+
+        std::vector<std::unique_ptr<DistributionSampleTopicSize>> distribution_sample_publishers_;
 };
