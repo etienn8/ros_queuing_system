@@ -61,11 +61,12 @@ add_message_files(
 ## Generate services in the 'srv' folder
 add_service_files(
   FILES
-  FloatRequest.srv
   ConversionTemplateService.srv
+  ByteSizeRequest.srv
+  FloatRequest.srv
+  QueueInfoFetch.srv
   QueueStatesPrediction.srv
   QueueServerStateFetch.srv
-  QueueInfoFetch.srv
 )
 
 ## Generate actions in the 'action' folder
