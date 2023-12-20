@@ -9,7 +9,6 @@ int main(int argc, char **argv)
     ros::NodeHandle nh("~");
 
     // Initialize a queue server
-    QueueServer queue_server(nh);
 
     float server_spin_rate = 10.0f;
 
@@ -18,13 +17,7 @@ int main(int argc, char **argv)
         ROS_WARN_STREAM("Server spin rate wasn't specified, the server will spin at " << server_spin_rate << " hz.");
     }
 
-    ros::Rate rate(server_spin_rate);
+    QueueServer queue_server(nh, server_spin_rate);
 
-    while(ros::ok())
-    {
-        queue_server.serverSpin();
-
-        ros::spinOnce();
-        rate.sleep();
-    }
+    ros::spin();
 }

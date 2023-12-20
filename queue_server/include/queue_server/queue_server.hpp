@@ -29,9 +29,11 @@ class QueueServer
     public:
         /**
          * @brief Constructor that loads the ROS parameters to define all the internal meta values 
-         * of the queue server and to create and define all the queues.  
+         * of the queue server and to create and define all the queues.
+         * @param spin_rate Rate (event per second) at which the real queues will be checked for transmission 
+         * and the size of all queues will be published.
         */
-        QueueServer(ros::NodeHandle& nh);
+        QueueServer(ros::NodeHandle& nh, float spin_rate);
         
         /**
          * @brief Add a virtual queue in the inequality constraint queue map.
@@ -56,7 +58,7 @@ class QueueServer
         /**
          * @brief Executes all the periodic tasks of the server like publishing the server state.
         */
-        void serverSpin();
+        void serverSpin(const ros::TimerEvent& event);
 
     private:
 
@@ -153,6 +155,11 @@ class QueueServer
          * @brief For each real queues, verify how much data could be sent and the queue will transmit up to that quanity if possible.
         */
         void transmitRealQueues();
+
+        /**
+         * @brief Timer that will call the server spin at rate given in the constructor.
+        */
+        ros::Timer spin_timer_;
 
         /**
          * @brief Service server that provides on demand the size of the queues

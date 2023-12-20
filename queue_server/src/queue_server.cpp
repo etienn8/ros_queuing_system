@@ -21,7 +21,7 @@
 using std::string;
 
 
-QueueServer::QueueServer(ros::NodeHandle& nh): nh_(nh)
+QueueServer::QueueServer(ros::NodeHandle& nh, float spin_rate): nh_(nh)
 {
     if (nh_.getParam("queue_server_name", queue_server_name_))
     {
@@ -54,6 +54,9 @@ QueueServer::QueueServer(ros::NodeHandle& nh): nh_(nh)
     {
         ROS_ERROR_STREAM("Queue server expected a server_state_topic_name parameter to be defined. The server states can't be published.");
     }
+
+    // Create the periodic caller of the serverSpin
+    spin_timer_ = nh_.createTimer(ros::Duration(1.0/spin_rate), &QueueServer::serverSpin, this);
 }
 
 void QueueServer::loadQueueParametersAndCreateQueues()
@@ -141,7 +144,7 @@ void QueueServer::addRealQueue(std::unique_ptr<ROSByteConvertedQueue>&& new_queu
     real_queues_.emplace(new_queue->info_.queue_name, std::move(new_queue));
 }
 
-void QueueServer::serverSpin()
+void QueueServer::serverSpin(const ros::TimerEvent& event)
 {
     // Verify that the publisher was initialized
     if (!queue_server_states_pub_.getTopic().empty())
