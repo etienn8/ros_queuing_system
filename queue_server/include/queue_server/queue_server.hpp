@@ -76,6 +76,7 @@ class QueueServer
 
             string arrival_topic_name_ = "";
             string tranmission_topic_name_ = "";
+            string transmission_evaluation_service_name_ = "";
         };
         
         /**
@@ -147,6 +148,11 @@ class QueueServer
          * @brief Publishes a ROS message with the queue_server_states_pub_ to indicate the server state and the size of the queues.
         */
         void publishServerStates();
+
+        /**
+         * @brief For each real queues, verify how much data could be sent and the queue will transmit up to that quanity if possible.
+        */
+        void transmitRealQueues();
 
         /**
          * @brief Service server that provides on demand the size of the queues

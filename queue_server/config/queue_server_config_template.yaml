@@ -49,3 +49,6 @@ queue_list:
     - arrival_topic_name: "arrival_topic"
     - tranmission_topic_name: "transmission_topic"
 
+    # === Service name that allows a real queue how much data in bytes it could transmit. Only used for real queues. ===
+    - transmission_evaluation_service_name: "transmission_evaluation"
+

@@ -14,6 +14,7 @@
 #include "lib_queue/dynamic_converted_queue.hpp"
 #include "topic_tools/shape_shifter.h"
 
+#include "ros_queue_msgs/ByteSizeRequest.h"
 #include "ros_queue_msgs/FloatRequest.h"
 #include "ros_queue_msgs/QueueInfo.h"
 
@@ -38,12 +39,14 @@ class ROSByteConvertedQueue: public DynamicConvertedQueue<topic_tools::ShapeShif
         /**
          * @brief Struct that contains all the options related to using pointer functions, or ROS Topics/Services for prediction, transmission and conversion. 
          * @param arrival_topic_name String of the topic from which to add messages to the data queue. 
-         * @param transmission_topic_name String of the topic name to publish the stored ROS messages in the queuue.
+         * @param transmission_topic_name String of the topic name to publish the stored ROS messages in the queue.
+         * @param transmission_evaluation_service_name String of the service name to call to know how much byte can be transmitted.
          */
         struct InterfacesArgs
         {
             string arrival_topic_name="";
             string transmission_topic_name = "";
+            string transmission_evaluation_service_name = "";
         };
 
         /**
@@ -72,6 +75,15 @@ class ROSByteConvertedQueue: public DynamicConvertedQueue<topic_tools::ShapeShif
             {
                 throw invalid_argument("No transmission topic name provided.");
             }
+
+            if (interfaces.transmission_evaluation_service_name.empty() )
+            {
+                ROS_WARN_STREAM("No transmission_evaluation_service_name provided. The real queue "<< info_.queue_name << " won't transmit based on the quality of transmission provided by the service.");
+            }
+            else
+            {  
+                transmission_evaluation_service_client_ = nh_.serviceClient<ros_queue_msgs::ByteSizeRequest>(interfaces.transmission_evaluation_service_name);
+            }
         }
 
         /**
@@ -83,6 +95,36 @@ class ROSByteConvertedQueue: public DynamicConvertedQueue<topic_tools::ShapeShif
         {
             deque<ShapeShifterPtr> empty_queue;
             return update(empty_queue, nb_element_to_transmit);
+        }
+
+        /**
+         * @brief Transmit the queue's data based on the quality of service (QoS). It calls specified by the 
+         * transmission_evaluation_service_name to evaluate how many bytes could be transmited. The queue than 
+         * transmit data until the sum of the size in bytes of the sent messages reach the number that could be sent.
+         * If the service wasn't initialized, the queue won't transmit.
+        */
+        void transmitBasedOnQoS()
+        {
+            ros_queue_msgs::ByteSizeRequest byte_size_req;
+             
+            if(transmission_evaluation_service_client_.getService().empty())
+            {
+                ROS_WARN_STREAM_ONCE(info_.queue_name<<": Tried to be updated based on quality of service, but its transmission_evaluation_service_name is not initialized.");
+            }
+            else if(transmission_evaluation_service_client_.waitForExistence(WAIT_DURATION_FOR_SERVICE_EXISTENCE))
+            {
+                if (transmission_evaluation_service_client_.call(byte_size_req))
+                {
+                    deque<ElementWithConvertedSize<ShapeShifterPtr>> empty_queue;
+
+                    this->updateInConvertedSize(std::move(empty_queue), byte_size_req.response.nb_of_bytes);
+                }
+
+            }
+            else
+            {
+                ROS_WARN_STREAM_THROTTLE(4, info_.queue_name<<": Tried to be updated based on quality of service, but its transmission_evaluation_service_ is not available.");
+            }
         }
 
     protected:
@@ -138,6 +180,7 @@ class ROSByteConvertedQueue: public DynamicConvertedQueue<topic_tools::ShapeShif
         }
 
     private:
+
         /**
          * @brief Callback called when a message is received on the arrival_topic_name and it adds it in the queue. 
          * At the first message, it creates a publisher for the transmission based on the received msg type.
@@ -181,6 +224,11 @@ class ROSByteConvertedQueue: public DynamicConvertedQueue<topic_tools::ShapeShif
          * @brief Subsciber used to received data in the queue.
         */
         ros::Subscriber arrival_sub_;
+
+        /**
+         * @brief Service client to get how much bytes can be transmitted.
+        */
+        ros::ServiceClient transmission_evaluation_service_client_;
 
         /**
          * @brief Duration to wait for the existence of services at each call.

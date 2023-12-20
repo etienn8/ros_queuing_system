@@ -89,7 +89,8 @@ void QueueServer::loadQueueParametersAndCreateQueues()
                                       xmlrpc_utils::paramMatchAndParse(parameter, "arrival_evaluation_service_name", queue_param_struct.arrival_evaluation_service_name_)||
                                       xmlrpc_utils::paramMatchAndParse(parameter, "departure_evaluation_service_name", queue_param_struct.departure_evaluation_service_name_)||
                                       xmlrpc_utils::paramMatchAndParse(parameter, "arrival_topic_name", queue_param_struct.arrival_topic_name_)||
-                                      xmlrpc_utils::paramMatchAndParse(parameter, "tranmission_topic_name", queue_param_struct.tranmission_topic_name_)))
+                                      xmlrpc_utils::paramMatchAndParse(parameter, "tranmission_topic_name", queue_param_struct.tranmission_topic_name_)||
+                                      xmlrpc_utils::paramMatchAndParse(parameter, "transmission_evaluation_service_name", queue_param_struct.transmission_evaluation_service_name_)))
                                 {
                                     string parameter_name = parameter.begin()->first;
 
@@ -147,6 +148,8 @@ void QueueServer::serverSpin()
     {
         publishServerStates();
     }
+
+    transmitRealQueues();
 }
 
 void QueueServer::checkAndCreateQueue(QueueParamStruct& queue_param_struct)
@@ -192,6 +195,11 @@ void QueueServer::checkAndCreateQueue(QueueParamStruct& queue_param_struct)
                 is_a_parameter_missing = true;
             }
 
+            if(queue_param_struct.transmission_evaluation_service_name_.empty())
+            {
+                ROS_WARN_STREAM("CONFIG: Real queue named " << queue_param_struct.queue_name_ <<" is missing its transmission_evaluation_service_name_.");
+            }
+
             if (!is_a_parameter_missing)
             {
                 ROS_INFO_STREAM("Creating real queue: " << queue_param_struct.queue_name_);
@@ -207,7 +215,8 @@ void QueueServer::checkAndCreateQueue(QueueParamStruct& queue_param_struct)
                                                             (struct ROSByteConvertedQueue::InterfacesArgs)
                                                             {
                                                                 .arrival_topic_name = queue_param_struct.arrival_topic_name_,
-                                                                .transmission_topic_name = queue_param_struct.tranmission_topic_name_
+                                                                .transmission_topic_name = queue_param_struct.tranmission_topic_name_,
+                                                                .transmission_evaluation_service_name = queue_param_struct.transmission_evaluation_service_name_
                                                             });
 
                 addRealQueue(std::move(new_queue));
@@ -332,4 +341,12 @@ void QueueServer::publishServerStates()
     appendQueueSizesToMsg(equality_constraint_virtual_queues_, server_state_msg);
     
     queue_server_states_pub_.publish(server_state_msg);
+}
+
+void QueueServer::transmitRealQueues()
+{
+    for(auto it = real_queues_.begin(); it != real_queues_.end(); ++it)
+    {
+        it->second->transmitBasedOnQoS();
+    }
 }

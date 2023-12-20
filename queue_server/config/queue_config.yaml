@@ -16,3 +16,6 @@ Queue_name: #Queue_name
     # === Topic name from which data will be stored and on which to publish data. Only used for real queues. ===
   - arrival_topic_name: 
   - tranmission_topic_name:
+
+  # === Service name that allows a real queue how much data in bytes it could transmit. Only used for real queues. ===
+  - transmission_evaluation_service_name:
