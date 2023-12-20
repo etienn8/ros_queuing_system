@@ -7,20 +7,25 @@
 #include "distribution_sample_service.hpp"
 #include "distribution_sample_topic_size.hpp"
 
+#include "ros_queue_msgs/ByteSizeRequest.h"
+#include "ros_queue_msgs/FloatRequest.h"
+
 using std::string;
 
 class DistributionSampleServer
 {
     public:
-        DistributionSampleServer(ros::NodeHandle& nh);
+        DistributionSampleServer(ros::NodeHandle& nh, float publisher_rate);
 
         /**
-         * @brief Publishes all generated samples that need to send over topics.  
+         * @brief Callback that publishes all generated samples that need to send over topics.  
          */
-        void serverSpin();
+        void serverSpin(const ros::TimerEvent& timer_event);
 
     private:
         ros::NodeHandle nh_;
+
+        ros::Timer pub_timer_;
 
         /**
          * @brief Data structure of all parameters that could be usefull to define a distribution. 
@@ -36,6 +41,7 @@ class DistributionSampleServer
             string distribution_type="";
             float lambda=-1.0f;
             string topic_name ="";
+            string type_of_response="";
         };
 
         /**
@@ -55,7 +61,9 @@ class DistributionSampleServer
         /**
          * @brief Vectors of all the service objects that hold a ROS service that send a sample of given distribtion function.
         */
-        std::vector<std::unique_ptr<DistributionSampleService>> distribution_sample_services_;
+        std::vector<std::unique_ptr<DistributionSampleService<ros_queue_msgs::FloatRequest>>> distribution_sample_float_services_;
+
+        std::vector<std::unique_ptr<DistributionSampleService<ros_queue_msgs::ByteSizeRequest>>> distribution_sample_int_services_;
 
         std::vector<std::unique_ptr<DistributionSampleTopicSize>> distribution_sample_publishers_;
 };

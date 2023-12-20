@@ -10,7 +10,6 @@ int main(int argc, char *argv[])
     ros::init(argc, argv, "distribution_service_nodes.cpp");
 
     ros::NodeHandle nh("~");
-    DistributionSampleServer server(nh);
     
     float publisher_rate = 5.0f;
 
@@ -19,13 +18,7 @@ int main(int argc, char *argv[])
         ROS_WARN("CONFIG distribution service node: publihser_rate is not set. Default value of 5.0f will be used.");
     }
 
-    ros::Duration rate(publisher_rate);
-
-    while(ros::ok())
-    {
-        server.serverSpin();
-        rate.sleep();
-    }
-
+    DistributionSampleServer server(nh, publisher_rate);
+    
     ros::spin();
 }

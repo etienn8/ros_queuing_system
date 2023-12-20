@@ -4,21 +4,25 @@ publisher_rate: 2.0
 distributions:
   - distribution1:
     - service_name: "poisson_lambda_20_0"
+    - type_of_response: "float"           #float or int
     - distribution_type: "poisson"
     - lambda: 20.0   #Mean of number of events per timestep
 
   - distribution2:
     - service_name: "poisson_lambda_15_0"
+    - type_of_response: "float"           #float or int
     - distribution_type: "poisson"
     - lambda: 15.0   #Mean of number of events per timestep
 
   - distribution3:
     - service_name: "poisson_lambda_3_0"
+    - type_of_response: "float"           #float or int
     - distribution_type: "poisson"
     - lambda: 3.0   #Mean of number of events per timestep
 
   - distribution4:
     - service_name: "poisson_lambda_4_0"
+    - type_of_response: "float"           #float or int
     - distribution_type: "poisson"
     - lambda: 4.0   #Mean of number of events per timestep
   
@@ -26,3 +30,9 @@ distributions:
     - topic_name: "topic_poisson_lambda_5_0"
     - distribution_type: "poisson"
     - lambda: 5.0   #Mean of number of events per timestep
+
+  - distribution6:
+    - service_name: "poisson_lambda_6_0"
+    - type_of_response: "int"           #float or int
+    - distribution_type: "poisson"
+    - lambda: 4.0   #Mean of number of events per timestep

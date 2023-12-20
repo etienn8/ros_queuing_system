@@ -7,14 +7,16 @@
 
 #include "rosparam_utils/xmlrpc_utils.hpp"
 
-DistributionSampleServer::DistributionSampleServer(ros::NodeHandle& nh):nh_(nh)
+DistributionSampleServer::DistributionSampleServer(ros::NodeHandle& nh, float publisher_rate):nh_(nh)
 {
     ROS_INFO("Distribution server: Set the logger to Info");
 
     loadROSParamsAndCreateServices();
+
+    pub_timer_ = nh_.createTimer(ros::Duration(1.0/publisher_rate), &DistributionSampleServer::serverSpin, this);
 };
 
-void DistributionSampleServer::serverSpin()
+void DistributionSampleServer::serverSpin(const ros::TimerEvent& timer_event)
 {
     for (auto it = distribution_sample_publishers_.begin(); it != distribution_sample_publishers_.end(); ++it)
     {
@@ -54,7 +56,9 @@ void DistributionSampleServer::loadROSParamsAndCreateServices()
                                xmlrpc_utils::paramMatchAndParse(parameters[parameter_index],"lambda",
                                                                 distribution_service_param_struct.lambda)||
                                xmlrpc_utils::paramMatchAndParse(parameters[parameter_index],"topic_name",
-                                                                distribution_service_param_struct.topic_name)
+                                                                distribution_service_param_struct.topic_name)||
+                               xmlrpc_utils::paramMatchAndParse(parameters[parameter_index],"type_of_response",
+                                                                distribution_service_param_struct.type_of_response)
                                                                 ))
                             {
                                 ROS_WARN_STREAM("CONFIG: Unexpected parameter " << distribution_name <<" in a distribution parameters.");
@@ -103,10 +107,28 @@ void DistributionSampleServer::checkAndCreateDistributionService(const Distribut
             
             if (!params.service_name.empty())
             {
-                std::unique_ptr<DistributionSampleService> new_sampling_service = std::make_unique<DistributionSampleService>(std::move(new_inverted_poisson),
-                                                                                                                                params.service_name,
-                                                                                                                                nh_);
-                distribution_sample_services_.push_back(std::move(new_sampling_service));
+                if(params.type_of_response.empty())
+                {
+                    ROS_ERROR_STREAM(logging_prefix <<": No type_of_response is defined for a service distribution.");
+                }
+                else if (params.type_of_response == "float")
+                {
+                    std::unique_ptr<DistributionSampleService<ros_queue_msgs::FloatRequest>> new_sampling_service = std::make_unique<DistributionSampleService<ros_queue_msgs::FloatRequest>>(std::move(new_inverted_poisson),
+                                                                                                                                    params.service_name,
+                                                                                                                                    nh_);
+                    distribution_sample_float_services_.push_back(std::move(new_sampling_service));
+                }
+                else if (params.type_of_response == "int")
+                {
+                    std::unique_ptr<DistributionSampleService<ros_queue_msgs::ByteSizeRequest>> new_sampling_service = std::make_unique<DistributionSampleService<ros_queue_msgs::ByteSizeRequest>>(std::move(new_inverted_poisson),
+                                                                                                                                    params.service_name,
+                                                                                                                                    nh_);
+                    distribution_sample_int_services_.push_back(std::move(new_sampling_service));
+                }
+                else
+                {
+                    ROS_ERROR_STREAM(logging_prefix <<": Unrecognized type_of_response named "<< params.type_of_response<<". Supported: float and int");
+                }
             }
             else if (!params.topic_name.empty())
             {
