@@ -103,6 +103,7 @@ include_directories(
 ## Declare a C++ library
 add_library(inversed_cumuluative_distributions_lib
   src/inversed_cumulative_distribution.cpp
+  src/inverted_bernoulli.cpp
   src/inverted_poisson.cpp
   src/distribution_sample_service.cpp
   src/distribution_sample_topic_size.cpp
