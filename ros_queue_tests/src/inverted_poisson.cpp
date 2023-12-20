@@ -1,4 +1,4 @@
-#include "ros_queue_tests/inverted_poisson.hpp"
+#include "ros_queue_tests/distributions/inverted_poisson.hpp"
 
 #include <cmath>
 #include <random>

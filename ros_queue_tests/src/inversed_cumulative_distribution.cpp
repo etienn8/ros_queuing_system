@@ -1,4 +1,4 @@
-#include "ros_queue_tests/inversed_cumulative_distribution.hpp"
+#include "ros_queue_tests/distributions/inversed_cumulative_distribution.hpp"
 #include <stdlib.h>
 #include <time.h>
 

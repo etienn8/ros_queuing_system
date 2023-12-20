@@ -42,6 +42,9 @@ class DistributionSampleServer
             float lambda=-1.0f;
             string topic_name ="";
             string type_of_response="";
+            float high_value = 0.0f;
+            float low_value = 0.0f;
+            float probability_of_high_value = 0.0f;
         };
 
         /**

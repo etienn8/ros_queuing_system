@@ -4,7 +4,7 @@
 
 #include "ros/ros.h"
 
-#include "inversed_cumulative_distribution.hpp"
+#include "distributions/inversed_cumulative_distribution.hpp"
 
 using std::string;
 

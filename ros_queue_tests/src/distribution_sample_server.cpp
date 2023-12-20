@@ -3,7 +3,8 @@
 #include <ros/console.h>
 
 #include "ros_queue_tests/distribution_sample_topic_size.hpp"
-#include "ros_queue_tests/inverted_poisson.hpp"
+#include "ros_queue_tests/distributions/inverted_poisson.hpp"
+#include "ros_queue_tests/distributions/inverted_bernoulli.hpp"
 
 #include "rosparam_utils/xmlrpc_utils.hpp"
 
@@ -58,7 +59,13 @@ void DistributionSampleServer::loadROSParamsAndCreateServices()
                                xmlrpc_utils::paramMatchAndParse(parameters[parameter_index],"topic_name",
                                                                 distribution_service_param_struct.topic_name)||
                                xmlrpc_utils::paramMatchAndParse(parameters[parameter_index],"type_of_response",
-                                                                distribution_service_param_struct.type_of_response)
+                                                                distribution_service_param_struct.type_of_response)||
+                               xmlrpc_utils::paramMatchAndParse(parameters[parameter_index],"high_value",
+                                                                distribution_service_param_struct.high_value)||
+                               xmlrpc_utils::paramMatchAndParse(parameters[parameter_index],"low_value",
+                                                                distribution_service_param_struct.low_value)||
+                               xmlrpc_utils::paramMatchAndParse(parameters[parameter_index],"probability_of_high_value",
+                                                                distribution_service_param_struct.probability_of_high_value)
                                                                 ))
                             {
                                 ROS_WARN_STREAM("CONFIG: Unexpected parameter " << distribution_name <<" in a distribution parameters.");
@@ -138,6 +145,25 @@ void DistributionSampleServer::checkAndCreateDistributionService(const Distribut
                 distribution_sample_publishers_.push_back(std::move(new_sampling_publisher));
             }
         }
+    }
+    else if(params.distribution_type == "bernoulli")
+    {
+            std::unique_ptr<InversedCumulativeDistribution> new_inverted_bernouilli= std::make_unique<InvertedBernoulli>(params.high_value, params.low_value, params.probability_of_high_value);
+            
+            if (params.type_of_response == "float")
+            {
+                std::unique_ptr<DistributionSampleService<ros_queue_msgs::FloatRequest>> new_sampling_service = std::make_unique<DistributionSampleService<ros_queue_msgs::FloatRequest>>(std::move(new_inverted_bernouilli),
+                                                                                                                                params.service_name,
+                                                                                                                                nh_);
+                distribution_sample_float_services_.push_back(std::move(new_sampling_service));
+            }
+            else if (params.type_of_response == "int")
+            {
+                std::unique_ptr<DistributionSampleService<ros_queue_msgs::ByteSizeRequest>> new_sampling_service = std::make_unique<DistributionSampleService<ros_queue_msgs::ByteSizeRequest>>(std::move(new_inverted_bernouilli),
+                                                                                                                                params.service_name,
+                                                                                                                                nh_);
+                distribution_sample_int_services_.push_back(std::move(new_sampling_service));
+            }
     }
     else if(params.distribution_type.empty())
     {

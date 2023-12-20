@@ -2,7 +2,7 @@
 <launch>
     <env name="ROSCONSOLE_CONFIG_FILE" value="$(find ros_queue_tests)/config/logging.conf"/>
 
-    <node pkg="ros_queue_tests" type="distribution_services_node" name="poisson_distribution_sample_server">
+    <node pkg="ros_queue_tests" type="distribution_services_node" name="distribution_sample_server">
         <rosparam command="load" file="$(find ros_queue_tests)/config/random_sample_distribution_service_config.yaml"/>
     </node>
 </launch>

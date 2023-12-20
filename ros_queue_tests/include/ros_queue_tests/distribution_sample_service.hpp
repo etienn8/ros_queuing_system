@@ -5,7 +5,7 @@
 
 #include "ros/ros.h"
 
-#include "inversed_cumulative_distribution.hpp"
+#include "distributions/inversed_cumulative_distribution.hpp"
 
 #include "ros_queue_msgs/ByteSizeRequest.h"
 #include "ros_queue_msgs/FloatRequest.h"
