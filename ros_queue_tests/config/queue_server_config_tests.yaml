@@ -3,7 +3,7 @@ queue_server_name: "$(arg server_name)"
 update_trigger_service_name: "trigger_service"
 server_state_topic_name: "server_state"
 
-# The frquency in loops/sec at which the queue sizes will be published, the real queue will be checked for transmission and the ROS callbacks will be executed.
+# The frquency in loops/sec at which the queue sizes will be published and the real queue will be checked for transmission.
 server_spin_rate: 20.0 
 
 queue_list:
@@ -18,8 +18,8 @@ queue_list:
     - max_queue_size: 1000.0
       
       # === Services calls for virtual queues to evaluate the change in their size. Only used for virtual queues. ===
-    - arrival_evaluation_service_name: "/poisson_distribution_sample_server/poisson_lambda_15_0"
-    - departure_evaluation_service_name: "/poisson_distribution_sample_server/poisson_lambda_20_0"
+    - arrival_evaluation_service_name: "/distribution_sample_server/poisson_lambda_15_0"
+    - departure_evaluation_service_name: "/distribution_sample_server/poisson_lambda_20_0"
 
   - VirtualQueue1: # Queue name
       # Existing types of queues: 
@@ -32,7 +32,25 @@ queue_list:
     - max_queue_size: 2000.0
       
       # === Services calls for virtual queues to evaluate the change in their size. Only used for virtual queues. ===
-    - arrival_evaluation_service_name: "/poisson_distribution_sample_server/poisson_lambda_3_0"
-    - departure_evaluation_service_name: "/poisson_distribution_sample_server/poisson_lambda_4_0"
+    - arrival_evaluation_service_name: "/distribution_sample_server/poisson_lambda_3_0"
+    - departure_evaluation_service_name: "/distribution_sample_server/poisson_lambda_4_0"
+  
+  - RealQueue1: #Queue_name
+      # Existing types of queues: 
+      # - real_queue: Queues that store ROS messages and its size is equal to sum of all its messages in bytes.
+      # - inequality_constraint_virtual_queue: Virtual queues that can't go below a 0 value.
+      # - equality_constraint_virtual_queue:  Virtual queues that can go below a 0 value.
+    - type_of_queue: real_queue
+      
+      # A float value for virtual queues and value in bytes for real_queues
+    - max_queue_size: 6250000.0
+      
+      # === Topic name from which data will be stored and on which to publish data. Only used for real queues. ===
+    - arrival_topic_name: "/distribution_sample_server/topic_poisson_lambda_5_0"
+    - tranmission_topic_name: "real_queue_transmitted_channel"
+
+    # === Service name that allows a real queue how much data in bytes it could transmit. Only used for real queues. ===
+    - transmission_evaluation_service_name: "/distribution_sample_server/bernoulli_0"
+
   
 
