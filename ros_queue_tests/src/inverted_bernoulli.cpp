@@ -8,7 +8,7 @@ InvertedBernoulli::InvertedBernoulli(float high_value, float low_value,
 
 float InvertedBernoulli::invertedCumulativeDistributionFunction(float random_input)
 {
-    if (random_input > probability_of_high_value_)
+    if (random_input < probability_of_high_value_)
     {
         return high_value_;
     }
