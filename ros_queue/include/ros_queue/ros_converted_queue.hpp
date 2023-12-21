@@ -69,7 +69,7 @@ class ROSConvertedQueue: public DynamicConvertedQueue<typename QueueElementTrait
          * @param interfaces Struct that contains all the options for the prediction, transmission and conversion interfaces. See ROSConvertedQueue::InterfacesArgs.
          * @throw Throws an std::invalid_argument if one of the function pointers is null or if no prediction, transmission or conversion function, topic or service name is given. 
         */
-        ROSConvertedQueue(int max_queue_size, ros_queue_msgs::QueueInfo&& info, ros::NodeHandle&& nh, InterfacesArgs interfaces)
+        ROSConvertedQueue(int max_queue_size, ros_queue_msgs::QueueInfo&& info, ros::NodeHandle& nh, InterfacesArgs interfaces)
                             : DynamicConvertedQueue<typename QueueElementTrait<TROSMsgType>::ElementType, TPredictionServiceClass>(max_queue_size),
                               ROSQueueCommonInterfaces(nh, std::move(info))    
         {
