@@ -6,6 +6,11 @@ class InversedCumulativeDistribution
 {
     public:
         /**
+         * @brief Initialize the ramdom seed for generateRandomSample.
+         */
+        InversedCumulativeDistribution();
+
+        /**
          * @brief Method that generates a random sample from a cumulative distribution.
          * @return Returns the generated sample.
         */
