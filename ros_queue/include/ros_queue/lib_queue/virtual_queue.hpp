@@ -10,7 +10,7 @@ class IVirtualQueue
          * @brief Get size of the virtual queue.
          * @return Size of the virtual queue.
          */
-        virtual int size()=0;
+        virtual float size()=0;
 
         /**
          * @brief Checks if the queue has zero elements (empty).
@@ -22,25 +22,25 @@ class IVirtualQueue
          * @brief Add a specified number of elements in the queue. It increase the queue by this size.
          * @param nb_element Number of elements to add to the queue.
          */
-        virtual void push(const int& nb_element)=0;
+        virtual void push(const float& nb_element)=0;
 
         /**
          * @brief Remove a specified number of elements in the queue. It decrease the queue by this size.
          * @param nb_element Number of elements to remove from the queue.
          */
-        virtual void pop(const int& nb_element)=0;
+        virtual void pop(const float& nb_element)=0;
 
         /**
          * @brief Set the size of the internal queue.
          * @param new_size Set the size of the queue to this value.
          */
-        virtual void setSize(const int& new_size)=0;
+        virtual void setSize(const float& new_size)=0;
 
     protected:
         /** 
          * @brief Size of the virtual queue. 
         */
-        int queue_size_ = 0;
+        float queue_size_ = 0.0f;
 };
 
 /**
@@ -53,7 +53,7 @@ class VirtualQueue: public IVirtualQueue
          * @brief Get size of the virtual queue.
          * @return Size of the virtual queue.
          */
-        virtual int  size() override;
+        virtual float size() override;
 
         /**
          * @brief Checks if the queue has zero elements (empty).
@@ -65,20 +65,20 @@ class VirtualQueue: public IVirtualQueue
          * @brief Add a specified number of elements in the queue. It increase the queue by this size.
          * @param nb_element Number of elements to add to the queue.
          */
-        virtual void push(const int& nb_element) override;
+        virtual void push(const float& nb_element) override;
 
         /**
          * @brief Remove a specified number of elements in the queue without going below a size of zero. It decrease the queue by this size.
          * @param nb_element Number of elements to remove from the queue.
          */
-        virtual void pop(const int& nb_element) override;
+        virtual void pop(const float& nb_element) override;
 
         /**
          * @brief Set the size of the internal queue.
          * @param new_size Set the size of the queue to this value.
          * @throw Throws an invalid_argument exception if the new_size is a negative value since this type of virtual queue should always have a positive size.
          */
-        virtual void setSize(const int& new_size) override;
+        virtual void setSize(const float& new_size) override;
 };
 
 /**
@@ -91,7 +91,7 @@ class NVirtualQueue: public IVirtualQueue
          * @brief Get size of the virtual queue.
          * @return Size of the virtual queue.
          */
-        virtual int  size() override;
+        virtual float size() override;
 
         /**
          * @brief Checks if the queue has zero elements (empty).
@@ -103,17 +103,17 @@ class NVirtualQueue: public IVirtualQueue
          * @brief Add a specified number of elements in the queue. It increase the queue by this size.
          * @param nb_element Number of elements to add to the queue.
          */
-        virtual void push(const int& nb_element) override;
+        virtual void push(const float& nb_element) override;
 
         /**
          * @brief Remove a specified number of elements in the queue. It decrease the queue by this size and it can go below zero.
          * @param nb_element Number of elements to remove from the queue.
          */
-        virtual void pop(const int& nb_element) override;
+        virtual void pop(const float& nb_element) override;
 
         /**
          * @brief Set the size of the internal queue.
          * @param new_size Set the size of the queue to this value.
          */
-        virtual void setSize(const int& new_size) override;
+        virtual void setSize(const float& new_size) override;
 };

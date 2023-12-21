@@ -1,3 +1,0 @@
-ros_queue/queue_int_element[] queue_to_convert
----
-int32[] converted_costs

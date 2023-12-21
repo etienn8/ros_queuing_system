@@ -103,6 +103,80 @@ class DynamicConvertedQueue: public IDynamicQueue<deque<ElementWithConvertedSize
          * @brief Updates the queue by adding the wrapped arriving_elements and by transmitting the specifiy number of departing elements while respecting the maximum queue size.
          * @details Data are transmitted by using DynamicQueue::transmit. The converted size of the queue is increasing whenever an element is added by its converted cost integrated in the wrapped element object. 
          * @param arriving_elements Queue of wrapped object of an element and its converted size to add to the internal queue.
+         * @param nb_departing_converted_size Sum of the converted size of elements to transmit from the internal queue.
+         * @throw Throws an invalid_argument exception if the departure arguement is negative since it can't transmit negative number of elements.
+         * @throw Throws an BadConversionException if the converted size of an element is 0 or negative.  
+         * @return Boolean of it the queue overflowed while adding elements.
+         */
+        bool updateInConvertedSize(deque<ElementWithConvertedSize<TQueueElementType>>&& arriving_elements, int nb_departing_converted_size)
+        {
+            if(nb_departing_converted_size < 0)
+            {
+                throw invalid_argument("Tried to remove a negative number of elements from the queue.");
+            }
+            deque<TQueueElementType> queue_to_transmit;
+            bool overflowed = false;
+
+            // Inner scope block for the mutex
+            {
+                // Protect access to queue
+                lock_guard<mutex> lock(queue_manipulation_mutex_);
+
+                if (!this->internal_queue_.empty())
+                {
+                     int front_element_size = static_cast<int>(this->internal_queue_.front().converted_size_);
+
+                    while(nb_departing_converted_size > front_element_size)
+                    {
+                        if(this->internal_queue_.empty())
+                        {
+                            break;
+                        }
+                        
+                        converted_queue_size_ -= front_element_size;
+                        nb_departing_converted_size -= front_element_size;
+
+                        queue_to_transmit.push_back(std::move(this->internal_queue_.front().element_));
+                        this->internal_queue_.pop_front();
+
+                        front_element_size = static_cast<int>(this->internal_queue_.front().converted_size_);
+                    }
+                }
+                //Receiving data
+                while(!arriving_elements.empty())
+                {
+                    int size_of_element = arriving_elements.front().converted_size_;
+                    
+                    if (size_of_element == 0)
+                    {
+                        throw BadConversionException("Element has a converted size of zero. Likely due to a bad conversion function.");
+                    }
+                    else if  (size_of_element < 0)
+                    {
+                        throw BadConversionException("Element has a negative converted size. Likely due to a bad conversion function."); 
+                    }
+
+                    if (converted_queue_size_ + size_of_element >= this->max_queue_size_)
+                    {
+                        overflowed = true;
+                        break;
+                    }
+                    converted_queue_size_ += size_of_element;
+                    this->internal_queue_.push_back(std::move(arriving_elements.front()));
+                    arriving_elements.pop_front();
+                }
+            }
+
+            //TODO: Add transmission error handling
+            transmit(std::move(queue_to_transmit));
+
+            return !overflowed;
+        }
+
+        /**
+         * @brief Updates the queue by adding the wrapped arriving_elements and by transmitting the specifiy number of departing elements while respecting the maximum queue size.
+         * @details Data are transmitted by using DynamicQueue::transmit. The converted size of the queue is increasing whenever an element is added by its converted cost integrated in the wrapped element object. 
+         * @param arriving_elements Queue of wrapped object of an element and its converted size to add to the internal queue.
          * @param nb_departing_elements Number of elements (not in converted size but in internal_queue size) to remove from the internal queue.
          * @throw Throws an invalid_argument exception if the departure arguement is negative since it can't transmit negative number of elements.
          * @throw Throws an BadConversionException if the converted size of an element is 0 or negative.  
@@ -353,6 +427,80 @@ class DynamicConvertedQueue<TQueueElementType, void>: public IDynamicQueue<deque
 
         // Allow the use of the IDynamicQueue overloaded update method
         using IDynamicQueue<deque<ElementWithConvertedSize<TQueueElementType>>>::update;
+        
+        /**
+         * @brief Updates the queue by adding the wrapped arriving_elements and by transmitting the specifiy number of departing elements while respecting the maximum queue size.
+         * @details Data are transmitted by using DynamicQueue::transmit. The converted size of the queue is increasing whenever an element is added by its converted cost integrated in the wrapped element object. 
+         * @param arriving_elements Queue of wrapped object of an element and its converted size to add to the internal queue.
+         * @param nb_departing_converted_size Sum of the converted size of elements to transmit from the internal queue.
+         * @throw Throws an invalid_argument exception if the departure arguement is negative since it can't transmit negative number of elements.
+         * @throw Throws an BadConversionException if the converted size of an element is 0 or negative.  
+         * @return Boolean of it the queue overflowed while adding elements.
+         */
+        bool updateInConvertedSize(deque<ElementWithConvertedSize<TQueueElementType>>&& arriving_elements, int nb_departing_converted_size)
+        {
+            if(nb_departing_converted_size < 0)
+            {
+                throw invalid_argument("Tried to remove a negative number of elements from the queue.");
+            }
+            deque<TQueueElementType> queue_to_transmit;
+            bool overflowed = false;
+
+            // Inner scope block for the mutex
+            {
+                // Protect access to queue
+                lock_guard<mutex> lock(queue_manipulation_mutex_);
+
+                if (!this->internal_queue_.empty())
+                {
+                     int front_element_size = static_cast<int>(this->internal_queue_.front().converted_size_);
+
+                    while(nb_departing_converted_size > front_element_size)
+                    {
+                        if(this->internal_queue_.empty())
+                        {
+                            break;
+                        }
+                        
+                        converted_queue_size_ -= front_element_size;
+                        nb_departing_converted_size -= front_element_size;
+
+                        queue_to_transmit.push_back(std::move(this->internal_queue_.front().element_));
+                        this->internal_queue_.pop_front();
+
+                        front_element_size = static_cast<int>(this->internal_queue_.front().converted_size_);
+                    }
+                }
+                //Receiving data
+                while(!arriving_elements.empty())
+                {
+                    int size_of_element = arriving_elements.front().converted_size_;
+                    
+                    if (size_of_element == 0)
+                    {
+                        throw BadConversionException("Element has a converted size of zero. Likely due to a bad conversion function.");
+                    }
+                    else if  (size_of_element < 0)
+                    {
+                        throw BadConversionException("Element has a negative converted size. Likely due to a bad conversion function."); 
+                    }
+
+                    if (converted_queue_size_ + size_of_element >= this->max_queue_size_)
+                    {
+                        overflowed = true;
+                        break;
+                    }
+                    converted_queue_size_ += size_of_element;
+                    this->internal_queue_.push_back(std::move(arriving_elements.front()));
+                    arriving_elements.pop_front();
+                }
+            }
+
+            //TODO: Add transmission error handling
+            transmit(std::move(queue_to_transmit));
+
+            return !overflowed;
+        }
 
         /**
          * @brief Updates the queue by adding the wrapped arriving_elements and by transmitting the specifiy number of departing elements while respecting the maximum queue size.

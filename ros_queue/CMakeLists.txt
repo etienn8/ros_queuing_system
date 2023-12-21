@@ -13,7 +13,9 @@ set(ROSQUEUE_LIB_NAME "ros_queue_lib")
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
+  ros_queue_msgs
   message_generation
+  topic_tools
 )
 
 ## System dependencies are found with CMake's conventions
@@ -50,17 +52,14 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
- add_message_files(
-   FILES
-   queue_int_element.msg
-   queue_transmit_template.msg
-)
+#add_message_files(
+#   FILES
+#)
 
 # Generate services in the 'srv' folder
 add_service_files(
   FILES
   ReturnSentValue.srv
-  ConversionTemplateService.srv
 )
 
 ## Generate actions in the 'action' folder
@@ -73,7 +72,7 @@ add_service_files(
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
   DEPENDENCIES
-  std_msgs  # Or other packages containing msgs
+  ros_queue_msgs  # Or other packages containing msgs
 )
 
 ################################################
@@ -108,7 +107,7 @@ generate_messages(
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES ${QUEUE_LIB_NAME} ${ROSQUEUE_LIB_NAME}
-  CATKIN_DEPENDS roscpp message_runtime
+  CATKIN_DEPENDS roscpp message_runtime topic_tools ros_queue_msgs
   #DEPENDS system_lib
 )
 
@@ -224,6 +223,7 @@ if(CATKIN_ENABLE_TESTING)
 
   add_rostest_gtest(ros_queue_test test/launch/queue_prediction_server_test.test test/ros_queue_test.cpp)
   target_link_libraries(ros_queue_test ${catkin_LIBRARIES} ${QUEUE_LIB_NAME} ${ROSQUEUE_LIB_NAME})
+  add_dependencies(ros_queue_test test_service_node)
 
   catkin_add_gtest(move_optimization_test test/move_optimization_tests.cpp)
   if(TARGET dynamic_queues_test)

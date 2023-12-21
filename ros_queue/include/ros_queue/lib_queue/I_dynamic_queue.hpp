@@ -6,7 +6,7 @@ using std::invalid_argument;
 
 /**
  * @brief Interface class that wraps a type of queue with interfaces to interact with it. 
- * @tparam TQueueType Type of queue (example: std::queue or std::dequeu).
+ * @tparam TQueueType Type of queue (example: std::queue or std::deque).
  */
 template<typename TQueueType, typename TStates=void>
 class IDynamicQueue

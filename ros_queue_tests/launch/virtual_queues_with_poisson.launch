@@ -1,0 +1,16 @@
+<!-- Starts a queue server with virtual queues that are fed by random Poisson distributions. -->
+<launch>
+    <!-- Creates the poisson distribution services -->
+    <include file="$(find ros_queue_tests)/launch/distribution_sample.launch"/>
+
+    <!-- Creates the queue server -->
+    <include file="$(find queue_server)/launch/queue_server_template.launch">
+        <arg name="queue_server_config_path" value="$(find ros_queue_tests)/config/queue_server_config_tests.yaml"/>
+        <arg name="server_name" value="test_queue_server"/>
+    </include>
+
+    <include file="$(find queue_server)/launch/periodic_udpate_caller.launch">
+        <arg name="trigger_service_name" value="/test_queue_server/trigger_service"/>
+        <arg name="update_rate" value="2.0"/>
+    </include>
+</launch>

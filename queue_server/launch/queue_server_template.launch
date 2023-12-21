@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="server_name" default="queue_server"/>
+
+  <arg name="queue_server_config_path" default="$(find queue_server)/config/queue_server_config_template.yaml"/>
+
+  <node name="$(arg server_name)" pkg="queue_server" type="queue_server_node">
+    <rosparam file="$(arg queue_server_config_path)" command="load" subst_value="true"/>
+  </node>
+</launch>
