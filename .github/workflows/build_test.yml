@@ -29,6 +29,11 @@ jobs:
         with:
           repository: etienn8/rosparam_utils
           path: 'catkin_ws/src/rosparam_utils'
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          path: 'catkin_ws/src/ros_queuing_system'
       
       - name: Build packages
         run: |
