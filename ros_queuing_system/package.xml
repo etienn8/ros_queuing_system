@@ -53,6 +53,7 @@
   <depend>ros_queue</depend>
   <depend>queue_server</depend>
   <depend>ros_queue_msgs</depend>
+  <depend>ros_queue_tests</depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
