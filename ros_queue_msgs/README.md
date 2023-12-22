@@ -19,16 +19,6 @@ This is research code, expect that it changes often and any fitness for a partic
 
 ## Installation
 
-### Installation from Packages
-
-To install all packages from the this repository as Debian packages use
-
-    sudo apt-get install ros-noetic-...
-    
-Or better, use `rosdep`:
-
-	sudo rosdep install --from-paths src
-
 ### Building from Source
 
 #### Dependencies
