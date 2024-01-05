@@ -186,6 +186,7 @@ q.update(updateInConvertedSize, 19); // This will not transmit anything since th
 ```
 
 #### InConVirtualQueue
+[Header with documentation.](https://github.com/etienn8/ros_queuing_system/blob/main/ros_queue/include/ros_queue/lib_queue/dynamic_virtual_queue.hpp)
 Virtual queues don't hold data like a real queues. They just use a float as a size and use the queue dynamic formula to be analyzed and used like a queue. Based on the work of Neely [1], virtual queues are often used to represent a metric that is under a constraint. When used as time average inequality constraint, the virtual queues size can't have a negative value (like a real queue). This queue type is implemented in this library as InConVirtualQueue (Inequality constraint Virtual Queue). Here's a simple example on how to instantiate and update them:
 
 ```
@@ -198,6 +199,7 @@ vq.getSize();   // Returns the size of the queue. Should be 1.0f
 ```
 
 #### EqConVirtualQueue
+[Header with documentation.](https://github.com/etienn8/ros_queuing_system/blob/main/ros_queue/include/ros_queue/lib_queue/dynamic_virtual_queue.hpp)
 Based on the work of Neely [1], some virtual queues could be used to represent a metric that is under a time average equality constraint, the size of the queue can go below zero (so its only capped by it's maximum size). Thus the name of this implementation is EqConVirtualQueue (Equality Constraint Virtual Queue). Here's an example: 
 ```
 #include "ros_queue/lib_queue/dynamic_virtual_queue.hpp"
