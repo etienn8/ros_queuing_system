@@ -3,7 +3,7 @@ queue_server_name: "$(arg server_name)"
 update_trigger_service_name: "trigger_service"
 server_state_topic_name: "server_state"
 
-# The frquency in loops/sec at which the queue sizes will be published, the real queue will be checked for transmission and the ROS callbacks will be executed.
+# The frquency in loops/sec at which the queue sizes will be published and the real queue will be checked for transmission.
 server_spin_rate: 20.0 
 
 queue_list:
