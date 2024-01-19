@@ -1,0 +1,30 @@
+# Configuration of a  min drift-plus-penalty controller
+
+# Indicate the type of controller.
+controller_type: "min_drift_plus_penalty"
+# Period between each controller optimization process. Float value.
+time_step: 0.1
+
+# Solution space service that provides a list of all available actions.
+solution_space_service_name: ""
+
+# ====== Queue configurations. Indicate all the queues used in the controllers equation. ======
+# Most of the queues' information will be fetch automatically through the parameters of the indicated queue_server.
+# Name of the queue_server linked to the controller
+queue_server_name: ""
+# List all the queues used from the queue server. The queue controller will try to stabilize all those queues. An arbitrary number of queues can be added.
+queue_list:
+    # The name of the queue. Should match a queue name from the queue_server
+    - QueueName1:
+        # Weight in the cost function multplied with the size of the queue. 
+        # A higher value means the controller will try to stabilize it faster compared to the other queues.
+        # It could also be set as a normalization factor.       
+        - weight: 1.0
+
+# ====== Variable (penalty) to minimize configurations.======
+# Name of the service to evaluate the penalty based on the current state and the potential action. 
+penalty_service_name:  ""
+# The V parameter that is multplied with the penalty (like a weight). When a high penalty metric also increases the queue size,
+# this parameter balances the tradeoff between a lower penalty or lower queue delays. A high V will prioritize the minimization
+# of the penalty while a low V will prioritize low queue sizes and delays.
+v_parameter: 1.0
