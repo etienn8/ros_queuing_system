@@ -50,6 +50,8 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
 add_message_files(
   FILES
+  PotentialAction.msg
+  PotentialActionSet.msg
   QueueIntElement.msg
   QueueState.msg
   QueueTransmitTemplate.msg
@@ -65,8 +67,9 @@ add_service_files(
   ByteSizeRequest.srv
   FloatRequest.srv
   QueueInfoFetch.srv
-  QueueStatesPrediction.srv
+  MetricPredictions.srv
   QueueServerStateFetch.srv
+  PotentialSolutionSpaceFetch.srv
 )
 
 ## Generate actions in the 'action' folder
