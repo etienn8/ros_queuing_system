@@ -81,14 +81,11 @@ To monitor the state of the servers and the queues, you can print them in the te
 
 * **queue_server_config_template.yaml**: This is a template that contains the server parameters and the configuration of its queues.
 	* `queue_server_name` (string): Indicates the name of the queue and thus will be used as a prefix for all the ROS interfaces of the server and its queues.
-	* `update_trigger_service_name` (string): Name of the advertised service, that when called, will trigger the update of all virtual queues. 
-	* `server_state_topic_name` (string): Name of the topic on which the queue server will periodically publish the size of its queues.
 	* `server_spin_rate` (float): The frquency in loops/sec at which the queue sizes will be published and the real queue will be checked for transmission.
 	* `queue_list` (list): Its a list of the queue configurations. Any number of queues can be defined in the list. To not forget any queue configurations, copy-paste the content of `queue_config.yaml` in the list to add a new queue and configure it as needed.
 ## Launch files
 
 * **periodic_udpate_caller.launch:** Starts a node that periodically calls, at a specified rate, the virtual queues update of a queue_server node
-     - **`trigger_service_name`** Name of the trigger service of the queue server. Should match its `update_trigger_service_name`. Default: "queue_server/trigger_service".
      - **`update_rate`** Rate at which the update will be triggered. Default: 2.0
 
 * **queue_server_template.launch:** Starts a queue server based on queue server configuration file.
@@ -103,7 +100,7 @@ Periodically calls an empty service. Usually used to trigger the virtual queue u
 
 #### Service calls
 
-* **`<trigger_service_name>`** ([std_srvs/Empty])
+* **`<trigger_service_name`** ([std_srvs/Empty])
 
 	Calls the empty service and expects no response.
 

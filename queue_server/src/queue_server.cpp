@@ -34,26 +34,9 @@ QueueServer::QueueServer(ros::NodeHandle& nh, float spin_rate): nh_(nh)
 
     loadQueueParametersAndCreateQueues();
 
-    string update_trigger_service_name="";
-    if (nh_.getParam("update_trigger_service_name", update_trigger_service_name) && !update_trigger_service_name.empty())
-    {
-        queue_server_update_virtual_queues_service = nh_.advertiseService(update_trigger_service_name, 
+    queue_server_update_virtual_queues_service = nh_.advertiseService("trigger_service",
                                                                          &QueueServer::queueUpdateCallback, this);
-    }
-    else
-    {
-        ROS_ERROR_STREAM("Queue server expected an update_trigger_service_name parameter to be defined. The virtual queues can't be updated.");
-    }
-
-    string server_state_topic_name="";
-    if (nh_.getParam("server_state_topic_name", server_state_topic_name) && !server_state_topic_name.empty())
-    {
-        queue_server_states_pub_ = nh_.advertise<ros_queue_msgs::QueueServerState>(server_state_topic_name,1000);
-    }
-    else
-    {
-        ROS_ERROR_STREAM("Queue server expected a server_state_topic_name parameter to be defined. The server states can't be published.");
-    }
+    queue_server_states_pub_ = nh_.advertise<ros_queue_msgs::QueueServerState>("server_state",1000);
 
     // Create the periodic caller of the serverSpin
     spin_timer_ = nh_.createTimer(ros::Duration(1.0/spin_rate), &QueueServer::serverSpin, this);
