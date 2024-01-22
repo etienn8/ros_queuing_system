@@ -109,6 +109,9 @@ Periodically calls an empty service. Usually used to trigger the virtual queue u
 Creates [ros_queue](https://github.com/etienn8/ros_queuing_system/tree/main/ros_queue) queues based on a given configuration file, stores the queues, publishes periodically the queue states, transmits periodically the real queues based on a given amount of data to transmit given by a service and updates the virtual queues whenever it receives a trigger. In a nutshell, it's responsible to hold queues and it manages the interactions from other nodes with those queues. 
 
 #### Subscribed Topics
+* **`virtual_queue_manual_changes`** ([ros_queue_msgs/VirtualQueueChangesList](https://github.com/etienn8/ros_queuing_system/blob/main/ros_queue_msgs/msg/VirtualQueueChangesList.msg))
+	Topic that contains a list of virtual queues' name and manual changes that needs to be performed on the specified queues.
+
 For all real queues configured in the config files:
 * **`<queue_name>/<arrival_topic_name>`** ([Any type of ROS message])
 	Messages from that topic will be stored in its corresponding real queue.

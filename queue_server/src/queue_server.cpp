@@ -14,6 +14,7 @@
 // ROS msgs
 #include "ros_queue_msgs/QueueInfo.h"
 #include "ros_queue_msgs/QueueServerState.h"
+#include "ros_queue_msgs/VirtualQueueChangesList.h"
 
 // ROS services
 #include "ros_queue_msgs/QueueServerStateFetch.h"
@@ -41,6 +42,11 @@ QueueServer::QueueServer(ros::NodeHandle& nh, float spin_rate): nh_(nh)
 
     queue_server_states_service_ = nh_.advertiseService("get_server_state", 
                                                          &QueueServer::serverStateCallback, this);
+
+    virtual_queue_manual_changes_ = nh_.subscribe<ros_queue_msgs::VirtualQueueChangesList>("virtual_queue_manual_changes",
+                                                                                            1000,
+                                                                                            &QueueServer::virtualQueuesManualChangesCallback,
+                                                                                            this);
     
     // Create the periodic caller of the serverSpin
     spin_timer_ = nh_.createTimer(ros::Duration(1.0/spin_rate), &QueueServer::serverSpin, this);
@@ -329,6 +335,27 @@ bool QueueServer::queueUpdateCallback(std_srvs::Empty::Request& req, std_srvs::E
     }
 
     return true;
+}
+
+void QueueServer::virtualQueuesManualChangesCallback(const ros_queue_msgs::VirtualQueueChangesList::ConstPtr& msg)
+{
+    for (auto changes_it = msg->list.begin(); changes_it != msg->list.end(); ++ changes_it)
+    {
+        // Find if the queue exists
+        auto in_it = inequality_constraint_virtual_queues_.find(changes_it->queue_name);
+        auto eq_it = equality_constraint_virtual_queues_.find(changes_it->queue_name);
+        
+        if (in_it != inequality_constraint_virtual_queues_.end())
+        {
+            // If found, update the queue based on requested manual changes.
+            in_it->second->update(changes_it->arrival - changes_it->departure);
+        }
+        else if (eq_it != equality_constraint_virtual_queues_.end())
+        {
+            // If found, update the queue based on requested manual changes.
+            eq_it->second->update(changes_it->arrival - changes_it->departure);
+        }
+    }
 }
 
 void QueueServer::publishServerStates()

@@ -13,6 +13,7 @@
 
 #include "ros_queue_msgs/QueueState.h"
 #include "ros_queue_msgs/QueueServerStateFetch.h"
+#include "ros_queue_msgs/VirtualQueueChangesList.h"
 
 #include "std_srvs/Empty.h"
 
@@ -181,11 +182,22 @@ class QueueServer
         ros::ServiceServer queue_server_update_virtual_queues_service_;
 
         /**
+         * @brief Callback of the virtual_queue_manual_changes_ that updates the virtual queues based 
+         * on manual changes specified in the received message. If a queue name doesn't match an existing queue
+         * the entry will be ignored.
+         * @param msg Received msg that contains a list of virtual queue names and changes to be applied.
+        */
+        void virtualQueuesManualChangesCallback(const ros_queue_msgs::VirtualQueueChangesList::ConstPtr& msg);
+
+        /**
+         * @brief ROS topic subscriber that can change the virtual queues based on specify changes.
+        */
+        ros::Subscriber virtual_queue_manual_changes_;
+
+        /**
          * @brief Callback function of an empty service that updates all the virtual queues. 
          * Since the virtual queues call services, the called serviced should be short.
         */
         bool queueUpdateCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Request& res);
-
-        
 };
 
