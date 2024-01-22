@@ -12,7 +12,6 @@
 #include "ros_queue/lib_queue/dynamic_virtual_queue.hpp"
 
 #include "ros_queue_msgs/QueueState.h"
-#include "ros_queue_msgs/QueueStatesPrediction.h"
 #include "ros_queue_msgs/QueueServerStateFetch.h"
 
 #include "std_srvs/Empty.h"
@@ -167,6 +166,11 @@ class QueueServer
         ros::ServiceServer queue_server_states_service_;
 
         /**
+         * @brief Callback function that returns the queue server states including the size of the queues.
+        */
+        bool serverStateCallback(ros_queue_msgs::QueueServerStateFetch::Request& req, ros_queue_msgs::QueueServerStateFetch::Response& res);
+
+        /**
          * @brief Service server that provides on demand the meta information of all queues.
         */
         ros::ServiceServer queue_server_queue_infos_service_;
@@ -174,12 +178,14 @@ class QueueServer
         /**
          * @brief Service server that updates all the virtual queues on demand.
         */
-        ros::ServiceServer queue_server_update_virtual_queues_service;
+        ros::ServiceServer queue_server_update_virtual_queues_service_;
 
         /**
          * @brief Callback function of an empty service that updates all the virtual queues. 
          * Since the virtual queues call services, the called serviced should be short.
         */
         bool queueUpdateCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Request& res);
+
+        
 };
 

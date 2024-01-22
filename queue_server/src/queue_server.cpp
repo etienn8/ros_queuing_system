@@ -34,10 +34,14 @@ QueueServer::QueueServer(ros::NodeHandle& nh, float spin_rate): nh_(nh)
 
     loadQueueParametersAndCreateQueues();
 
-    queue_server_update_virtual_queues_service = nh_.advertiseService("trigger_service",
+    queue_server_update_virtual_queues_service_ = nh_.advertiseService("trigger_service",
                                                                          &QueueServer::queueUpdateCallback, this);
     queue_server_states_pub_ = nh_.advertise<ros_queue_msgs::QueueServerState>("server_state",1000);
 
+
+    queue_server_states_service_ = nh_.advertiseService("get_server_state", 
+                                                         &QueueServer::serverStateCallback, this);
+    
     // Create the periodic caller of the serverSpin
     spin_timer_ = nh_.createTimer(ros::Duration(1.0/spin_rate), &QueueServer::serverSpin, this);
 }
@@ -297,6 +301,17 @@ void QueueServer::checkAndCreateQueue(QueueParamStruct& queue_param_struct)
             is_a_parameter_missing = true;
         }
     }
+}
+
+bool QueueServer::serverStateCallback(ros_queue_msgs::QueueServerStateFetch::Request& req, ros_queue_msgs::QueueServerStateFetch::Response& res)
+{
+    res.queue_server_state.queue_server_name = queue_server_name_;
+
+    appendQueueSizesToMsg(real_queues_, res.queue_server_state);
+    appendQueueSizesToMsg(inequality_constraint_virtual_queues_, res.queue_server_state);
+    appendQueueSizesToMsg(equality_constraint_virtual_queues_, res.queue_server_state);
+
+    return true;
 }
 
 bool QueueServer::queueUpdateCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Request& res)

@@ -124,6 +124,11 @@ For all real queues configured in the config files
 
 		rosservice call /<queue_server_name>/trigger_service
 
+* **`get_server_state`** ([std_queue_msgs/QueueServerStateFetch](https://github.com/etienn8/ros_queuing_system/blob/main/ros_queue_msgs/msg/QueueServerState.msg))
+	Returns the current server states. It mainly includes the current queue sizes. For example, you can display the server states from the console with:
+
+		rosservice call /<queue_server_name>/trigger_service
+
 For each queue (virtual and real):
 * **`<queue_name>/getQueueInfo`** ([ros_queue_msgs/QueueInfoFetch](https://github.com/etienn8/ros_queuing_system/blob/main/ros_queue_msgs/srv/QueueInfoFetch.srv))
 	Returns the meta information of a queue in the form of a [ros_queue_msgs/QueueInfo](https://github.com/etienn8/ros_queuing_system/blob/main/ros_queue_msgs/msg/QueueInfo.msg). For example, you can fetch the queue info from the console with:
