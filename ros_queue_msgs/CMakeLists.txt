@@ -58,6 +58,8 @@ add_message_files(
   QueueInfo.msg
   QueueServerState.msg
   States.msg
+  VirtualQueueChanges.msg
+  VirtualQueueChangesList.msg
 )
 
 ## Generate services in the 'srv' folder
