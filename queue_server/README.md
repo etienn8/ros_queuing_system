@@ -100,7 +100,7 @@ Periodically calls an empty service. Usually used to trigger the virtual queue u
 
 #### Service calls
 
-* **`<trigger_service_name`** ([std_srvs/Empty])
+* **`<trigger_service_name>`** ([std_srvs/Empty])
 
 	Calls the empty service and expects no response.
 
