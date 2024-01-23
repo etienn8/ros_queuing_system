@@ -61,5 +61,4 @@ struct ControllerQueueStruct
      * the latter uses a potential action as an input, departure_based_on_queue_size_service_ need to be created.
     */
     std::unique_ptr<ros::ServiceClient> departure_based_on_queue_size_service_;
-
 };
