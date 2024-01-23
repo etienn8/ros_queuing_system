@@ -26,6 +26,7 @@
   <exec_depend>ros_queue_msgs</exec_depend>
   <exec_depend>roscpp</exec_depend>
   <depend>message_runtime</depend>
+  <depend>rosparam_utils</depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->
