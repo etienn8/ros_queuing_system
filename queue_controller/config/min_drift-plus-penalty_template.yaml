@@ -4,6 +4,10 @@
 controller_type: "min_drift_plus_penalty"
 # Period between each controller optimization process. Float value.
 time_step: 0.1
+# If set to false, the controller will find an optimal next action to take and then update the virtual queues based 
+# on that optimal solution. If set to true, the controller will update the virtual queues based on the current of 
+# state of the system then find an optimal next action. Default: set to false
+inverse_control_and_steps: false
 
 # Solution space service that provides a list of all available actions.
 solution_space_service_name: ""
@@ -20,6 +24,11 @@ queue_list:
         # A higher value means the controller will try to stabilize it faster compared to the other queues.
         # It could also be set as a normalization factor.       
         - weight: 1.0
+        # Name of the service to evaluate the expected arrivals of the queue based on the evaluated action.
+        - expected_arrival_service_name: ""
+        # Name of the service to evaluate the expected departures of the queue based on the evaluated action.
+        - expected_departure_service_name: ""
+
 
 # ====== Variable (penalty) to minimize configurations.======
 # Name of the service to evaluate the penalty based on the current state and the potential action. 
