@@ -37,14 +37,14 @@ struct ControllerQueueStruct
      * of the system and a given potential action. Should not be defined if arrival_based_on_queue_size_service_
      * is used. If both are defined, expected_arrival_service_ will be used.
     */
-    std::unique_ptr<ros::ServiceClient> expected_arrival_service_;
+    ros::ServiceClient expected_arrival_service_;
 
     /**
      * @brief ROS Service used to compute the expected departures of a queue based on a the current state
      * of the system and a given potential action. Should not be defined if departure_based_on_queue_size_service_
      * is used. If both are defined, expected_arrival_service_ will be used.
     */
-    std::unique_ptr<ros::ServiceClient> expected_departure_service_;
+    ros::ServiceClient expected_departure_service_;
 
     /**
      * @brief ROS Service used to get a current queue size if it's used as the arrival metric. Should not be defined 
@@ -52,7 +52,7 @@ struct ControllerQueueStruct
      * @details Since it uses a difference service definition compared to expected_arrival_service_ because
      * the latter uses a potential action as an input, arrival_based_on_queue_size_service_ need to be created.
     */
-    std::unique_ptr<ros::ServiceClient> arrival_based_on_queue_size_service_;
+    ros::ServiceClient arrival_based_on_queue_size_service_;
 
     /**
      * @brief ROS Service used to get a current queue size if it's used as the departure metric. Should not be defined 
@@ -60,5 +60,5 @@ struct ControllerQueueStruct
      * @details Since it uses a difference service definition compared to expected_departure_service_ because
      * the latter uses a potential action as an input, departure_based_on_queue_size_service_ need to be created.
     */
-    std::unique_ptr<ros::ServiceClient> departure_based_on_queue_size_service_;
+    ros::ServiceClient departure_based_on_queue_size_service_;
 };
