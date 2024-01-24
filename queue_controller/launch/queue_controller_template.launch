@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="queue_controller_name" default="queue_controller"/>
+
+  <arg name="queue_controller_config_path" default="$(find queue_controller)/config/min_drift-plus-penalty_template.yaml"/>
+
+  <node name="$(arg queue_controller_name)" pkg="queue_controller" type="queue_controller">
+    <rosparam file="$(arg queue_controller_config_path)" command="load" subst_value="true"/>
+  </node>
+</launch>
