@@ -123,6 +123,7 @@ include_directories(
 ## Declare a C++ library
 add_library(${QUEUE_SERVER_LIB_NAME}
    src/queue_server.cpp
+   src/queue_server_utils.cpp
  )
 
 ## Add cmake target dependencies of the library

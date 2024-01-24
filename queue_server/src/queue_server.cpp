@@ -9,6 +9,8 @@
 #include "ros_queue/lib_queue/dynamic_virtual_queue.hpp"
 #include "ros_queue/lib_queue/float_compare.hpp"
 
+#include "queue_server/queue_server_utils.hpp"
+
 #include "rosparam_utils/xmlrpc_utils.hpp"
 
 // ROS msgs
@@ -200,7 +202,7 @@ void QueueServer::checkAndCreateQueue(QueueParamStruct& queue_param_struct)
             {
                 ROS_INFO_STREAM("Creating real queue: " << queue_param_struct.queue_name_);
                 ros_queue_msgs::QueueInfo info;
-                info.is_virtual = false;
+                info.is_virtual = queue_server_utils::isQueueTypeVirtual(queue_param_struct.type_of_queue_);
                 info.queue_name = queue_param_struct.queue_name_;
                 info.queue_type = queue_param_struct.type_of_queue_;
 
@@ -240,7 +242,7 @@ void QueueServer::checkAndCreateQueue(QueueParamStruct& queue_param_struct)
             {
                 ROS_INFO_STREAM("Creating virtual real queue: " << queue_param_struct.queue_name_);
                 ros_queue_msgs::QueueInfo info;
-                info.is_virtual = true;
+                info.is_virtual = queue_server_utils::isQueueTypeVirtual(queue_param_struct.type_of_queue_);
                 info.queue_name = queue_param_struct.queue_name_;
                 info.queue_type = queue_param_struct.type_of_queue_;
 
@@ -279,7 +281,7 @@ void QueueServer::checkAndCreateQueue(QueueParamStruct& queue_param_struct)
             {
                 ROS_INFO_STREAM("Creating virtual real queue: " << queue_param_struct.queue_name_);
                 ros_queue_msgs::QueueInfo info;
-                info.is_virtual = true;
+                info.is_virtual = queue_server_utils::isQueueTypeVirtual(queue_param_struct.type_of_queue_);
                 info.queue_name = queue_param_struct.queue_name_;
                 info.queue_type = queue_param_struct.type_of_queue_;
 
