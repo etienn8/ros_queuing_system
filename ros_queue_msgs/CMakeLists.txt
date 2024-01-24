@@ -70,6 +70,7 @@ add_service_files(
   FloatRequest.srv
   QueueInfoFetch.srv
   MetricPredictions.srv
+  MetricControlPredictions.srv
   QueueServerStateFetch.srv
   PotentialSolutionSpaceFetch.srv
 )
