@@ -14,7 +14,7 @@ solution_space_service_name: "solution_space"
 
 # ====== Queue configurations. Indicate all the queues used in the controllers equation. ======
 # Most of the queues' information will be fetch automatically through the parameters of the indicated queue_server.
-# Name of the queue_server linked to the controller
+# Name of the queue_server linked to the controller. Should be given in absolute path.
 queue_server_name: "test_queue_server"
 # List all the queues used from the queue server. The queue controller will try to stabilize all those queues. An arbitrary number of queues can be added.
 queue_list:
