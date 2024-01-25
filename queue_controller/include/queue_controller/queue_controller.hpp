@@ -1,8 +1,9 @@
 #pragma once
 
-#include <vector>
-#include <string>
 #include <map>
+#include <memory>
+#include <string>
+#include <vector>
 
 #include "ros/ros.h"
 
@@ -11,7 +12,11 @@
 #include "ros_queue_msgs/PotentialAction.h"
 #include "ros_queue_msgs/PotentialActionSet.h"
 
+#include "rosparam_utils/xmlrpc_utils.hpp"
+#include "rosparam_utils/parameter_package_fetch_struct.hpp"
+
 using std::string;
+using std::map;
 
 class QueueController
 {
@@ -44,7 +49,23 @@ class QueueController
         */
         ros::ServiceClient virtual_queues_trigger_;
 
-        // Controller parameters
+        /**
+         * @brief Map of all the queues used by the queue_controller from a queue_server. The key
+         * is the queue's name and the value is all the usefull parameters of the queue to evaluate and 
+         * udpate the queues.
+        */
+        map<string, std::unique_ptr<ControllerQueueStruct>> queue_list_;
+
+        /**
+         * @brief Populate the internal queue_list_ based on the parsed_queue_configs. It will also verify
+         * if the queues exist in the queue server. If a queue doesn't exist, it won't be added to the queue_list.
+         * @param parsed_queue_configs Parsed parameters from the queue_controller configuration from which
+         * the queue_list_ will be populated.
+         * @return Returns false if the queue server wasn't found and true otherwise.
+        */
+        bool populateQueueStructures(vector<xmlrpc_utils::ParameterPackageFetchStruct> parsed_queue_configs);
+
+        // ===== Controller parameters =====
         /**
          * @brief If set to false, the controller will find an optimal next action to take and 
          * then update the virtual queues based on that optimal solution. If set to true, 
@@ -62,7 +83,7 @@ class QueueController
          * @brief Indicate the period between each controller's call.
          * Used by the min_drift_plus_penalty controllers.
         */
-        string controller_time_step_;
+        float controller_time_step_;
 
         /**
          * @brief Service server that a external node can call to trigger the renewal controller to execute.
