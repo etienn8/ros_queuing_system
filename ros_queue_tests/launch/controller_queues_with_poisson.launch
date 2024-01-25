@@ -1,0 +1,17 @@
+<!-- Starts a queue server with queues that are fed by random Poisson distributions and controlled by a queue controller -->
+<launch>
+    <!-- Creates the poisson distribution services -->
+    <include file="$(find ros_queue_tests)/launch/distribution_sample.launch"/>
+
+    <!-- Creates the queue server -->
+    <include file="$(find queue_server)/launch/queue_server_template.launch">
+        <arg name="queue_server_config_path" value="$(find ros_queue_tests)/config/queue_server_config_tests.yaml"/>
+        <arg name="server_name" value="test_queue_server"/>
+    </include>
+
+    <!-- Creates the queue controller-->
+    <include file="$(find queue_controller)/launch/queue_controller_template.launch">
+        <arg name="queue_controller_config_path" value="$(find ros_queue_tests)/config/min_drift-plus-penalty_poisson.yaml"/>
+    </include>
+
+</launch>
