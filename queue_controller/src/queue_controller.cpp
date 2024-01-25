@@ -11,6 +11,7 @@
 #include "ros_queue_msgs/PotentialSolutionSpaceFetch.h"
 #include "ros_queue_msgs/QueueServerStateFetch.h"
 #include "ros_queue_msgs/VirtualQueueChangesList.h"
+#include "ros_queue_msgs/PotentialAction.h"
 
 #include "rosparam_utils/xmlrpc_utils.hpp"
 #include "rosparam_utils/parameter_package_fetch_struct.hpp"
@@ -103,26 +104,27 @@ QueueController::QueueController(ros::NodeHandle& nh): nh_(nh)
                     xmlrpc_utils::fetchMatchingParametersFromList(nh_, ros::this_node::getName(),
                                                                   "queue_list", fetch_struct);
 
+    // Does the queue server exist and transfer queue_configs in internal queue structs
+    if(!populateQueueStructures(parsed_queue_configs))
+    {
+        can_create_controller = false;
+    }
+
     // Intialize controller
     if (can_create_controller)
     {   
-        // Transfer queue_configs in internal queue structs
-        populateQueueStructures(parsed_queue_configs);
-
         // Connect to queue_server for queue sizes
-        server_state_client_ = nh_.serviceClient<ros_queue_msgs::QueueServerStateFetch>(queue_server_name_ + "/get_server_state");
+        server_state_client_ = nh_.serviceClient<ros_queue_msgs::QueueServerStateFetch>("/" + queue_server_name_ + "/get_server_state");
 
         // Connect to queue_server for queue server udpates (depends on steps order)
         if (!inversed_control_and_update_steps_)
         {   
-            manual_virtual_queue_changes_ = nh_.advertise<ros_queue_msgs::VirtualQueueChangesList>(queue_server_name_ + "/virtual_queue_manual_changes", 1000);
+            manual_virtual_queue_changes_ = nh_.advertise<ros_queue_msgs::VirtualQueueChangesList>("/" + queue_server_name_ + "/virtual_queue_manual_changes", 1000);
         }
         else
         {
-            virtual_queues_trigger_ = nh_.serviceClient<std_srvs::Empty>(queue_server_name_ + "/trigger_service");
+            virtual_queues_trigger_ = nh_.serviceClient<std_srvs::Empty>("/" + queue_server_name_ + "/trigger_service");
         }
-        
-        // Connect to queue services
 
         // Create ouptut topic
 
