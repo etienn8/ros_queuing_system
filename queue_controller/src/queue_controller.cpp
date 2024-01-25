@@ -130,8 +130,19 @@ QueueController::QueueController(ros::NodeHandle& nh): nh_(nh)
         best_action_output_pub_ = nh_.advertise<ros_queue_msgs::PotentialAction>("best_action", 1000);
         
         // Initialize the triggers
+        if (controller_type_ == "min_drift_plus_penalty")
+        {
+            periodic_trigger_timer_ = nh_.createTimer(ros::Duration(controller_time_step_), 
+                                                      &QueueController::minDriftPlusPenaltyCallback, this);
+        }
+
         is_initialized_ = true;
     }
+}
+
+void QueueController::minDriftPlusPenaltyCallback(const ros::TimerEvent& time_event)
+{
+    ROS_DEBUG_STREAM("Queue controller: Staring control loop of "<< ros::this_node::getName());
 }
 
 bool QueueController::populateQueueStructures(vector<xmlrpc_utils::ParameterPackageFetchStruct> parsed_queue_configs)

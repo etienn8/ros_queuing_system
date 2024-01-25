@@ -70,6 +70,19 @@ class QueueController
         */
         bool populateQueueStructures(vector<xmlrpc_utils::ParameterPackageFetchStruct> parsed_queue_configs);
 
+
+        // ===== Trigger attributes =====
+        /**
+         * @brief Timer that periodically calls the queue controller sequence.
+        */
+        ros::Timer periodic_trigger_timer_;
+
+        /**
+         * @brief Callback of the min-drift-plus-penalty algorithm that is called by a periodic timer.
+         * @param time_event Information of the time event.
+        */
+        void minDriftPlusPenaltyCallback(const ros::TimerEvent& time_event);
+
         // ===== Controller parameters =====
         /**
          * @brief If set to false, the controller will find an optimal next action to take and 
