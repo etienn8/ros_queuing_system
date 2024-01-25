@@ -127,7 +127,8 @@ QueueController::QueueController(ros::NodeHandle& nh): nh_(nh)
         }
 
         // Create ouptut topic
-
+        best_action_output_pub_ = nh_.advertise<ros_queue_msgs::PotentialAction>("best_action", 1000);
+        
         // Initialize the triggers
         is_initialized_ = true;
     }

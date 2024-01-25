@@ -32,6 +32,11 @@ class QueueController
         ros::NodeHandle nh_;
 
         /**
+         * @brief ROS publisher of the output action decided by the optimization.
+        */
+        ros::Publisher best_action_output_pub_;
+
+        /**
          * @brief ROS service client used to get the current states of the queues in the queue server.
         */
         ros::ServiceClient server_state_client_;
