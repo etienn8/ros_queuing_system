@@ -23,6 +23,27 @@ class QueueController
     public:
         QueueController(ros::NodeHandle& nh);
 
+        struct ObjectiveParameter
+        {
+            string objective_name;
+
+            float expected_arrivals;
+            float expected_departures;
+
+            float current_size;
+        };
+
+        struct ActionParameters
+        {
+            ros_queue_msgs::PotentialAction action;
+            
+            ObjectiveParameter penalty;
+            
+            std::vector<ObjectiveParameter> queue_parameters;
+
+            float expected_renewal_time;
+        };
+
     protected:
         /**
          * @brief Indicates if the controller received a valid configuration and was initialized.
@@ -83,6 +104,45 @@ class QueueController
         */
         void minDriftPlusPenaltyCallback(const ros::TimerEvent& time_event);
 
+        // ===== Controller steps ======
+        /**
+         * @brief Calls the service to get the all the potential actions that will be evaluated.
+         * @return The set of potential actions.
+        */
+        ros_queue_msgs::PotentialActionSet getActionSet();
+        
+        /**
+         * @brief Evaluates the penalty, the queues sizes and the queue changes for each action.
+         * @param action_set The set of potential actions from which all metrics will be predicted.
+         * @return Returns a list of all the penalty and queues parameters for each action.
+        */
+        std::vector<ActionParameters> getParametersForControlStep(ros_queue_msgs::PotentialActionSet& action_set);
+        
+        /**
+         * @brief Used the min drift-plus-penalty algorithm to compute the action that minimize the penalty and stabilizes all the queues (if possible).
+         * @param action_parameters_list All the parameters and variables for the penalty and the queues for each actions.
+         * @return Returns the best action including all the metrics.
+        */
+        ActionParameters computeMinDriftPlusPenalty(std::vector<ActionParameters>& action_parameters_list);
+        
+        /**
+         * @brief Publish the best action.
+         * @param best_action The best action that was computed
+        */
+        void sendBestCommand(ros_queue_msgs::PotentialAction& best_action);
+        
+        /**
+         * @brief Send a signal to the queue server to update the virtual queues based on the 
+         * current state of the system.
+        */
+        void updateVirtualQueuesBasedOnCurrentState();
+
+        /**
+         * @brief Send a message to the queue server to update the virual queues based on the
+         * metrics of the best action
+        */
+        void updateVirtualQueuesBasedOnBestAction(ActionParameters& best_action_parameters);
+
         // ===== Controller parameters =====
         /**
          * @brief If set to false, the controller will find an optimal next action to take and 
@@ -141,11 +201,6 @@ class QueueController
          * to solve all the ROS topic and ROS service names provided by the queue server. 
         */
         string queue_server_name_;
-
-        /**
-         *  @brief List of all the current potential actions that will be evaluated.
-        */
-        std::vector<ros_queue_msgs::PotentialAction> current_action_set_;
 
         /**
          * @brief List of all the queue's expected float parameters. Only used at config time.

@@ -12,6 +12,7 @@
 #include "ros_queue_msgs/QueueServerStateFetch.h"
 #include "ros_queue_msgs/VirtualQueueChangesList.h"
 #include "ros_queue_msgs/PotentialAction.h"
+#include "ros_queue_msgs/PotentialActionSet.h"
 
 #include "rosparam_utils/xmlrpc_utils.hpp"
 #include "rosparam_utils/parameter_package_fetch_struct.hpp"
@@ -143,6 +144,55 @@ QueueController::QueueController(ros::NodeHandle& nh): nh_(nh)
 void QueueController::minDriftPlusPenaltyCallback(const ros::TimerEvent& time_event)
 {
     ROS_DEBUG_STREAM("Queue controller: Staring control loop of "<< ros::this_node::getName());
+    
+    if (inversed_control_and_update_steps_)
+    {
+        updateVirtualQueuesBasedOnCurrentState();
+    }
+
+    ros_queue_msgs::PotentialActionSet action_set =  getActionSet();
+    std::vector<ActionParameters> action_parameters_list = getParametersForControlStep(action_set);
+    ActionParameters best_action_parameters = computeMinDriftPlusPenalty(action_parameters_list);
+    
+    sendBestCommand(best_action_parameters.action);
+
+    if (!inversed_control_and_update_steps_)
+    {
+        updateVirtualQueuesBasedOnBestAction(best_action_parameters);
+    }
+}
+
+ros_queue_msgs::PotentialActionSet QueueController::getActionSet()
+{
+    ros_queue_msgs::PotentialActionSet empty_action_set;
+    return empty_action_set;
+}
+
+std::vector<QueueController::ActionParameters> QueueController::getParametersForControlStep(ros_queue_msgs::PotentialActionSet& action_set)
+{
+    std::vector<ActionParameters> empty_vector;
+    return empty_vector;
+}
+
+QueueController::ActionParameters QueueController::computeMinDriftPlusPenalty(std::vector<ActionParameters>& action_parameters_list)
+{
+    QueueController::ActionParameters empty_action_paramter;
+    return empty_action_paramter;
+}
+
+void QueueController::sendBestCommand(ros_queue_msgs::PotentialAction& best_action)
+{
+
+}
+
+void QueueController::updateVirtualQueuesBasedOnCurrentState()
+{
+
+}
+
+void QueueController::updateVirtualQueuesBasedOnBestAction(ActionParameters& best_action_parameters)
+{
+
 }
 
 bool QueueController::populateQueueStructures(vector<xmlrpc_utils::ParameterPackageFetchStruct> parsed_queue_configs)
