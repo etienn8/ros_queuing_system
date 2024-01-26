@@ -164,8 +164,16 @@ void QueueController::minDriftPlusPenaltyCallback(const ros::TimerEvent& time_ev
 
 ros_queue_msgs::PotentialActionSet QueueController::getActionSet()
 {
-    ros_queue_msgs::PotentialActionSet empty_action_set;
-    return empty_action_set;
+    ROS_DEBUG("Calling action set service");
+
+    ros_queue_msgs::PotentialSolutionSpaceFetch potential_set_srv;
+    
+    if(!solution_space_client_.call(potential_set_srv))
+    {
+        ROS_WARN_STREAM_THROTTLE(2, "Failed to call the service that retrieves the action set");
+    }
+
+    return potential_set_srv.response.action_set;
 }
 
 std::vector<QueueController::ActionParameters> QueueController::getParametersForControlStep(ros_queue_msgs::PotentialActionSet& action_set)
