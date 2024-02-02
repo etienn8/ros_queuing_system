@@ -113,10 +113,17 @@ add_library(distribution_sample_server
   src/distribution_sample_server.cpp
 )
 
+add_library(prediction_server_lib
+  src/prediction_server.cpp
+  src/prediction_service.cpp
+)
+
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
 add_dependencies(distribution_sample_server ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(prediction_server_lib ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
 
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
@@ -124,9 +131,17 @@ add_dependencies(distribution_sample_server ${${PROJECT_NAME}_EXPORTED_TARGETS} 
 add_executable(distribution_services_node 
               src/distribution_services_node.cpp)
 
+add_executable(transmission_vector_action_server
+              src/transmission_vector_action_server.cpp)
+              
+add_executable(prediction_server_node
+              src/prediction_server_node.cpp
+)
+
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 add_dependencies(distribution_services_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(transmission_vector_action_server ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(distribution_sample_server
@@ -138,4 +153,18 @@ target_link_libraries(distribution_services_node
   ${catkin_LIBRARIES}
   inversed_cumuluative_distributions_lib
   distribution_sample_server
+)
+
+target_link_libraries(prediction_server_lib
+  ${catkin_LIBRARIES}
+  inversed_cumuluative_distributions_lib
+)
+
+target_link_libraries(prediction_server_node
+  ${catkin_LIBRARIES}
+  prediction_server_lib
+)
+
+target_link_libraries(transmission_vector_action_server
+  ${catkin_LIBRARIES}
 )

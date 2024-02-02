@@ -14,4 +14,12 @@
         <arg name="queue_controller_config_path" value="$(find ros_queue_tests)/config/min_drift-plus-penalty_poisson.yaml"/>
     </include>
 
+    <!-- Create a service to give the potential actions. -->
+    <node pkg="ros_queue_tests" type="transmission_vector_action_server" name="transmission_vector_server"/>
+
+    <!-- Create a server that simulate-->
+    <node pkg="ros_queue_tests" type="prediction_server_node" name="action_prediction_server_node">
+        <rosparam command="load" file="$(find ros_queue_tests)/config/prediction_servers.yaml"/>
+    </node>
+ 
 </launch>

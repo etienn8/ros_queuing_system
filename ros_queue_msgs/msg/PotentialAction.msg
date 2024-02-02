@@ -1,0 +1,1 @@
+bool[] transmission_vector
