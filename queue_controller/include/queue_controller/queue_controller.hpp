@@ -109,8 +109,10 @@ class QueueController
             }
 
             // Parse queue parameters
-            const xmlrpc_utils::ParameterPackageFetchStruct fetch_struct(queue_string_parameter_names_,
-                                                                    queue_float_parameter_names_);
+            xmlrpc_utils::ParameterPackageFetchStruct::OptionsStruct options;
+            options.string_parameter_name_list = queue_string_parameter_names_;
+            options.float_parameter_name_list = queue_float_parameter_names_;
+            const xmlrpc_utils::ParameterPackageFetchStruct fetch_struct(options);
             
             vector<xmlrpc_utils::ParameterPackageFetchStruct> parsed_queue_configs= 
                             xmlrpc_utils::fetchMatchingParametersFromList(nh_, ros::this_node::getName(),
@@ -373,6 +375,7 @@ class QueueController
 
             // Penalty service
             TMetricControlPredictionSrv penalty_prediction_srv;
+            penalty_prediction_srv.request.action_set = action_set_msg;
             if (!penalty_service_client_.call(penalty_prediction_srv))
             {
                 ROS_WARN_STREAM_THROTTLE(2, "Failed to call the penalty evalution service");
