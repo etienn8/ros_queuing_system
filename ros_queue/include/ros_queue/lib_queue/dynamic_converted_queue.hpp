@@ -47,6 +47,16 @@ class DynamicConvertedQueue: public IDynamicQueue<deque<ElementWithConvertedSize
         }
 
         /**
+         * @brief Return the converted size of the element at the front of the queue.
+         * @return Converted size of the first element of the queue.
+        */
+        int getSizeOfFirstElement()
+        {
+           lock_guard<mutex> lock(queue_manipulation_mutex_);
+           return static_cast<int>(this->internal_queue_.front().converted_size_);
+        }
+
+        /**
          * @brief Evaluate the size of the queue based on the converted size of the queue and predicted arrival and departure rate (in internal queue size instead of converted size).
          * @details It evaluates the size of the queue based on it's actual converted size and predicted arrival and departure rate. Those prediction are evaluated based on the methods IDynamicQueue::arrival_prediction and IDynamicQueue::transmission_prediction.
          * @param states Argument with a type given by a template parameter that is passed to the prediction function so the user can give data to the prediction. 
@@ -349,6 +359,7 @@ class DynamicConvertedQueue: public IDynamicQueue<deque<ElementWithConvertedSize
         mutex queue_manipulation_mutex_;
 };
 
+
 template<typename TQueueElementType>
 class DynamicConvertedQueue<TQueueElementType, void>: public IDynamicQueue<deque<ElementWithConvertedSize<TQueueElementType>>>
 {
@@ -374,6 +385,16 @@ class DynamicConvertedQueue<TQueueElementType, void>: public IDynamicQueue<deque
         {
             lock_guard<mutex> lock(queue_manipulation_mutex_);
             return this->internal_queue_.size();
+        }
+
+        /**
+         * @brief Return the converted size of the element at the front of the queue.
+         * @return Converted size of the first element of the queue.
+        */
+        int getSizeOfFirstElement()
+        {
+           lock_guard<mutex> lock(queue_manipulation_mutex_);
+           return static_cast<int>(this->internal_queue_.front().converted_size_);
         }
 
         /**
