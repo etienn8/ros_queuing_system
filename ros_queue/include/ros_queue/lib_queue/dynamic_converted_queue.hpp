@@ -48,11 +48,16 @@ class DynamicConvertedQueue: public IDynamicQueue<deque<ElementWithConvertedSize
 
         /**
          * @brief Return the converted size of the element at the front of the queue.
-         * @return Converted size of the first element of the queue.
+         * @return Converted size of the first element of the queue. Returns 0 if there's no elements.
         */
         int getSizeOfFirstElement()
         {
            lock_guard<mutex> lock(queue_manipulation_mutex_);
+           if(this->internal_queue_.empty())
+           {
+                return 0;
+           }
+           
            return static_cast<int>(this->internal_queue_.front().converted_size_);
         }
 
@@ -389,11 +394,16 @@ class DynamicConvertedQueue<TQueueElementType, void>: public IDynamicQueue<deque
 
         /**
          * @brief Return the converted size of the element at the front of the queue.
-         * @return Converted size of the first element of the queue.
+         * @return Converted size of the first element of the queue. Returns 0 if there's no elements.
         */
         int getSizeOfFirstElement()
         {
            lock_guard<mutex> lock(queue_manipulation_mutex_);
+           if(this->internal_queue_.empty())
+           {
+                return 0;
+           }
+           
            return static_cast<int>(this->internal_queue_.front().converted_size_);
         }
 
