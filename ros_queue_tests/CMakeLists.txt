@@ -135,13 +135,17 @@ add_executable(transmission_vector_action_server
               src/transmission_vector_action_server.cpp)
               
 add_executable(prediction_server_node
-              src/prediction_server_node.cpp
-)
+              src/prediction_server_node.cpp)
+
+add_executable(transmission_action_receiver_node
+               src/transmission_action_receiver.cpp
+               src/transmission_action_receiver_node.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 add_dependencies(distribution_services_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(transmission_vector_action_server ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(transmission_action_receiver_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(distribution_sample_server
@@ -166,5 +170,9 @@ target_link_libraries(prediction_server_node
 )
 
 target_link_libraries(transmission_vector_action_server
+  ${catkin_LIBRARIES}
+)
+
+target_link_libraries(transmission_action_receiver_node
   ${catkin_LIBRARIES}
 )
