@@ -116,15 +116,19 @@ class ROSByteConvertedQueue: public DynamicConvertedQueue<topic_tools::ShapeShif
                 if (transmission_evaluation_service_client_.call(byte_size_req))
                 {
                     const int& nb_of_byte_to_transmit = byte_size_req.response.nb_of_bytes;
-                    const int& size_of_the_front_element = getSizeOfFirstElement();
-
-                    if (nb_of_byte_to_transmit < size_of_the_front_element)
+                    
+                    if (nb_of_byte_to_transmit > 0)
                     {
-                        ROS_WARN_STREAM_THROTTLE(2,"The front element of " << this->info_.queue_name <<" is bigger ("<< size_of_the_front_element << ") than the transmission rate (" << nb_of_byte_to_transmit << ")");
-                    }
+                        const int& size_of_the_front_element = getSizeOfFirstElement();
 
-                    deque<ElementWithConvertedSize<ShapeShifterPtr>> empty_queue;
-                    this->updateInConvertedSize(std::move(empty_queue), nb_of_byte_to_transmit);
+                        if (nb_of_byte_to_transmit < size_of_the_front_element)
+                        {
+                            ROS_WARN_STREAM_THROTTLE(2,"The front element of " << this->info_.queue_name <<" is bigger ("<< size_of_the_front_element << ") than the transmission rate (" << nb_of_byte_to_transmit << ")");
+                        }
+
+                        deque<ElementWithConvertedSize<ShapeShifterPtr>> empty_queue;
+                        this->updateInConvertedSize(std::move(empty_queue), nb_of_byte_to_transmit);
+                    }
                 }
 
             }
