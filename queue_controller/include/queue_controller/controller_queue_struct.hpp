@@ -47,18 +47,18 @@ struct ControllerQueueStruct
     ros::ServiceClient expected_departure_service_;
 
     /**
-     * @brief ROS Service used to get a current queue size if it's used as the arrival metric. Should not be defined 
+     * @brief ROS Service used to get a a metric thas is independant from the action. Should not be defined 
      * if expected_arrival_service_ is used. If both are defined, expected_arrival_service_ will be used.
-     * @details Since it uses a difference service definition compared to expected_arrival_service_ because
-     * the latter uses a potential action as an input, arrival_based_on_queue_size_service_ need to be created.
+     * @details Since it uses a different service definition compared to expected_arrival_service_ because
+     * the latter uses a potential action as an input, arrival_independant_from_action_service_ need to be created.
     */
-    ros::ServiceClient arrival_based_on_queue_size_service_;
+    ros::ServiceClient arrival_independent_from_action_service_;
 
     /**
      * @brief ROS Service used to get a current queue size if it's used as the departure metric. Should not be defined 
      * if expected_departure_service_ is used. If both are defined, expected_departure_service_ will be used.
-     * @details Since it uses a difference service definition compared to expected_departure_service_ because
-     * the latter uses a potential action as an input, departure_based_on_queue_size_service_ need to be created.
+     * @details Since it uses a different service definition  compared to expected_departure_service_ because
+     * the latter uses a potential action as an input, departure_independant_from_action_service_ need to be created.
     */
-    ros::ServiceClient departure_based_on_queue_size_service_;
+    ros::ServiceClient departure_independent_from_action_service_;
 };
