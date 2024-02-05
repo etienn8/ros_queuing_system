@@ -17,7 +17,7 @@
     <!-- Create a service to give the potential actions. -->
     <node pkg="ros_queue_tests" type="transmission_vector_action_server" name="transmission_vector_server"/>
 
-    <!-- Create a server that simulate-->
+    <!-- Create a server that simulates arrival and departure based on potential action-->
     <node pkg="ros_queue_tests" type="prediction_server_node" name="action_prediction_server_node">
         <rosparam command="load" file="$(find ros_queue_tests)/config/prediction_servers.yaml"/>
     </node>
