@@ -22,7 +22,11 @@
         <rosparam command="load" file="$(find ros_queue_tests)/config/prediction_servers.yaml"/>
     </node>
 
+    <!-- Create a server that aplies the best action selected by the controller. In this config, it will transmit the real queues. -->
     <node pkg="ros_queue_tests" type="transmission_action_receiver_node" name="transmission_action_receiver_node">
         <param name="action_subscriber_name" type="string" value="/test_queue_server/RealQueue0/real_queue_transmitted_channel"/>
     </node>
+
+    <!-- Create a server to compute the penalty of a transmission vector action. -->
+    <node pkg="ros_queue_tests" type="penalty_3q_2s_node" name="penalty_3q_2s_node"/>
 </launch>
