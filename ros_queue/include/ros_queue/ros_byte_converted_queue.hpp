@@ -15,6 +15,7 @@
 #include "topic_tools/shape_shifter.h"
 
 #include "ros_queue_msgs/ByteSizeRequest.h"
+#include "ros_queue_msgs/ManualByteTransmitSize.h"
 #include "ros_queue_msgs/FloatRequest.h"
 #include "ros_queue_msgs/QueueInfo.h"
 
@@ -84,6 +85,8 @@ class ROSByteConvertedQueue: public DynamicConvertedQueue<topic_tools::ShapeShif
             {  
                 transmission_evaluation_service_client_ = nh_.serviceClient<ros_queue_msgs::ByteSizeRequest>(interfaces.transmission_evaluation_service_name);
             }
+
+            manual_transmit_subscriber_ = nh_.subscribe("nb_bytes_to_transmit", 10, &ROSByteConvertedQueue::manualTransmissionCallback, this);
         }
 
         /**
@@ -217,6 +220,31 @@ class ROSByteConvertedQueue: public DynamicConvertedQueue<topic_tools::ShapeShif
         }
 
         /**
+         * @brief Callback that transmits queue elements based on the number of bytes to transmit
+         * specified in the received message.
+         * @param msg Message containing information about how many bytes should be manually transmitted.
+        */
+        void manualTransmissionCallback(const ros_queue_msgs::ManualByteTransmitSize::ConstPtr& msg)
+        {
+            if(is_publisher_initialized)
+            {
+                const int& nb_of_byte_to_transmit = msg->nb_bytes_to_transmit;
+                
+                if (nb_of_byte_to_transmit > 0)
+                {
+                    const int& size_of_the_front_element = getSizeOfFirstElement();
+
+                    if (nb_of_byte_to_transmit < size_of_the_front_element)
+                    {
+                        ROS_WARN_STREAM_THROTTLE(2,"The front element of " << this->info_.queue_name <<" is bigger ("<< size_of_the_front_element << ") than the transmission rate (" << nb_of_byte_to_transmit << ")");
+                    }
+
+                    deque<ElementWithConvertedSize<ShapeShifterPtr>> empty_queue;
+                    this->updateInConvertedSize(std::move(empty_queue), nb_of_byte_to_transmit);
+                }
+            }
+        }
+        /**
          * @brief Name of the topic to transmit the queue elements.
         */
         string transmission_topic_name_ = "";
@@ -240,6 +268,12 @@ class ROSByteConvertedQueue: public DynamicConvertedQueue<topic_tools::ShapeShif
          * @brief Service client to get how much bytes can be transmitted.
         */
         ros::ServiceClient transmission_evaluation_service_client_;
+
+        /**
+         * @brief ROS subscriber that receives message that that indicate a number of 
+         * bytes that should be manually transmitted.
+        */
+        ros::Subscriber manual_transmit_subscriber_;
 
         /**
          * @brief Duration to wait for the existence of services at each call.

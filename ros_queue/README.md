@@ -343,6 +343,9 @@ q0.transmitBasedOnQoS(); // Calls the transmission_evaluation_service_name to kn
 Subscriber:
 - `<arrival_topic_name>`: (Can be any ROS messages)
 	The messages from this topic will be stored in the queue. After the first reception of the message, a publisher will be created.
+	
+- `nb_bytes_to_transmit`: (std_msgs/Int32)
+	The queue will try to transmit the number of bytes specified by the integer received in this incoming message.
 
 Publisher:
 - `<transmission_topic_name>`: (Type of the first message received at the <arrival_topic_name>)
