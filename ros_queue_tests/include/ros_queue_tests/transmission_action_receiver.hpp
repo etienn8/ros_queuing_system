@@ -34,6 +34,11 @@ class TransmissionActionReceiver
         ros::ServiceServer byte_size_request_service_server_;
 
         /**
+         * @brief Service client to know the transmission rate of the real queue based on if the real queue can transmit.
+        */
+        ros::ServiceClient departure_service_;
+        
+        /**
          * @brief Number of bytes that can be transmitted at the next service call.
         */
         int byte_to_send_ = 0;
