@@ -190,6 +190,8 @@ class QueueController
             std::map<string, ObjectiveParameter> queue_parameters;
 
             float expected_renewal_time;
+
+            float cost = 0.0f;
         };
 
     private:
@@ -608,8 +610,34 @@ class QueueController
         */
         ActionParameters computeMinDriftPlusPenalty(std::vector<ActionParameters>& action_parameters_list)
         {
-            QueueController::ActionParameters empty_action_paramter;
-            return empty_action_paramter;
+            auto best_action = action_parameters_list.begin();
+
+            bool is_first_cost = true;
+
+            for (auto action_parameters_it = action_parameters_list.begin(); action_parameters_it != action_parameters_list.end(); ++action_parameters_it)
+            {
+                action_parameters_it->cost = v_parameter_*action_parameters_it->penalty;
+                
+                for(auto queue_it = action_parameters_it->queue_parameters.begin(); queue_it != action_parameters_it->queue_parameters.end(); ++queue_it)
+                {
+                    const string& queue_name = queue_it->first;
+                    action_parameters_it->cost += queue_list_[queue_name]->weight_ * 
+                                                  queue_it->second.current_size * 
+                                                  (queue_it->second.expected_arrivals - queue_it->second.expected_departures);
+                }
+
+                if (is_first_cost)
+                {
+                    is_first_cost = false;
+                    best_action = action_parameters_it;
+                }
+                else if(action_parameters_it->cost < best_action->cost)
+                {
+                    best_action = action_parameters_it;
+                }
+            }
+
+            return *best_action;
         }
         
         /**
