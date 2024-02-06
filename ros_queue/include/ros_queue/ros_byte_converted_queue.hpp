@@ -133,7 +133,6 @@ class ROSByteConvertedQueue: public DynamicConvertedQueue<topic_tools::ShapeShif
                         this->updateInConvertedSize(std::move(empty_queue), nb_of_byte_to_transmit);
                     }
                 }
-
             }
             else
             {
