@@ -646,7 +646,7 @@ class QueueController
         */
         void sendBestCommand(ActionType& best_action)
         {
-
+            best_action_output_pub_.publish(best_action);
         }
         
         /**
@@ -664,7 +664,24 @@ class QueueController
         */
         void updateVirtualQueuesBasedOnBestAction(ActionParameters& best_action_parameters)
         {
+            ros_queue_msgs::VirtualQueueChangesList change_list;
 
+            for (auto queue_it = queue_list_.begin(); queue_it != queue_list_.end(); ++queue_it)
+            {
+                if(queue_it->second->is_virtual_)
+                {
+                    const string& queue_name = queue_it->first;
+                    ros_queue_msgs::VirtualQueueChanges queue_changes;
+                    
+                    queue_changes.queue_name = queue_name;
+                    queue_changes.arrival = best_action_parameters.queue_parameters[queue_name].expected_arrivals;
+                    queue_changes.departure = best_action_parameters.queue_parameters[queue_name].expected_departures;
+                    
+                    change_list.list.push_back(std::move(queue_changes));
+                }
+            }
+
+            manual_virtual_queue_changes_.publish(change_list);
         }
 
 
