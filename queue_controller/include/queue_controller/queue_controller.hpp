@@ -185,7 +185,7 @@ class QueueController
         {
             ActionType action;
             
-            ObjectiveParameter penalty;
+            float penalty;
             
             std::map<string, ObjectiveParameter> queue_parameters;
 
@@ -384,14 +384,17 @@ class QueueController
             }
 
             TPotentialActionSetMsg action_set =  getActionSet();
-            std::vector<ActionParameters> action_parameters_list = getParametersForControlStep(action_set);
-            ActionParameters best_action_parameters = computeMinDriftPlusPenalty(action_parameters_list);
-            
-            sendBestCommand(best_action_parameters.action);
-
-            if (!inversed_control_and_update_steps_)
+            std::vector<ActionParameters> action_parameters_list(action_set.action_set.size());
+            if(getParametersForControlStep(action_set, action_parameters_list))
             {
-                updateVirtualQueuesBasedOnBestAction(best_action_parameters);
+                ActionParameters best_action_parameters = computeMinDriftPlusPenalty(action_parameters_list);
+                
+                sendBestCommand(best_action_parameters.action);
+
+                if (!inversed_control_and_update_steps_)
+                {
+                    updateVirtualQueuesBasedOnBestAction(best_action_parameters);
+                }
             }
         }
 
@@ -418,13 +421,12 @@ class QueueController
         /**
          * @brief Evaluates the penalty, the queues sizes and the queue changes for each action.
          * @param action_set The set of potential actions from which all metrics will be predicted.
-         * @return Returns a list of all the penalty and queues parameters for each action.
+         * @param action_parameters_output List of all the penalty and queues parameters for each action. Used as an output.
+         * @return Returns true if the parameters are valid.
         */
-        std::vector<ActionParameters> getParametersForControlStep(TPotentialActionSetMsg& action_set_msg)
+         bool getParametersForControlStep(TPotentialActionSetMsg& action_set_msg, std::vector<ActionParameters>& action_parameters_output)
         {
             const int& size_of_actions = action_set_msg.action_set.size();
-
-            std::vector<QueueController::ActionParameters> action_parameters_output(size_of_actions);
 
             // Populate actions
             for (int action_index = 0; action_index < size_of_actions; ++action_index)
@@ -460,7 +462,8 @@ class QueueController
             }
 
             // Expected time
-            
+            // TODO
+
             // Queues services
             for (auto queue_it = queue_list_.begin(); queue_it != queue_list_.end(); ++queue_it)
             {
@@ -469,102 +472,133 @@ class QueueController
                 // Arrivals
                 if(queue_it->second->expected_arrival_service_.isValid())
                 {
-                    TMetricControlPredictionSrv predictions;
-                    predictions.request.action_set = action_set_msg;
+                    TMetricControlPredictionSrv arrival_predictions;
+                    arrival_predictions.request.action_set = action_set_msg;
 
-                    if(queue_it->second->expected_arrival_service_.call(predictions))
+                    if(queue_it->second->expected_arrival_service_.call(arrival_predictions))
                     {
-                        const int& returned_size = predictions.response.predictions.size();
+                        const int& returned_size = arrival_predictions.response.predictions.size();
                         
                         if(returned_size == size_of_actions)
                         {
                             for (int action_index =0; action_index < size_of_actions; ++action_index)
                             {
-                                action_parameters_output[action_index].queue_parameters[queue_name].expected_arrivals = predictions.response.predictions[action_index];
+                                action_parameters_output[action_index].queue_parameters[queue_name].expected_arrivals = arrival_predictions.response.predictions[action_index];
                             }
                         }
                         else
                         {
+                            are_parameters_valid = false;
                             ROS_WARN_STREAM_THROTTLE(2, "Returned prediction array doesn't contain the same amount of elements has the action set (expected " << size_of_actions << ", received "<< returned_size <<")");
                         }
                     }
                     else
                     {
+                        are_parameters_valid = false;
                         ROS_WARN_STREAM_THROTTLE(2, "Failed to call the expected arrival service named: " << queue_it->second->expected_arrival_service_.getService());
                     }
                 }
                 else if (queue_it->second->arrival_independent_from_action_service_.isValid())
                 {
-                    ros_queue_msgs::FloatRequest prediction;
-
-                    if(queue_it->second->arrival_independent_from_action_service_.call(prediction))
+                    ros_queue_msgs::FloatRequest arrival_prediction;
+                    if(queue_it->second->arrival_independent_from_action_service_.call(arrival_prediction))
                     {
                         for (int action_index =0; action_index < size_of_actions; ++action_index)
                         {
-                            action_parameters_output[action_index].queue_parameters[queue_name].expected_arrivals = prediction.response.value;
+                            action_parameters_output[action_index].queue_parameters[queue_name].expected_arrivals = arrival_prediction.response.value;
                         }
                     }
                     else
                     {
+                        are_parameters_valid = false;
                         ROS_WARN_STREAM_THROTTLE(2, "Failed to call the expected arrival service independent from actions named: " << queue_it->second->arrival_independent_from_action_service_.getService());
                     }
                 }
                 else
                 {
+
+                    are_parameters_valid = false;
                     ROS_WARN_STREAM_THROTTLE(2, "The arrival evaluation service of the queue "<< queue_it->first <<"is not valid");
                 }
 
                 // Departures
                 if(queue_it->second->expected_departure_service_.isValid())
                     {
-                        TMetricControlPredictionSrv predictions;
-                        predictions.request.action_set = action_set_msg;
+                        TMetricControlPredictionSrv departure_predictions;
+                        departure_predictions.request.action_set = action_set_msg;
 
-                        if(queue_it->second->expected_departure_service_.call(predictions))
+                        if(queue_it->second->expected_departure_service_.call(departure_predictions))
                         {
-                            const int& returned_size = predictions.response.predictions.size();
+                            const int& returned_size = departure_predictions.response.predictions.size();
                             
                             if(returned_size == size_of_actions)
                             {
                                 for (int action_index =0; action_index < size_of_actions; ++action_index)
                                 {
-                                    action_parameters_output[action_index].queue_parameters[queue_name].expected_departures = predictions.response.predictions[action_index];
+                                    action_parameters_output[action_index].queue_parameters[queue_name].expected_departures = departure_predictions.response.predictions[action_index];
                                 }
                             }
                             else
                             {
+                                are_parameters_valid = false;
                                 ROS_WARN_STREAM_THROTTLE(2, "Returned prediction array doesn't contain the same amount of elements has the action set (expected " << size_of_actions << ", received "<< returned_size <<")");
                             }
                         }
                         else
                         {
+                            are_parameters_valid = false;
                             ROS_WARN_STREAM_THROTTLE(2, "Failed to call the expected departure service named: " << queue_it->second->expected_departure_service_.getService());
                         }
                     }
                     else if (queue_it->second->departure_independent_from_action_service_.isValid())
                     {
-                        ros_queue_msgs::FloatRequest prediction;
+                        ros_queue_msgs::FloatRequest departure_prediction;
 
-                        if(queue_it->second->departure_independent_from_action_service_.call(prediction))
+                        if(queue_it->second->departure_independent_from_action_service_.call(departure_prediction))
                         {
                             for (int action_index =0; action_index < size_of_actions; ++action_index)
                             {
-                                action_parameters_output[action_index].queue_parameters[queue_name].expected_departures = prediction.response.value;
+                                action_parameters_output[action_index].queue_parameters[queue_name].expected_departures = departure_prediction.response.value;
                             }
                         }
                         else
                         {
+                            are_parameters_valid = false;
                             ROS_WARN_STREAM_THROTTLE(2, "Failed to call the expected depature service independent from actions named: " << queue_it->second->departure_independent_from_action_service_.getService());
                         }
                     }
                     else
                     {
+                        are_parameters_valid = false;
                         ROS_WARN_STREAM_THROTTLE(2, "The departure evaluation service of the queue "<< queue_it->first <<"is not valid");
                     }
 
             }
+            // Populate the output if the parameters are valid
+            if (are_parameters_valid)
+            {
+                for (int action_index = 0; action_index < size_of_actions; ++action_index)
+                {
+                    action_parameters_output[action_index].penalty = penalty_prediction_srv.response.predictions[action_index];
+                    for (auto queue_it = queue_list_.begin(); queue_it != queue_list_.end(); ++queue_it)
+                    {
+                        const string& queue_name = queue_it->first;
+                        ObjectiveParameter& queue_parameters_out = action_parameters_output[action_index].queue_parameters[queue_name];
 
-            return action_parameters_output;
+                        for (auto queue_it = server_state_msg.response.queue_server_state.queue_sizes.begin(); 
+                                 queue_it != server_state_msg.response.queue_server_state.queue_sizes.end(); ++queue_it)
+                        {
+                            if(queue_name == queue_it->queue_name)
+                            {
+                                queue_parameters_out.current_size = queue_it->current_size;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+             return are_parameters_valid;
         }
         
         /**
