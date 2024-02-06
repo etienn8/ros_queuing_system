@@ -36,16 +36,31 @@ class QueueController
     public:
         typedef typename ActionTrait<TPotentialActionSetMsg>::ActionType ActionType;
 
+        enum ControllerType
+        {
+            DriftPlusPenalty,
+            RenewalDriftPlusPenalty
+        };
+
         QueueController(ros::NodeHandle& nh): nh_(nh)
         {
             bool can_create_controller = true;
 
-            if(nh.getParam("controller_type", controller_type_))
+            string controller_type_name;
+            if(nh.getParam("controller_type", controller_type_name))
             {
-                if (!(controller_type_ == "min_drift_plus_penalty" || controller_type_ == "renewal_min_drift_plus_penalty"))
+                if(controller_type_name == "min_drift_plus_penalty")
+                {
+                    controller_type_ = ControllerType::DriftPlusPenalty;
+                }
+                else if (controller_type_name == "renewal_min_drift_plus_penalty")
+                {
+                    controller_type_ = ControllerType::RenewalDriftPlusPenalty;
+                }
+                else
                 {
                     can_create_controller = false;
-                    ROS_ERROR_STREAM("Unknown controller type:" << controller_type_ <<". Supported types: min_drift_plus_penalty and renewal_min_drift_plus_penalty"); 
+                    ROS_ERROR_STREAM("Unknown controller type:" << controller_type_name <<". Supported types: min_drift_plus_penalty and renewal_min_drift_plus_penalty"); 
                 }
             }
             else
@@ -54,7 +69,7 @@ class QueueController
                 ROS_ERROR_STREAM("Missing the controller type");
             }
 
-            if (controller_type_ == "min_drift_plus_penalty")
+            if(controller_type_ == ControllerType::DriftPlusPenalty)
             {
                 if(!nh.getParam("time_step", controller_time_step_))
                 {
@@ -148,7 +163,7 @@ class QueueController
                 best_action_output_pub_ = nh_.advertise<ActionType>("best_action", 1000);
                 
                 // Initialize the triggers
-                if (controller_type_ == "min_drift_plus_penalty")
+                if (controller_type_ == ControllerType::DriftPlusPenalty)
                 {
                     periodic_trigger_timer_ = nh_.createTimer(ros::Duration(controller_time_step_), 
                                                             &QueueController::minDriftPlusPenaltyCallback, this);
@@ -603,7 +618,7 @@ class QueueController
         /**
          * @brief Indicate the controller types. It defines the type of optimization and the used metrics.
         */
-        string controller_type_;
+        ControllerType controller_type_;
 
         /**
          * @brief Indicate the period between each controller's call.
