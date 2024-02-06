@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
 
     ros::NodeHandle nh("~");
 
-    ros::ServiceServer srv_server = nh.advertiseService("penalty_3q_2s_node", penalty_evaluation_callback);
+    ros::ServiceServer srv_server = nh.advertiseService("power_penalty", penalty_evaluation_callback);
 
     ros::spin();
 }
