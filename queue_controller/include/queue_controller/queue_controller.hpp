@@ -417,13 +417,34 @@ class QueueController
                 action_parameters_output[action_index].action = action_set_msg.action_set[action_index];
             }
 
+            bool are_parameters_valid = true;
+
             // Penalty service
             TMetricControlPredictionSrv penalty_prediction_srv;
             penalty_prediction_srv.request.action_set = action_set_msg;
-            if (!penalty_service_client_.call(penalty_prediction_srv))
+            if (penalty_service_client_.call(penalty_prediction_srv))
             {
+                if (penalty_prediction_srv.response.predictions.size() != size_of_actions)
+                {
+                    are_parameters_valid = false;
+                    ROS_WARN_STREAM_THROTTLE(2, "Returned penalty array doesn't contain the same amount of elements has the action set (expected " << size_of_actions << ", received "<< penalty_prediction_srv.response.predictions.size() <<")");
+                }
+            }
+            else
+            {
+                are_parameters_valid = false;
                 ROS_WARN_STREAM_THROTTLE(2, "Failed to call the penalty evalution service");
             }
+
+            // Get queue sizes
+            ros_queue_msgs::QueueServerStateFetch server_state_msg;
+            if(!server_state_client_.call(server_state_msg))
+            {
+                are_parameters_valid = false;
+                ROS_WARN_STREAM_THROTTLE(2, "Failed to call the queue server state fetch# service");
+            }
+
+            // Expected time
             
             // Queues services
             for (auto queue_it = queue_list_.begin(); queue_it != queue_list_.end(); ++queue_it)
@@ -527,9 +548,6 @@ class QueueController
                     }
 
             }
-
-            // Expected time
-            // Get queue sizes
 
             return action_parameters_output;
         }
