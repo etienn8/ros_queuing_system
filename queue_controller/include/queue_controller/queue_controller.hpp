@@ -86,7 +86,7 @@ class QueueController
             string solution_space_service_name;
             if(nh.getParam("solution_space_service_name", solution_space_service_name))
             {
-                solution_space_client_ = nh_.serviceClient<TPotentialActionSetSrv>(solution_space_service_name);
+                solution_space_client_ = nh_.serviceClient<TPotentialActionSetSrv>(solution_space_service_name, true);
             }
             else
             {
@@ -97,7 +97,7 @@ class QueueController
             string penalty_service_name;
             if(nh.getParam("penalty_service_name", penalty_service_name))
             {
-                penalty_service_client_ = nh_.serviceClient<TMetricControlPredictionSrv>(penalty_service_name);
+                penalty_service_client_ = nh_.serviceClient<TMetricControlPredictionSrv>(penalty_service_name, true);
             }
             else
             {
@@ -147,7 +147,7 @@ class QueueController
             if (can_create_controller)
             {   
                 // Connect to queue_server for queue sizes
-                server_state_client_ = nh_.serviceClient<ros_queue_msgs::QueueServerStateFetch>("/" + queue_server_name_ + "/get_server_state");
+                server_state_client_ = nh_.serviceClient<ros_queue_msgs::QueueServerStateFetch>("/" + queue_server_name_ + "/get_server_state", true);
 
                 // Connect to queue_server for queue server udpates (depends on steps order)
                 if (!inversed_control_and_update_steps_)
@@ -156,7 +156,7 @@ class QueueController
                 }
                 else
                 {
-                    virtual_queues_trigger_ = nh_.serviceClient<std_srvs::Empty>("/" + queue_server_name_ + "/trigger_service");
+                    virtual_queues_trigger_ = nh_.serviceClient<std_srvs::Empty>("/" + queue_server_name_ + "/trigger_service", true);
                 }
 
                 // Create ouptut topic
@@ -239,7 +239,7 @@ class QueueController
          * the queue_list_ will be populated.
          * @return Returns false if the queue server wasn't found and true otherwise.
         */
-        bool populateQueueStructures(vector<xmlrpc_utils::ParameterPackageFetchStruct> parsed_queue_configs)
+        bool populateQueueStructures(vector<xmlrpc_utils::ParameterPackageFetchStruct>& parsed_queue_configs)
         {
             // Create structure to parse the queue params from the queue server
             ROS_INFO_STREAM("Waiting for queue serve named " << queue_server_name_ << " to be online. Waiting at most 10 seconds.");
@@ -288,7 +288,7 @@ class QueueController
                                 if(action_dependent_flag_it->second.first)
                                 {
                                     new_controller_struct->expected_arrival_service_ = 
-                                                            nh_.serviceClient<TMetricControlPredictionSrv>(service_name_temp);
+                                                            nh_.serviceClient<TMetricControlPredictionSrv>(service_name_temp, true);
                                 }
                                 else
                                 {
@@ -298,7 +298,7 @@ class QueueController
                                         ROS_WARN_STREAM("The queue "<< queue_name_temp << " from the queue controller configuration is missing its arrival_action_dependent parameter. Will be set to false.");
                                     }
                                     new_controller_struct->arrival_independent_from_action_service_ = 
-                                                            nh_.serviceClient<ros_queue_msgs::FloatRequest>(service_name_temp);
+                                                            nh_.serviceClient<ros_queue_msgs::FloatRequest>(service_name_temp, true);
                                 }
                             }
 
@@ -322,7 +322,7 @@ class QueueController
                                 if(action_dependent_flag_it->second.first)
                                 {
                                     new_controller_struct->expected_departure_service_ = 
-                                                            nh_.serviceClient<TMetricControlPredictionSrv>(service_name_temp);
+                                                            nh_.serviceClient<TMetricControlPredictionSrv>(service_name_temp, true);
                                 }
                                 else
                                 {
@@ -332,7 +332,7 @@ class QueueController
                                         ROS_WARN_STREAM("The queue "<< queue_name_temp << " from the queue controller configuration is missing its departure_action_dependent parameter. Will be set to false.");
                                     }
                                     new_controller_struct->departure_independent_from_action_service_ = 
-                                                            nh_.serviceClient<ros_queue_msgs::FloatRequest>(service_name_temp);
+                                                            nh_.serviceClient<ros_queue_msgs::FloatRequest>(service_name_temp, true);
                                 }
                             }
 
