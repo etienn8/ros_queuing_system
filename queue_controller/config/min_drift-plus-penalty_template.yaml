@@ -37,7 +37,6 @@ queue_list:
         # If set to true, the arrival service request will use the services specified by the template of the controller in its cpp file. 
         - departure_action_dependent: false
 
-
 # ====== Variable (penalty) to minimize configurations.======
 # Name of the service to evaluate the penalty based on the current state and the potential action. 
 penalty_service_name:  ""
