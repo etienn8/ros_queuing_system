@@ -58,6 +58,8 @@ add_message_files(
   QueueTransmitTemplate.msg
   QueueInfo.msg
   QueueServerState.msg
+  QueueStats.msg
+  QueueServerStats.msg
   States.msg
   VirtualQueueChanges.msg
   VirtualQueueChangesList.msg
