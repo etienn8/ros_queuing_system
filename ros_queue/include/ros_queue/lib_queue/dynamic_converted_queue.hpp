@@ -10,6 +10,8 @@
 #include "ros_queue/lib_queue/element_with_converted_size.hpp"
 #include "ros_queue/lib_queue/queue_exception.hpp"
 
+#include "ros_queue/lib_queue/mean_stats.hpp"
+
 using namespace std;
 
 /**
@@ -137,6 +139,8 @@ class DynamicConvertedQueue: public IDynamicQueue<deque<ElementWithConvertedSize
                 // Protect access to queue
                 lock_guard<mutex> lock(queue_manipulation_mutex_);
 
+
+                int total_departures = 0;
                 if (!this->internal_queue_.empty())
                 {
                      int front_element_size = static_cast<int>(this->internal_queue_.front().converted_size_);
@@ -150,6 +154,7 @@ class DynamicConvertedQueue: public IDynamicQueue<deque<ElementWithConvertedSize
                         
                         converted_queue_size_ -= front_element_size;
                         nb_departing_converted_size -= front_element_size;
+                        total_departures += front_element_size;
 
                         queue_to_transmit.push_back(std::move(this->internal_queue_.front().element_));
                         this->internal_queue_.pop_front();
@@ -157,6 +162,13 @@ class DynamicConvertedQueue: public IDynamicQueue<deque<ElementWithConvertedSize
                         front_element_size = static_cast<int>(this->internal_queue_.front().converted_size_);
                     }
                 }
+
+                if (mean_stats_.should_compute_means_)
+                {
+                    mean_stats_.increaseDepartureMean(total_departures);
+                }
+
+                int total_arrivals = 0;
                 //Receiving data
                 while(!arriving_elements.empty())
                 {
@@ -176,9 +188,18 @@ class DynamicConvertedQueue: public IDynamicQueue<deque<ElementWithConvertedSize
                         overflowed = true;
                         break;
                     }
+
+                    total_arrivals += size_of_element;
                     converted_queue_size_ += size_of_element;
                     this->internal_queue_.push_back(std::move(arriving_elements.front()));
                     arriving_elements.pop_front();
+                }
+
+                if (mean_stats_.should_compute_means_)
+                {
+                    mean_stats_.increaseArrivalMean(total_arrivals);
+                    // Mean queue size sampling
+                    mean_stats_.increaseSizeMean(static_cast<float>(converted_queue_size_));
                 }
             }
 
@@ -211,6 +232,7 @@ class DynamicConvertedQueue: public IDynamicQueue<deque<ElementWithConvertedSize
                 // Protect access to queue
                 lock_guard<mutex> lock(queue_manipulation_mutex_);
 
+                int total_departures = 0;
                 for(int i =0; i<nb_departing_elements; ++i)
                 {
                     if(this->internal_queue_.empty())
@@ -218,10 +240,19 @@ class DynamicConvertedQueue: public IDynamicQueue<deque<ElementWithConvertedSize
                         break;
                     }
                     
-                    converted_queue_size_ -= this->internal_queue_.front().converted_size_;
+                    const int departure_size = this->internal_queue_.front().converted_size_;
+                    total_departures += departure_size;
+                    converted_queue_size_ -= departure_size;
                     queue_to_transmit.push_back(std::move(this->internal_queue_.front().element_));
                     this->internal_queue_.pop_front();
                 }
+
+                if (mean_stats_.should_compute_means_)
+                {
+                    mean_stats_.increaseDepartureMean(total_departures);
+                }
+
+                int total_arrivals = 0;
                 //Receiving data
                 while(!arriving_elements.empty())
                 {
@@ -241,9 +272,18 @@ class DynamicConvertedQueue: public IDynamicQueue<deque<ElementWithConvertedSize
                         overflowed = true;
                         break;
                     }
+
+                    total_arrivals += size_of_element;
                     converted_queue_size_ += size_of_element;
                     this->internal_queue_.push_back(std::move(arriving_elements.front()));
                     arriving_elements.pop_front();
+                }
+
+                if (mean_stats_.should_compute_means_)
+                {
+                    mean_stats_.increaseArrivalMean(total_arrivals);
+                    // Mean queue size sampling
+                    mean_stats_.increaseSizeMean(static_cast<float>(converted_queue_size_));
                 }
             }
 
@@ -315,6 +355,10 @@ class DynamicConvertedQueue: public IDynamicQueue<deque<ElementWithConvertedSize
 
             return data_queue;
         }
+        /**
+         * @brief Object that keep tracks of the time average mean of the arrivals, departures and the queue's size.
+        */
+        MeanStats mean_stats_;
 
     protected:
         /**
@@ -482,6 +526,7 @@ class DynamicConvertedQueue<TQueueElementType, void>: public IDynamicQueue<deque
                 // Protect access to queue
                 lock_guard<mutex> lock(queue_manipulation_mutex_);
 
+                int total_departure = 0;
                 if (!this->internal_queue_.empty())
                 {
                      int front_element_size = static_cast<int>(this->internal_queue_.front().converted_size_);
@@ -495,6 +540,7 @@ class DynamicConvertedQueue<TQueueElementType, void>: public IDynamicQueue<deque
                         
                         converted_queue_size_ -= front_element_size;
                         nb_departing_converted_size -= front_element_size;
+                        total_departure += front_element_size;
 
                         queue_to_transmit.push_back(std::move(this->internal_queue_.front().element_));
                         this->internal_queue_.pop_front();
@@ -502,6 +548,14 @@ class DynamicConvertedQueue<TQueueElementType, void>: public IDynamicQueue<deque
                         front_element_size = static_cast<int>(this->internal_queue_.front().converted_size_);
                     }
                 }
+
+                if (mean_stats_.should_compute_means_)
+                {
+                    mean_stats_.increaseDepartureMean(total_departure);
+                    mean_stats_.increaseConvertedRemainingMean(nb_departing_converted_size);
+                }
+
+                int total_arrivals = 0;
                 //Receiving data
                 while(!arriving_elements.empty())
                 {
@@ -521,9 +575,19 @@ class DynamicConvertedQueue<TQueueElementType, void>: public IDynamicQueue<deque
                         overflowed = true;
                         break;
                     }
+
+                    total_arrivals += size_of_element;
                     converted_queue_size_ += size_of_element;
                     this->internal_queue_.push_back(std::move(arriving_elements.front()));
                     arriving_elements.pop_front();
+
+                }
+
+                if (mean_stats_.should_compute_means_)
+                {
+                    mean_stats_.increaseArrivalMean(total_arrivals);
+                    // Mean queue size sampling
+                    mean_stats_.increaseSizeMean(static_cast<float>(converted_queue_size_));
                 }
             }
 
@@ -557,17 +621,28 @@ class DynamicConvertedQueue<TQueueElementType, void>: public IDynamicQueue<deque
                 // Protect access to queue
                 lock_guard<mutex> lock(queue_manipulation_mutex_);
 
+                int total_departures = 0;
                 for(int i =0; i<nb_departing_elements; ++i)
                 {
                     if(this->internal_queue_.empty())
                     {
                         break;
                     }
+
+                    const int departure_size = this->internal_queue_.front().converted_size_;
                     
-                    converted_queue_size_ -= this->internal_queue_.front().converted_size_;
+                    total_departures += departure_size;
+                    converted_queue_size_ -= departure_size;
                     queue_to_transmit.push_back(std::move(this->internal_queue_.front().element_));
                     this->internal_queue_.pop_front();
                 }
+
+                if (mean_stats_.should_compute_means_)
+                {
+                    mean_stats_.increaseDepartureMean(total_departures);
+                }
+
+                int total_arrivals = 0;
                 //Receiving data
                 while(!arriving_elements.empty())
                 {
@@ -587,9 +662,17 @@ class DynamicConvertedQueue<TQueueElementType, void>: public IDynamicQueue<deque
                         overflowed = true;
                         break;
                     }
+                    total_arrivals += size_of_element;
                     converted_queue_size_ += size_of_element;
                     this->internal_queue_.push_back(std::move(arriving_elements.front()));
                     arriving_elements.pop_front();
+                }
+
+                if (mean_stats_.should_compute_means_)
+                {
+                    mean_stats_.increaseArrivalMean(total_arrivals);
+                    // Mean queue size sampling
+                    mean_stats_.increaseSizeMean(static_cast<float>(converted_queue_size_));
                 }
             }
 
@@ -661,6 +744,11 @@ class DynamicConvertedQueue<TQueueElementType, void>: public IDynamicQueue<deque
 
             return data_queue;
         }
+
+        /**
+         * @brief Object that keep tracks of the time average mean of the arrivals, departures and the queue's size.
+        */
+        MeanStats mean_stats_;
 
     protected:
         /**

@@ -8,6 +8,8 @@ struct MeanStats
     double departure_sum_ = 0.0f;
     double size_sum_ = 0.0f;
     long long mean_sample_size = 0; 
+    double converted_remaining_sum = 0.0f;
+    long long remaining_sample_sum = 0;
 
     bool should_compute_means_ = false;
 
@@ -27,7 +29,7 @@ struct MeanStats
     {
         double current_time_point_diff = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - time_0_).count();
 
-        return arrival_sum_/current_time_point_diff;
+        return arrival_sum_/current_time_point_diff*1000.0;
     }
 
     void increaseDepartureMean(float new_departure)
@@ -39,7 +41,7 @@ struct MeanStats
     {
         double current_time_point_diff = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - time_0_).count();
 
-        return departure_sum_/current_time_point_diff;
+        return departure_sum_/current_time_point_diff*1000.0;
     }
 
     void increaseSizeMean(float new_queue_size)
@@ -51,5 +53,16 @@ struct MeanStats
     double getSizeMean()
     {
         return size_sum_/mean_sample_size;
+    }
+
+    void increaseConvertedRemainingMean(float current_remaining)
+    {
+        converted_remaining_sum += current_remaining;
+        remaining_sample_sum += 1;
+    };
+
+    double getConvertedRemainingMean()
+    {
+        return converted_remaining_sum/remaining_sample_sum;
     }
 };

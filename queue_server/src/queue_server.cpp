@@ -16,6 +16,7 @@
 // ROS msgs
 #include "ros_queue_msgs/QueueInfo.h"
 #include "ros_queue_msgs/QueueServerState.h"
+#include "ros_queue_msgs/QueueServerStats.h"
 #include "ros_queue_msgs/VirtualQueueChangesList.h"
 
 // ROS services
@@ -35,11 +36,22 @@ QueueServer::QueueServer(ros::NodeHandle& nh, float spin_rate): nh_(nh)
         ROS_INFO_STREAM("Queue server doesn't a name from the param queue_server_name. Queue serve will be initialized with an empty name.");
     }
 
+    if (nh_.getParam("compute_statistics", should_queues_compute_stats_))
+    {
+        if(should_queues_compute_stats_)
+        {
+            queue_server_stats_pub_ = nh_.advertise<ros_queue_msgs::QueueServerStats>("server_stats", 10);
+        }
+    }
+    {
+        ROS_INFO_STREAM("Missing parameter compute_statistics, queues by default will not publish their stats.");
+    }
+
     loadQueueParametersAndCreateQueues();
 
     queue_server_update_virtual_queues_service_ = nh_.advertiseService("trigger_service",
                                                                          &QueueServer::queueUpdateCallback, this);
-    queue_server_states_pub_ = nh_.advertise<ros_queue_msgs::QueueServerState>("server_state",1000);
+    queue_server_states_pub_ = nh_.advertise<ros_queue_msgs::QueueServerState>("server_state",10);
 
 
     queue_server_states_service_ = nh_.advertiseService("get_server_state", 
@@ -141,13 +153,12 @@ void QueueServer::addRealQueue(std::unique_ptr<ROSByteConvertedQueue>&& new_queu
 
 void QueueServer::serverSpin(const ros::TimerEvent& event)
 {
-    // Verify that the publisher was initialized
-    if (!queue_server_states_pub_.getTopic().empty())
-    {
-        publishServerStates();
-    }
-
+    publishServerStates();
     transmitRealQueues();
+    if(should_queues_compute_stats_)
+    {
+        publishServerStats();
+    }
 }
 
 void QueueServer::checkAndCreateQueue(QueueParamStruct& queue_param_struct)
@@ -216,6 +227,8 @@ void QueueServer::checkAndCreateQueue(QueueParamStruct& queue_param_struct)
                                                                 .transmission_topic_name = queue_param_struct.tranmission_topic_name_,
                                                                 .transmission_evaluation_service_name = queue_param_struct.transmission_evaluation_service_name_
                                                             });
+                // Sets if the queue should compute stats or not.
+                new_queue->mean_stats_.should_compute_means_ = should_queues_compute_stats_;
 
                 addRealQueue(std::move(new_queue));
             }
@@ -371,6 +384,30 @@ void QueueServer::publishServerStates()
     appendQueueSizesToMsg(equality_constraint_virtual_queues_, server_state_msg);
     
     queue_server_states_pub_.publish(server_state_msg);
+}
+
+void QueueServer::publishServerStats()
+{
+    ros_queue_msgs::QueueServerStats server_stats_msg;
+
+    server_stats_msg.queue_server_name = queue_server_name_;
+
+    for (auto queue_it = real_queues_.begin(); queue_it != real_queues_.end(); ++queue_it)
+    {
+        if (queue_it->second->mean_stats_.should_compute_means_)
+        {
+            ros_queue_msgs::QueueStats queue_stats;
+            queue_stats.queue_name = queue_it->first;
+            queue_stats.arrival_mean = queue_it->second->mean_stats_.getArrivalMean();
+            queue_stats.departure_mean = queue_it->second->mean_stats_.getDepartureMean();
+            queue_stats.current_size = queue_it->second->getSize();
+            queue_stats.size_mean = queue_it->second->mean_stats_.getSizeMean();
+            queue_stats.converted_remaining_mean = queue_it->second->mean_stats_.getConvertedRemainingMean();
+            
+            server_stats_msg.queue_stats.push_back(std::move(queue_stats));
+        }
+    }
+    queue_server_stats_pub_.publish(server_stats_msg);
 }
 
 void QueueServer::transmitRealQueues()

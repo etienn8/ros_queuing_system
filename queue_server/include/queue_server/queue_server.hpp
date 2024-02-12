@@ -118,12 +118,24 @@ class QueueServer
         */
         string queue_server_name_;
 
+        /**
+         * @brief Parameter that indicate if queues should compute additionnal statistics via a topic.
+         * Only useful at configuration time.
+        */
+        bool should_queues_compute_stats_ = false;
+
         /****************************************************************************
          *  ROS interfaces.
         */
 
         /**
-         * @brief Publisher that periodically publish and table of all the size of the queues.
+         * @brief Publisher that periodically publishes a list of all the queues and stats about their
+         * time average metrics.
+        */
+        ros::Publisher queue_server_stats_pub_;
+
+        /**
+         * @brief Publisher that periodically publishes a table of all the size of the queues.
         */
         ros::Publisher queue_server_states_pub_;
 
@@ -150,6 +162,12 @@ class QueueServer
          * @brief Publishes a ROS message with the queue_server_states_pub_ to indicate the server state and the size of the queues.
         */
         void publishServerStates();
+
+        /**
+         * @brief Publishes a ROS that contrains time averages statistics about the queues if the 
+         * stats publishing flag is set  
+        */
+        void publishServerStats();
 
         /**
          * @brief For each real queues, verify how much data could be sent and the queue will transmit up to that quanity if possible.

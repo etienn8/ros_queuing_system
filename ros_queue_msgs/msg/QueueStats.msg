@@ -3,3 +3,4 @@ float32 current_size
 float32 size_mean
 float32 arrival_mean
 float32 departure_mean
+float32 converted_remaining_mean
