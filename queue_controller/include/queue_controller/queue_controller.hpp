@@ -559,7 +559,7 @@ class QueueController
                     TMetricControlPredictionSrv departure_predictions;
                     departure_predictions.request.action_set = action_set_msg;
 
-                    queue_controller_utils::check_persistent_service_connection<TPotentialActionSetSrv>(nh_, queue_it->second->queue_it->second->expected_departure_service_);
+                    queue_controller_utils::check_persistent_service_connection<TPotentialActionSetSrv>(nh_, queue_it->second->expected_departure_service_);
 
                     if(queue_it->second->expected_departure_service_.call(departure_predictions))
                     {
