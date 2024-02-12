@@ -31,6 +31,15 @@ struct ControllerQueueStruct
     */
     float weight_;
 
+    /**
+     * @brief Flag to indicate if the expected_arrival_service_ or the arrival_independent_from_action_service_ should be used.
+    */
+    bool is_arrival_action_dependent;
+
+    /**
+     * @brief Flag to indicate if the expected_departure_service_ or the departure_independent_from_action_service_ should be used.
+    */
+    bool is_departure_action_dependent;
 
     /**
      * @brief ROS Service used to compute the expected arrivals of a queue based on a the current state

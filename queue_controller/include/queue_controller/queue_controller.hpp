@@ -9,6 +9,7 @@
 #include "ros/ros.h"
 
 #include "controller_queue_struct.hpp"
+#include "queue_controller_utils.hpp"
 
 #include "ros_queue_msgs/FloatRequest.h"
 #include "ros_queue_msgs/QueueInfoFetch.h"
@@ -87,6 +88,9 @@ class QueueController
             if(nh.getParam("solution_space_service_name", solution_space_service_name))
             {
                 solution_space_client_ = nh_.serviceClient<TPotentialActionSetSrv>(solution_space_service_name, true);
+                
+                ROS_INFO_STREAM("Waiting for the solution space client named :" << solution_space_service_name);
+                solution_space_client_.waitForExistence();
             }
             else
             {
@@ -98,6 +102,9 @@ class QueueController
             if(nh.getParam("penalty_service_name", penalty_service_name))
             {
                 penalty_service_client_ = nh_.serviceClient<TMetricControlPredictionSrv>(penalty_service_name, true);
+                
+                ROS_INFO_STREAM("Waiting for the penalty space client named :" << penalty_service_name);
+                penalty_service_client_.waitForExistence();
             }
             else
             {
@@ -149,6 +156,9 @@ class QueueController
                 // Connect to queue_server for queue sizes
                 server_state_client_ = nh_.serviceClient<ros_queue_msgs::QueueServerStateFetch>("/" + queue_server_name_ + "/get_server_state", true);
 
+                ROS_INFO_STREAM("Waiting for the server service named :" << server_state_client_.getService());
+                server_state_client_.waitForExistence();
+
                 // Connect to queue_server for queue server udpates (depends on steps order)
                 if (!inversed_control_and_update_steps_)
                 {   
@@ -157,6 +167,8 @@ class QueueController
                 else
                 {
                     virtual_queues_trigger_ = nh_.serviceClient<std_srvs::Empty>("/" + queue_server_name_ + "/trigger_service", true);
+                    ROS_INFO_STREAM("Waiting for the server service named :" << virtual_queues_trigger_.getService());
+                    virtual_queues_trigger_.waitForExistence();
                 }
 
                 // Create ouptut topic
@@ -287,8 +299,11 @@ class QueueController
                             {
                                 if(action_dependent_flag_it->second.first)
                                 {
+                                    new_controller_struct->is_arrival_action_dependent = true;
                                     new_controller_struct->expected_arrival_service_ = 
                                                             nh_.serviceClient<TMetricControlPredictionSrv>(service_name_temp, true);
+                                    ROS_INFO_STREAM("Waiting for the server service named :" << new_controller_struct->expected_arrival_service_.getService());
+                                    new_controller_struct->expected_arrival_service_.waitForExistence();
                                 }
                                 else
                                 {
@@ -297,8 +312,11 @@ class QueueController
                                     {
                                         ROS_WARN_STREAM("The queue "<< queue_name_temp << " from the queue controller configuration is missing its arrival_action_dependent parameter. Will be set to false.");
                                     }
+                                    new_controller_struct->is_arrival_action_dependent = false;
                                     new_controller_struct->arrival_independent_from_action_service_ = 
                                                             nh_.serviceClient<ros_queue_msgs::FloatRequest>(service_name_temp, true);
+                                    ROS_INFO_STREAM("Waiting for the server service named :" << new_controller_struct->arrival_independent_from_action_service_.getService());
+                                    new_controller_struct->arrival_independent_from_action_service_.waitForExistence();
                                 }
                             }
 
@@ -321,8 +339,11 @@ class QueueController
                             {
                                 if(action_dependent_flag_it->second.first)
                                 {
+                                    new_controller_struct->is_departure_action_dependent= true;
                                     new_controller_struct->expected_departure_service_ = 
                                                             nh_.serviceClient<TMetricControlPredictionSrv>(service_name_temp, true);
+                                    ROS_INFO_STREAM("Waiting for the server service named :" << new_controller_struct->expected_departure_service_.getService());
+                                    new_controller_struct->expected_departure_service_.waitForExistence();
                                 }
                                 else
                                 {
@@ -331,8 +352,12 @@ class QueueController
                                     {
                                         ROS_WARN_STREAM("The queue "<< queue_name_temp << " from the queue controller configuration is missing its departure_action_dependent parameter. Will be set to false.");
                                     }
+                                    new_controller_struct->is_departure_action_dependent= false;
                                     new_controller_struct->departure_independent_from_action_service_ = 
                                                             nh_.serviceClient<ros_queue_msgs::FloatRequest>(service_name_temp, true);
+                                    ROS_INFO_STREAM("Waiting for the server service named :" << new_controller_struct->expected_departure_service_.getService());
+                                    new_controller_struct->expected_departure_service_.waitForExistence();
+                                    
                                 }
                             }
 
@@ -354,7 +379,6 @@ class QueueController
                         ROS_WARN_STREAM("Expected queue " << queue_name_temp << " from the queue controller wasn't found in the queue server " << queue_server_name_ << ". The queue won't be considered by the controller.");
                     }
                 }
-
             }
             else
             {
@@ -386,16 +410,20 @@ class QueueController
             }
 
             TPotentialActionSetMsg action_set =  getActionSet();
-            std::vector<ActionParameters> action_parameters_list(action_set.action_set.size());
-            if(getParametersForControlStep(action_set, action_parameters_list))
+            int nb_actions = action_set.action_set.size();
+            if (nb_actions > 0)
             {
-                ActionParameters best_action_parameters = computeMinDriftPlusPenalty(action_parameters_list);
-                
-                sendBestCommand(best_action_parameters.action);
-
-                if (!inversed_control_and_update_steps_)
+                std::vector<ActionParameters> action_parameters_list(nb_actions);
+                if(getParametersForControlStep(action_set, action_parameters_list))
                 {
-                    updateVirtualQueuesBasedOnBestAction(best_action_parameters);
+                    ActionParameters best_action_parameters = computeMinDriftPlusPenalty(action_parameters_list);
+                
+                    sendBestCommand(best_action_parameters.action);
+
+                    if (!inversed_control_and_update_steps_)
+                    {
+                        updateVirtualQueuesBasedOnBestAction(best_action_parameters);
+                    }
                 }
             }
         }
@@ -410,8 +438,9 @@ class QueueController
         {
             ROS_DEBUG("Calling action set service");
 
-            TPotentialActionSetSrv potential_set_srv;
+            queue_controller_utils::check_persistent_service_connection<TPotentialActionSetSrv>(nh_, solution_space_client_);
             
+            TPotentialActionSetSrv potential_set_srv;
             if(!solution_space_client_.call(potential_set_srv))
             {
                 ROS_WARN_STREAM_THROTTLE(2, "Failed to call the service that retrieves the action set");
@@ -439,6 +468,8 @@ class QueueController
             bool are_parameters_valid = true;
 
             // Penalty service
+            queue_controller_utils::check_persistent_service_connection<TMetricControlPredictionSrv>(nh_, penalty_service_client_);
+
             TMetricControlPredictionSrv penalty_prediction_srv;
             penalty_prediction_srv.request.action_set = action_set_msg;
             if (penalty_service_client_.call(penalty_prediction_srv))
@@ -472,10 +503,12 @@ class QueueController
                 const string& queue_name = queue_it->first;
                 
                 // Arrivals
-                if(queue_it->second->expected_arrival_service_.isValid())
+                if(queue_it->second->is_arrival_action_dependent)
                 {
                     TMetricControlPredictionSrv arrival_predictions;
                     arrival_predictions.request.action_set = action_set_msg;
+
+                    queue_controller_utils::check_persistent_service_connection<TPotentialActionSetSrv>(nh_, queue_it->second->expected_arrival_service_);
 
                     if(queue_it->second->expected_arrival_service_.call(arrival_predictions))
                     {
@@ -500,9 +533,12 @@ class QueueController
                         ROS_WARN_STREAM_THROTTLE(2, "Failed to call the expected arrival service named: " << queue_it->second->expected_arrival_service_.getService());
                     }
                 }
-                else if (queue_it->second->arrival_independent_from_action_service_.isValid())
+                else
                 {
                     ros_queue_msgs::FloatRequest arrival_prediction;
+
+                    queue_controller_utils::check_persistent_service_connection<ros_queue_msgs::FloatRequest>(nh_, queue_it->second->arrival_independent_from_action_service_);
+                    
                     if(queue_it->second->arrival_independent_from_action_service_.call(arrival_prediction))
                     {
                         for (int action_index =0; action_index < size_of_actions; ++action_index)
@@ -516,65 +552,57 @@ class QueueController
                         ROS_WARN_STREAM_THROTTLE(2, "Failed to call the expected arrival service independent from actions named: " << queue_it->second->arrival_independent_from_action_service_.getService());
                     }
                 }
-                else
-                {
-
-                    are_parameters_valid = false;
-                    ROS_WARN_STREAM_THROTTLE(2, "The arrival evaluation service of the queue "<< queue_it->first <<"is not valid");
-                }
 
                 // Departures
-                if(queue_it->second->expected_departure_service_.isValid())
-                    {
-                        TMetricControlPredictionSrv departure_predictions;
-                        departure_predictions.request.action_set = action_set_msg;
+                if(queue_it->second->is_departure_action_dependent)
+                {
+                    TMetricControlPredictionSrv departure_predictions;
+                    departure_predictions.request.action_set = action_set_msg;
 
-                        if(queue_it->second->expected_departure_service_.call(departure_predictions))
-                        {
-                            const int& returned_size = departure_predictions.response.predictions.size();
-                            
-                            if(returned_size == size_of_actions)
-                            {
-                                for (int action_index =0; action_index < size_of_actions; ++action_index)
-                                {
-                                    action_parameters_output[action_index].queue_parameters[queue_name].expected_departures = departure_predictions.response.predictions[action_index];
-                                }
-                            }
-                            else
-                            {
-                                are_parameters_valid = false;
-                                ROS_WARN_STREAM_THROTTLE(2, "Returned prediction array doesn't contain the same amount of elements has the action set (expected " << size_of_actions << ", received "<< returned_size <<")");
-                            }
-                        }
-                        else
-                        {
-                            are_parameters_valid = false;
-                            ROS_WARN_STREAM_THROTTLE(2, "Failed to call the expected departure service named: " << queue_it->second->expected_departure_service_.getService());
-                        }
-                    }
-                    else if (queue_it->second->departure_independent_from_action_service_.isValid())
-                    {
-                        ros_queue_msgs::FloatRequest departure_prediction;
+                    queue_controller_utils::check_persistent_service_connection<TPotentialActionSetSrv>(nh_, queue_it->second->queue_it->second->expected_departure_service_);
 
-                        if(queue_it->second->departure_independent_from_action_service_.call(departure_prediction))
+                    if(queue_it->second->expected_departure_service_.call(departure_predictions))
+                    {
+                        const int& returned_size = departure_predictions.response.predictions.size();
+                        
+                        if(returned_size == size_of_actions)
                         {
                             for (int action_index =0; action_index < size_of_actions; ++action_index)
                             {
-                                action_parameters_output[action_index].queue_parameters[queue_name].expected_departures = departure_prediction.response.value;
+                                action_parameters_output[action_index].queue_parameters[queue_name].expected_departures = departure_predictions.response.predictions[action_index];
                             }
                         }
                         else
                         {
                             are_parameters_valid = false;
-                            ROS_WARN_STREAM_THROTTLE(2, "Failed to call the expected depature service independent from actions named: " << queue_it->second->departure_independent_from_action_service_.getService());
+                            ROS_WARN_STREAM_THROTTLE(2, "Returned prediction array doesn't contain the same amount of elements has the action set (expected " << size_of_actions << ", received "<< returned_size <<")");
                         }
                     }
                     else
                     {
                         are_parameters_valid = false;
-                        ROS_WARN_STREAM_THROTTLE(2, "The departure evaluation service of the queue "<< queue_it->first <<"is not valid");
+                        ROS_WARN_STREAM_THROTTLE(2, "Failed to call the expected departure service named: " << queue_it->second->expected_departure_service_.getService());
                     }
+                }
+                else
+                {
+                    ros_queue_msgs::FloatRequest departure_prediction;
 
+                    queue_controller_utils::check_persistent_service_connection<ros_queue_msgs::FloatRequest>(nh_, queue_it->second->departure_independent_from_action_service_);
+
+                    if(queue_it->second->departure_independent_from_action_service_.call(departure_prediction))
+                    {
+                        for (int action_index =0; action_index < size_of_actions; ++action_index)
+                        {
+                            action_parameters_output[action_index].queue_parameters[queue_name].expected_departures = departure_prediction.response.value;
+                        }
+                    }
+                    else
+                    {
+                        are_parameters_valid = false;
+                        ROS_WARN_STREAM_THROTTLE(2, "Failed to call the expected depature service independent from actions named: " << queue_it->second->departure_independent_from_action_service_.getService());
+                    }
+                }
             }
             // Populate the output if the parameters are valid
             if (are_parameters_valid)
