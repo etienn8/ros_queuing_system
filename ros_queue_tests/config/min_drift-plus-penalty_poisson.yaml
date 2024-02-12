@@ -10,7 +10,7 @@ time_step: 0.1
 inverse_control_and_steps: false
 
 # Solution space service that provides a list of all available actions.
-solution_space_service_name: "solution_space"
+solution_space_service_name: "/transmission_vector_server/transmission_vector_action_set"
 
 # ====== Queue configurations. Indicate all the queues used in the controllers equation. ======
 # Most of the queues' information will be fetch automatically through the parameters of the indicated queue_server.
@@ -19,30 +19,62 @@ queue_server_name: "test_queue_server"
 # List all the queues used from the queue server. The queue controller will try to stabilize all those queues. An arbitrary number of queues can be added.
 queue_list:
     # The name of the queue. Should match a queue name from the queue_server
-    - RealQueue1:
+    - RealQueue0:
         # Weight in the cost function multplied with the size of the queue. 
         # A higher value means the controller will try to stabilize it faster compared to the other queues.
         # It could also be set as a normalization factor.       
         - weight: 1.0
         # Name of the service to evaluate the expected arrivals of the queue based on the evaluated action.
-        - expected_arrival_service_name: "expected_arrival"
+        - expected_arrival_service_name: "/distribution_sample_server/real_queue_arrival_evaluation"
+        # If set to false, the arrival service request will be empty and use the srv ros_queue_msgs/FloatRequest. Default value.
+        # If set to true, the arrival service request will use the services specified by the template of the controller in its cpp file. 
+        - arrival_action_dependent: false
+        
         # Name of the service to evaluate the expected departures of the queue based on the evaluated action.
-        - expected_departure_service_name: "expected_departure"
+        - expected_departure_service_name: "/action_prediction_server_node/queue_0_b"
+        # If set to false, the arrival service request will be empty and use the srv ros_queue_msgs/FloatRequest. Default value.
+        # If set to true, the arrival service request will use the services specified by the template of the controller in its cpp file. 
+        - departure_action_dependent: true
+
     # The name of the queue. Should match a queue name from the queue_server
+    - VirtualQueue0:
+        # Weight in the cost function multplied with the size of the queue. 
+        # A higher value means the controller will try to stabilize it faster compared to the other queues.
+        # It could also be set as a normalization factor.       
+        - weight: 1.0
+        # Name of the service to evaluate the expected arrivals of the queue based on the evaluated action.
+        - expected_arrival_service_name: "/distribution_sample_server/poisson_lambda_3_0"
+        # If set to false, the arrival service request will be empty and use the srv ros_queue_msgs/FloatRequest. Default value.
+        # If set to true, the arrival service request will use the services specified by the template of the controller in its cpp file. 
+        - arrival_action_dependent: false
+        
+        # Name of the service to evaluate the expected departures of the queue based on the evaluated action.
+        - expected_departure_service_name: "/action_prediction_server_node/queue_1_b"
+        # If set to false, the arrival service request will be empty and use the srv ros_queue_msgs/FloatRequest. Default value.
+        # If set to true, the arrival service request will use the services specified by the template of the controller in its cpp file. 
+        - departure_action_dependent: true
+
     - VirtualQueue1:
         # Weight in the cost function multplied with the size of the queue. 
         # A higher value means the controller will try to stabilize it faster compared to the other queues.
         # It could also be set as a normalization factor.       
-        - weight: 2.0
+        - weight: 1.0
         # Name of the service to evaluate the expected arrivals of the queue based on the evaluated action.
-        - expected_arrival_service_name: "expected_arrival"
+        - expected_arrival_service_name: "/distribution_sample_server/poisson_lambda_3_0"
+        # If set to false, the arrival service request will be empty and use the srv ros_queue_msgs/FloatRequest. Default value.
+        # If set to true, the arrival service request will use the services specified by the template of the controller in its cpp file. 
+        - arrival_action_dependent: false
+        
         # Name of the service to evaluate the expected departures of the queue based on the evaluated action.
-        - expected_departure_service_name: "expected_departure"
+        - expected_departure_service_name: "/action_prediction_server_node/queue_2_b"
+        # If set to false, the arrival service request will be empty and use the srv ros_queue_msgs/FloatRequest. Default value.
+        # If set to true, the arrival service request will use the services specified by the template of the controller in its cpp file. 
+        - departure_action_dependent: true
 
 # ====== Variable (penalty) to minimize configurations.======
 # Name of the service to evaluate the penalty based on the current state and the potential action. 
-penalty_service_name:  "penalty_service"
+penalty_service_name:  "/penalty_3q_2s_node/power_penalty"
 # The V parameter that is multplied with the penalty (like a weight). When a high penalty metric also increases the queue size,
 # this parameter balances the tradeoff between a lower penalty or lower queue delays. A high V will prioritize the minimization
 # of the penalty while a low V will prioritize low queue sizes and delays.
-v_parameter: 3.0
+v_parameter: 1.0
