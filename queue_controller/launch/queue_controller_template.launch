@@ -4,7 +4,7 @@
 
   <arg name="queue_controller_config_path" default="$(find queue_controller)/config/min_drift-plus-penalty_template.yaml"/>
 
-  <node name="$(arg queue_controller_name)" pkg="queue_controller" type="queue_controller">
+  <node name="$(arg queue_controller_name)" pkg="queue_controller" type="queue_controller" output="screen">
     <rosparam file="$(arg queue_controller_config_path)" command="load" subst_value="true"/>
   </node>
 </launch>
