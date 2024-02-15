@@ -20,7 +20,6 @@ prediction_service_list:
     - distribution_type: "static"
     - transmission_value: 4.0 
 
-
   - queue_0_b:
     - control_action_type: "transmission_vector"
     - transmission_vector_id: 0
