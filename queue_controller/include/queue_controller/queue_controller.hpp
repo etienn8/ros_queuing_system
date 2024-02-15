@@ -414,7 +414,7 @@ class QueueController
             double update_virtual_queues_time_spent = 0.0f; 
             double total_time = 0.0f;
             
-            ROS_DEBUG_STREAM("Queue controller: Staring control loop of "<< ros::this_node::getName());
+            ROS_DEBUG_STREAM("Queue controller: Starting control loop of "<< ros::this_node::getName());
             
             if (inversed_control_and_update_steps_)
             {
@@ -456,8 +456,9 @@ class QueueController
                                   << "action_set_time_spent: " << action_set_time_spent << " ms (" << action_set_time_spent/controller_time_step_ms*100<< "%), \n" 
                                   << "get_parameters_time_spent: " << get_parameters_time_spent << " ms (" << get_parameters_time_spent/controller_time_step_ms*100<< "%), \n" 
                                   << "compute_optimization_time_spent: " << compute_optimization_time_spent << " ms (" << compute_optimization_time_spent/controller_time_step_ms*100<< "%), \n"
-                                  <<  "send_best_action_time_spent: " << send_best_action_time_spent << " ms (" << send_best_action_time_spent/controller_time_step_ms*100<< "%), \n"
-                                  << "update_virtual_queues_time_spent: " << update_virtual_queues_time_spent << " ms (" << update_virtual_queues_time_spent/controller_time_step_ms*100<< "%)");        
+                                  << "send_best_action_time_spent: " << send_best_action_time_spent << " ms (" << send_best_action_time_spent/controller_time_step_ms*100<< "%), \n"
+                                  << "update_virtual_queues_time_spent: " << update_virtual_queues_time_spent << " ms (" << update_virtual_queues_time_spent/controller_time_step_ms*100<< "%), \n"
+                                  << "iddle time:" << controller_time_step_ms - total_time << " ms (" << (controller_time_step_ms - total_time)/controller_time_step_ms*100<< "%)");        
             }
         }
 
