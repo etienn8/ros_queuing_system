@@ -29,6 +29,10 @@ struct MeanStats
     {
         double current_time_point_diff = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - time_0_).count();
 
+        if (current_time_point_diff == 0)
+        {
+            return 0.0;
+        }
         return arrival_sum_/current_time_point_diff*1000.0;
     }
 
@@ -41,6 +45,10 @@ struct MeanStats
     {
         double current_time_point_diff = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - time_0_).count();
 
+        if (current_time_point_diff == 0)
+        {
+            return 0.0;
+        }
         return departure_sum_/current_time_point_diff*1000.0;
     }
 
@@ -52,6 +60,10 @@ struct MeanStats
 
     double getSizeMean()
     {
+        if(mean_sample_size == 0)
+        {
+            return 0.0;
+        }
         return size_sum_/mean_sample_size;
     }
 
@@ -63,6 +75,10 @@ struct MeanStats
 
     double getConvertedRemainingMean()
     {
+        if(remaining_sample_sum == 0)
+        {
+            return 0.0;
+        }
         return converted_remaining_sum/remaining_sample_sum;
     }
 };
