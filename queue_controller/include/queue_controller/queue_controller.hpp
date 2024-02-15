@@ -717,7 +717,13 @@ class QueueController
         */
         void updateVirtualQueuesBasedOnCurrentState()
         {
+            queue_controller_utils::check_persistent_service_connection<std_srvs::Empty>(nh_, virtual_queues_trigger_);
 
+            std_srvs::Empty trigger;
+            if(!virtual_queues_trigger_.call(trigger))
+            {
+                ROS_WARN_STREAM("Failed to call the virtual queue trigger service");
+            }
         }
 
         /**
