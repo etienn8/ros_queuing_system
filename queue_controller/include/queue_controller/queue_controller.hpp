@@ -1,5 +1,6 @@
 #pragma once
 
+#include <chrono>
 #include <map>
 #include <memory>
 #include <string>
@@ -402,29 +403,61 @@ class QueueController
         */
         void minDriftPlusPenaltyCallback(const ros::TimerEvent& time_event)
         {
+            // Time measurement variables
+            std::chrono::time_point<std::chrono::system_clock> time_0 = std::chrono::high_resolution_clock::now();
+            std::chrono::time_point<std::chrono::system_clock> time_cursor = time_0;
+            double virtual_queues_current_state_update_time_spent = 0.0f;
+            double action_set_time_spent = 0.0f;
+            double get_parameters_time_spent = 0.0f;
+            double compute_optimization_time_spent = 0.0f;
+            double send_best_action_time_spent = 0.0f;
+            double update_virtual_queues_time_spent = 0.0f; 
+            double total_time = 0.0f;
+            
             ROS_DEBUG_STREAM("Queue controller: Staring control loop of "<< ros::this_node::getName());
             
             if (inversed_control_and_update_steps_)
             {
                 updateVirtualQueuesBasedOnCurrentState();
             }
+            time_cursor = queue_controller_utils::updateTimePointAndGetTimeDifferenceMS(time_cursor, virtual_queues_current_state_update_time_spent);
 
             TPotentialActionSetMsg action_set =  getActionSet();
+            time_cursor = queue_controller_utils::updateTimePointAndGetTimeDifferenceMS(time_cursor, action_set_time_spent);
+
             int nb_actions = action_set.action_set.size();
             if (nb_actions > 0)
             {
                 std::vector<ActionParameters> action_parameters_list(nb_actions);
                 if(getParametersForControlStep(action_set, action_parameters_list))
                 {
+                    time_cursor = queue_controller_utils::updateTimePointAndGetTimeDifferenceMS(time_cursor, get_parameters_time_spent);
+
                     ActionParameters best_action_parameters = computeMinDriftPlusPenalty(action_parameters_list);
+                    time_cursor = queue_controller_utils::updateTimePointAndGetTimeDifferenceMS(time_cursor, compute_optimization_time_spent);
                 
                     sendBestCommand(best_action_parameters.action);
+                    time_cursor = queue_controller_utils::updateTimePointAndGetTimeDifferenceMS(time_cursor, send_best_action_time_spent);
 
                     if (!inversed_control_and_update_steps_)
                     {
                         updateVirtualQueuesBasedOnBestAction(best_action_parameters);
                     }
+                    time_cursor = queue_controller_utils::updateTimePointAndGetTimeDifferenceMS(time_cursor, update_virtual_queues_time_spent);
                 }
+            }
+
+            queue_controller_utils::updateTimePointAndGetTimeDifferenceMS(time_0, total_time);
+            if (controller_time_step_ != 0.0)
+            {
+                const double controller_time_step_ms = controller_time_step_*1000.0;
+                ROS_DEBUG_STREAM("Queue controller: Control loop of "<< ros::this_node::getName() << " took " << total_time << " ms to complete. Time spent in each step: \n" 
+                                  << "virtual_queues_current_state_update_time_spent: " << virtual_queues_current_state_update_time_spent << " ms (" << virtual_queues_current_state_update_time_spent/controller_time_step_ms*100<< "%), \n" 
+                                  << "action_set_time_spent: " << action_set_time_spent << " ms (" << action_set_time_spent/controller_time_step_ms*100<< "%), \n" 
+                                  << "get_parameters_time_spent: " << get_parameters_time_spent << " ms (" << get_parameters_time_spent/controller_time_step_ms*100<< "%), \n" 
+                                  << "compute_optimization_time_spent: " << compute_optimization_time_spent << " ms (" << compute_optimization_time_spent/controller_time_step_ms*100<< "%), \n"
+                                  <<  "send_best_action_time_spent: " << send_best_action_time_spent << " ms (" << send_best_action_time_spent/controller_time_step_ms*100<< "%), \n"
+                                  << "update_virtual_queues_time_spent: " << update_virtual_queues_time_spent << " ms (" << update_virtual_queues_time_spent/controller_time_step_ms*100<< "%)");        
             }
         }
 
