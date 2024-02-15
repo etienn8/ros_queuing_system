@@ -59,7 +59,7 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType, public ROSQueueCommonInt
 
                 if (!interfaces.arrival_evaluation_service_name.empty())
                 {
-                    ROS_WARN("An arrival evaluator function pointer and a service name has been provided. The function pointer will be used.");
+                    ROS_WARN("An arrival evaluation function pointer and a service name has been provided. The function pointer will be used.");
                 }
             }
             else if (!interfaces.arrival_evaluation_service_name.empty())
@@ -68,7 +68,7 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType, public ROSQueueCommonInt
             }
             else
             {
-                throw invalid_argument("No arrival evaluator function pointer or service name provided.");
+                throw invalid_argument("No arrival evaluation function pointer or service name provided.");
             }
 
             // Init the departure evaluator
@@ -78,7 +78,7 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType, public ROSQueueCommonInt
 
                 if (!interfaces.departure_evaluation_service_name.empty())
                 {
-                    ROS_WARN("A departure evaluator function pointer and a service name has been provided. The function pointer will be used.");
+                    ROS_WARN("A departure evaluation function pointer and a service name has been provided. The function pointer will be used.");
                 }
             }
             else if (!interfaces.departure_evaluation_service_name.empty())
@@ -87,7 +87,7 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType, public ROSQueueCommonInt
             }
             else
             {
-                throw invalid_argument("No departure evaluator function pointer or service name provided.");
+                throw invalid_argument("No departure evaluation function pointer or service name provided.");
             }
         }
 
@@ -122,7 +122,7 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType, public ROSQueueCommonInt
                 }
                 else
                 {
-                    ROS_WARN_STREAM_THROTTLE(2, "Arrival evaluator service " <<  arrival_evaluation_service_client_.getService() <<" is not available.");
+                    ROS_WARN_STREAM_THROTTLE(2, "Arrival evaluation service " <<  arrival_evaluation_service_client_.getService() <<" is not available.");
                 }
             }
 
@@ -146,7 +146,7 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType, public ROSQueueCommonInt
                 }
                 else
                 {
-                    ROS_WARN_STREAM_THROTTLE(2, "Departure evaluator service " <<  arrival_evaluation_service_client_.getService() <<" is not available.");
+                    ROS_WARN_STREAM_THROTTLE(2, "Departure evaluation service " <<  departure_evaluation_service_client_.getService() <<" is not available.");
                 }
             }
             
