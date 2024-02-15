@@ -21,6 +21,12 @@ distributions:
     - lambda: 3.0   #Mean of number of events per timestep
 
   - distribution4:
+    - service_name: "poisson_lambda_4_0"
+    - type_of_response: "float"           #float or int
+    - distribution_type: "poisson"
+    - lambda: 4.0   #Mean of number of events per timestep
+
+  - distribution_real_queue:
     - service_name: "real_queue_arrival_evaluation"
     - type_of_response: "float"           #float or int
     - distribution_type: "poisson"
@@ -34,7 +40,7 @@ distributions:
   - distribution5:
     - topic_name: "mock_real_queue_0_arrival_topic"
     - distribution_type: "poisson"
-    - lambda: 60.0   #Mean of number of events per timestep
+    - lambda: 59.0   #Mean of number of events per timestep
   
   - distribution6:
     - service_name: "poisson_lambda_6_0"
