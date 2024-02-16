@@ -2,17 +2,17 @@
 
 #include <vector>
 
-#include "ros_queue_msgs/PotentialAction.h"
-#include "ros_queue_msgs/PotentialSolutionSpaceFetch.h"
+#include "ros_queue_msgs/TransmissionVector.h"
+#include "ros_queue_msgs/PotentialTransmissionVectorSpaceFetch.h"
 
 #include <string>
 
 using std::string;
 
-bool transmission_vector_action_set_callback(ros_queue_msgs::PotentialSolutionSpaceFetch::Request& req,
-                                    ros_queue_msgs::PotentialSolutionSpaceFetch::Response& res)
+bool transmission_vector_action_set_callback(ros_queue_msgs::PotentialTransmissionVectorSpaceFetch::Request& req,
+                                    ros_queue_msgs::PotentialTransmissionVectorSpaceFetch::Response& res)
 {
-  ros_queue_msgs::PotentialAction action;
+  ros_queue_msgs::TransmissionVector action;
   action.transmission_vector = std::vector<uint8_t>{1, 1, 0};
 
   res.action_set.action_set.push_back(action);

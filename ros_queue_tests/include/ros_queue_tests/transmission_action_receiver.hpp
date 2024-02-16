@@ -4,7 +4,7 @@
 
 #include "ros/ros.h"
 
-#include "ros_queue_msgs/PotentialAction.h"
+#include "ros_queue_msgs/TransmissionVector.h"
 #include "ros_queue_msgs/ByteSizeRequest.h"
 
 /**
@@ -55,7 +55,7 @@ class TransmissionActionReceiver
          * @param msg Optimal transmission vector message sent by the queue_controller. The first entry of the 
          * transmission vector should be the transmission of the real queue.
         */
-        void receivedActionCallback(const ros_queue_msgs::PotentialAction::ConstPtr& msg);
+        void receivedActionCallback(const ros_queue_msgs::TransmissionVector::ConstPtr& msg);
 
         /**
          * @brief Callback used whenever a real queue connected to the service wants to know how many bytes it could 

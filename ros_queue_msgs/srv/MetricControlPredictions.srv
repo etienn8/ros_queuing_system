@@ -1,3 +1,0 @@
-ros_queue_msgs/PotentialActionSet action_set
----
-float32[] predictions

@@ -2,7 +2,7 @@
 
 #include "ros/ros.h"
 
-#include "ros_queue_msgs/MetricControlPredictions.h"
+#include "ros_queue_msgs/MetricTransmissionVectorPredictions.h"
 #include "ros_queue_msgs/FloatRequest.h"
 
 #include "ros_queue_tests/distributions/inversed_cumulative_distribution.hpp"
@@ -37,8 +37,8 @@ class PredictionService
 
         ParameterOptions options_;
 
-        bool transmissionVectorCb(ros_queue_msgs::MetricControlPredictions::Request& req,
-                             ros_queue_msgs::MetricControlPredictions::Response& res);
+        bool transmissionVectorCb(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req,
+                             ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res);
 
         bool actionIndependentCallback(ros_queue_msgs::FloatRequest::Request& req,
                                        ros_queue_msgs::FloatRequest::Response& res);

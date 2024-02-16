@@ -36,8 +36,8 @@ PredictionService::PredictionService(ros::NodeHandle nh, ParameterOptions& optio
     } 
 }
 
-bool PredictionService::transmissionVectorCb(ros_queue_msgs::MetricControlPredictions::Request& req,
-                                             ros_queue_msgs::MetricControlPredictions::Response& res)
+bool PredictionService::transmissionVectorCb(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req,
+                                             ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
 {
     if (options_.is_transmission_evaluation)
     {

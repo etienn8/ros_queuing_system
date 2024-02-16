@@ -1,6 +1,6 @@
 #include "ros_queue_tests/transmission_action_receiver.hpp"
 
-#include "ros_queue_msgs/MetricControlPredictions.h"
+#include "ros_queue_msgs/MetricTransmissionVectorPredictions.h"
 
 #include <string>
 
@@ -17,7 +17,7 @@ TransmissionActionReceiver::TransmissionActionReceiver(ros::NodeHandle& nh): nh_
     string departure_service_name;
     if(nh_.getParam("departure_evaluation_service", departure_service_name) && !departure_service_name.empty())
     {
-        departure_service_ = nh_.serviceClient<ros_queue_msgs::MetricControlPredictions>(departure_service_name);
+        departure_service_ = nh_.serviceClient<ros_queue_msgs::MetricTransmissionVectorPredictions>(departure_service_name);
     }
 
     // vector_transmission_service_ = nh_
@@ -25,9 +25,9 @@ TransmissionActionReceiver::TransmissionActionReceiver(ros::NodeHandle& nh): nh_
 }
 
 
-void TransmissionActionReceiver::receivedActionCallback(const ros_queue_msgs::PotentialAction::ConstPtr& msg)
+void TransmissionActionReceiver::receivedActionCallback(const ros_queue_msgs::TransmissionVector::ConstPtr& msg)
 {
-    ros_queue_msgs::MetricControlPredictions departure_msg;
+    ros_queue_msgs::MetricTransmissionVectorPredictions departure_msg;
     departure_msg.request.action_set.action_set.push_back(*msg);
 
     if(departure_service_.call(departure_msg) && !departure_msg.response.predictions.empty())

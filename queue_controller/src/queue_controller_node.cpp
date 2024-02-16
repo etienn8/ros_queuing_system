@@ -1,7 +1,6 @@
 #include "ros/ros.h"
 
 #include "queue_controller/queue_controller.hpp"
-#include "ros_queue_msgs/PotentialSolutionSpaceFetch.h"
 #include "queue_controller/action_configs/bernoulli_action_controller_config.hpp"
 
 int main(int argc, char **argv)

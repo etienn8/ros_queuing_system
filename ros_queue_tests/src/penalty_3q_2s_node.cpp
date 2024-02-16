@@ -1,10 +1,10 @@
 #include "ros/ros.h"
 
-#include "ros_queue_msgs/MetricControlPredictions.h"
+#include "ros_queue_msgs/MetricTransmissionVectorPredictions.h"
 
 
-bool penalty_evaluation_callback(ros_queue_msgs::MetricControlPredictions::Request& req,
-                                 ros_queue_msgs::MetricControlPredictions::Response& res)
+bool penalty_evaluation_callback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req,
+                                 ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
 {
     for (auto action_it = req.action_set.action_set.begin(); action_it != req.action_set.action_set.end(); ++action_it)
     {

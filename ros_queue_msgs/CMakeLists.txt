@@ -51,8 +51,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
   FILES
   ManualByteTransmitSize.msg
-  PotentialAction.msg
-  PotentialActionSet.msg
+  PotentialTransmissionVectorSet.msg
   QueueIntElement.msg
   QueueState.msg
   QueueTransmitTemplate.msg
@@ -61,6 +60,7 @@ add_message_files(
   QueueStats.msg
   QueueServerStats.msg
   States.msg
+  TransmissionVector.msg
   VirtualQueueChanges.msg
   VirtualQueueChangesList.msg
 )
@@ -73,9 +73,9 @@ add_service_files(
   FloatRequest.srv
   QueueInfoFetch.srv
   MetricPredictions.srv
-  MetricControlPredictions.srv
+  MetricTransmissionVectorPredictions.srv
   QueueServerStateFetch.srv
-  PotentialSolutionSpaceFetch.srv
+  PotentialTransmissionVectorSpaceFetch.srv
 )
 
 ## Generate actions in the 'action' folder
