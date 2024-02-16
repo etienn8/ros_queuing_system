@@ -1,0 +1,7 @@
+# The goal
+ros_queue_msgs/TransmissionVector action_goal
+---
+# The result
+bool success
+---
+# The feedback

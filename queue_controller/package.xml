@@ -27,6 +27,7 @@
   <exec_depend>roscpp</exec_depend>
   <depend>message_runtime</depend>
   <depend>rosparam_utils</depend>
+  <depend>actionlib_msgs</depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->

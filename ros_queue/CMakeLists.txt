@@ -16,6 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
   ros_queue_msgs
   message_generation
   topic_tools
+  actionlib_msgs
 )
 
 ## System dependencies are found with CMake's conventions

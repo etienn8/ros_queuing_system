@@ -61,6 +61,7 @@
 
   <depend>ros_queue_msgs</depend>
   <depend>topic_tools</depend>
+  <depend>actionlib_msgs</depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
