@@ -32,7 +32,7 @@ struct ActionTrait {
   using ActionType = typename TActionSetType::_action_set_type::value_type;
 };
 
-template<typename TMetricControlPredictionSrv, typename TPotentialActionSetMsg, typename TPotentialActionSetSrv>
+template<typename TMetricControlPredictionSrv, typename TPotentialActionSetMsg, typename TPotentialActionSetSrv, typename TActionLibOutputType>
 class QueueController
 {
     public:
