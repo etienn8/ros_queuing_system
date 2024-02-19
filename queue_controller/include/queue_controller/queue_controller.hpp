@@ -240,7 +240,7 @@ class QueueController
                 static ros::Rate loop_rate(1.0f/controller_time_step_);
                 while(ros::ok())
                 {
-                    minDriftPlusPenaltyCallback();
+                    controllerCallback();
                     ros::spinOnce();
                     loop_rate.sleep();
                 }
@@ -269,7 +269,7 @@ class QueueController
                     // Compute the real elapsed time since the last renewal.
                     last_renewal_time_ = (ros::Time::now() - last_renewal_time_point).toSec();
                     // Compute the controller
-                    minDriftPlusPenaltyCallback();
+                    controllerCallback();
 
                     last_renewal_time_point = ros::Time::now();
 
@@ -501,10 +501,9 @@ class QueueController
         }
 
         /**
-         * @brief Callback of the min-drift-plus-penalty algorithm that is called by a periodic timer.
-         * @param time_event Information of the time event.
+         * @brief Callback of called from the spin to exectute all the steps from the controller.
         */
-        void minDriftPlusPenaltyCallback()
+        void controllerCallback()
         {
             // Time measurement variables
             std::chrono::time_point<std::chrono::system_clock> time_0 = std::chrono::high_resolution_clock::now();
@@ -536,7 +535,7 @@ class QueueController
                 {
                     time_cursor = queue_controller_utils::updateTimePointAndGetTimeDifferenceMS(time_cursor, get_parameters_time_spent);
 
-                    ActionParameters best_action_parameters = computeMinDriftPlusPenalty(action_parameters_list);
+                    ActionParameters best_action_parameters = optimizationStep(action_parameters_list);
                     time_cursor = queue_controller_utils::updateTimePointAndGetTimeDifferenceMS(time_cursor, compute_optimization_time_spent);
                 
                     sendBestCommand(best_action_parameters.action);
@@ -769,11 +768,11 @@ class QueueController
         }
         
         /**
-         * @brief Used the min drift-plus-penalty algorithm to compute the action that minimize the penalty and stabilizes all the queues (if possible).
+         * @brief Used the min drift-plus-penalty algorithm or its renewal version to compute the action that minimize the penalty and stabilizes all the queues (if possible).
          * @param action_parameters_list All the parameters and variables for the penalty and the queues for each actions.
          * @return Returns the best action including all the metrics.
         */
-        ActionParameters computeMinDriftPlusPenalty(std::vector<ActionParameters>& action_parameters_list)
+        ActionParameters optimizationStep(std::vector<ActionParameters>& action_parameters_list)
         {
             auto best_action = action_parameters_list.begin();
 
