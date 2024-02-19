@@ -8,7 +8,8 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "queue_controller");
     ros::NodeHandle nh("~");
     
-    QueueController<METRIC_CONTROL_PREDICTION_SRV, POTENTIAL_ACTION_SET_MSG, POTENTIAL_ACTION_SET_SRV, ACTION_LIB_OUTPUT_TYPE> queue_controller(nh);
+    QueueController<METRIC_CONTROL_PREDICTION_SRV, POTENTIAL_ACTION_SET_MSG, POTENTIAL_ACTION_SET_SRV, ACTION_LIB_OUTPUT_TYPE, ACTION_LIB_OUTPUT_GOAL_TYPE> queue_controller(nh);
 
-    ros::spin();
+    // Perform the ros::spin() to process the callbacks and runs the controller.
+    queue_controller.spin();
 }

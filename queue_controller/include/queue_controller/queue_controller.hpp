@@ -17,6 +17,8 @@
 #include "ros_queue_msgs/QueueServerStateFetch.h"
 #include "ros_queue_msgs/VirtualQueueChangesList.h"
 
+#include <actionlib/client/simple_action_client.h>
+
 #include "std_srvs/Empty.h"
 
 #include "rosparam_utils/xmlrpc_utils.hpp"
@@ -32,7 +34,7 @@ struct ActionTrait {
   using ActionType = typename TActionSetType::_action_set_type::value_type;
 };
 
-template<typename TMetricControlPredictionSrv, typename TPotentialActionSetMsg, typename TPotentialActionSetSrv, typename TActionLibOutputType>
+template<typename TMetricControlPredictionSrv, typename TPotentialActionSetMsg, typename TPotentialActionSetSrv, typename TActionLibOutputType, typename TActionLibOutputGoalType>
 class QueueController
 {
     public:
@@ -77,6 +79,21 @@ class QueueController
                 {
                     can_create_controller = false;
                     ROS_ERROR_STREAM("Missing the controller time step");
+                }
+            }
+
+            if(controller_type_ == ControllerType::RenewalDriftPlusPenalty)
+            {
+                if(!nh.getParam("max_renewal_time", max_renewal_time_))
+                {
+                    can_create_controller = false;
+                    ROS_ERROR_STREAM("Missing the max_renewal_time");
+                }
+
+                if(!nh.getParam("min_renewal_time", min_renewal_time_))
+                {
+                    can_create_controller = false;
+                    ROS_ERROR_STREAM("Missing the min_renewal_time");
                 }
             }
 
@@ -151,6 +168,13 @@ class QueueController
                 can_create_controller = false;
             }
 
+            string action_server_name;
+            if(!nh.getParam("action_server_name", action_server_name))
+            {
+                can_create_controller = false;
+                ROS_ERROR_STREAM("Missing the action_server_name.");
+            }
+
             // Intialize controller
             if (can_create_controller)
             {   
@@ -173,14 +197,7 @@ class QueueController
                 }
 
                 // Create ouptut topic
-                best_action_output_pub_ = nh_.advertise<ActionType>("best_action", 1000);
-                
-                // Initialize the triggers
-                if (controller_type_ == ControllerType::DriftPlusPenalty)
-                {
-                    periodic_trigger_timer_ = nh_.createTimer(ros::Duration(controller_time_step_), 
-                                                            &QueueController::minDriftPlusPenaltyCallback, this);
-                }
+                best_action_client_ =  std::make_unique<actionlib::SimpleActionClient<TActionLibOutputType>>(action_server_name, true);   
 
                 is_initialized_ = true;
             }
@@ -207,6 +224,84 @@ class QueueController
             float cost = 0.0f;
         };
 
+        /**
+         * @brief Main loop of the queue controller. It will call the control sequence based on the controller type.
+        */
+        void spin()
+        {
+            if (!is_initialized_)
+            {
+                ROS_ERROR_STREAM_THROTTLE(2, "Queue controller wasn't initialized. Stopping queue controller.");
+                return;
+            }
+
+            if (controller_type_ == ControllerType::DriftPlusPenalty)
+            {
+                static ros::Rate loop_rate(1.0f/controller_time_step_);
+                while(ros::ok())
+                {
+                    minDriftPlusPenaltyCallback();
+                    ros::spinOnce();
+                    loop_rate.sleep();
+                }
+            }
+            else if (controller_type_ == ControllerType::RenewalDriftPlusPenalty)
+            {
+                while(ros::ok())
+                {
+                    if(!best_action_client_waited_)
+                    {
+                        if(!best_action_client_->waitForServer(ros::Duration(5.0)))
+                        {
+                            ROS_WARN_STREAM("The action server named wasn't found. Queue controller will be running with a perdiod of max_renewal_time ("<< max_renewal_time_ << "s) between each control step and will continue to try to connect to server.");
+                        }
+
+                        best_action_client_waited_ = true;
+                    }
+
+                    static bool first_renewal = true;
+                    if(first_renewal)
+                    {
+                        first_renewal = false;
+                        last_renewal_time_point = ros::Time::now();
+                    }
+
+                    // Compute the real elapsed time since the last renewal.
+                    last_renewal_time_ = (ros::Time::now() - last_renewal_time_point).toSec();
+                    // Compute the controller
+                    minDriftPlusPenaltyCallback();
+
+                    last_renewal_time_point = ros::Time::now();
+
+                    if(best_action_client_->isServerConnected())
+                    {
+                        // Wait for the best action to be reached or wait for the max_renewal_time
+                        bool finished_before_max_time =  best_action_client_->waitForResult(ros::Duration(max_renewal_time_));
+                        
+                        // We abandon the last goal if its still on going.
+                        if (!finished_before_max_time)
+                        {
+                            best_action_client_->cancelGoal();
+                        }
+
+                        double elapsed_time = (ros::Time::now() - last_renewal_time_point).toSec();
+
+                        // Wait for t_min is reached if the goal was reached before.
+                        if (elapsed_time < min_renewal_time_)
+                        {
+                            ros::Duration(min_renewal_time_ - elapsed_time).sleep();
+                        }
+                    }
+                    else
+                    {
+                        ros::Duration(max_renewal_time_).sleep();      
+                    }
+
+                    ROS_DEBUG_STREAM("Time since last renewal: " << last_renewal_time_);
+                }
+            }
+        }
+
     private:
         /**
          * @brief Indicates if the controller received a valid configuration and was initialized.
@@ -216,9 +311,15 @@ class QueueController
         ros::NodeHandle nh_;
 
         /**
-         * @brief ROS publisher of the output action decided by the optimization.
+         * @brief Time at which the last renewal was done. Used by the renewal_min_drift_plus_penalty controller.
         */
-        ros::Publisher best_action_output_pub_;
+        ros::Time last_renewal_time_point;
+
+        /**
+         * @brief Last elapsed time between the last renewal and the current time in seconds. Used by the renewal_min_drift_plus_penalty controller
+         * and only used with virtual updates that are based on the current state of the system (inversed_control_and_update_steps_ is set to true).
+        */
+        double last_renewal_time_;
 
         /**
          * @brief ROS service client used to get the current states of the queues in the queue server.
@@ -237,6 +338,16 @@ class QueueController
          * will update based on the current system's state.
         */
         ros::ServiceClient virtual_queues_trigger_;
+
+        /**
+         * @brief Action lib client that sends the optimal action to a server.
+        */
+         std::unique_ptr<actionlib::SimpleActionClient<TActionLibOutputType>> best_action_client_;
+
+        /**
+         * @brief Flag that indicates if the best action client already waited for the server to be online. 
+        */
+        bool best_action_client_waited_ = false; 
 
         /**
          * @brief Map of all the queues used by the queue_controller from a queue_server. The key
@@ -320,7 +431,6 @@ class QueueController
                                     new_controller_struct->arrival_independent_from_action_service_.waitForExistence();
                                 }
                             }
-
                         }
                         else
                         {
@@ -390,18 +500,11 @@ class QueueController
             return true;
         }
 
-
-        // ===== Trigger attributes =====
-        /**
-         * @brief Timer that periodically calls the queue controller sequence.
-        */
-        ros::Timer periodic_trigger_timer_;
-
         /**
          * @brief Callback of the min-drift-plus-penalty algorithm that is called by a periodic timer.
          * @param time_event Information of the time event.
         */
-        void minDriftPlusPenaltyCallback(const ros::TimerEvent& time_event)
+        void minDriftPlusPenaltyCallback()
         {
             // Time measurement variables
             std::chrono::time_point<std::chrono::system_clock> time_0 = std::chrono::high_resolution_clock::now();
@@ -708,7 +811,13 @@ class QueueController
         */
         void sendBestCommand(ActionType& best_action)
         {
-            best_action_output_pub_.publish(best_action);
+            TActionLibOutputGoalType action_lib_output;
+            action_lib_output.action_goal = best_action;
+
+            if(best_action_client_)
+            {
+                best_action_client_->sendGoal(action_lib_output);
+            }
         }
         
         /**
@@ -783,7 +892,13 @@ class QueueController
          * @brief Time after which, if the renewal_trigger_server_ was not call, the controller will be called.
          * Only used by the renewal_min_drift_plus_penalty controller.
         */
-        float max_renewal_time = 0.0f;
+        float max_renewal_time_ = 0.0f;
+
+        /**
+         * @brief Time after which, if the renewal_trigger_server_ was not call, the controller will be called.
+         * Only used by the renewal_min_drift_plus_penalty controller.
+        */
+        float min_renewal_time_ = 0.0f;
 
         /**
          * @brief ROS service client that returns a set of possible actions that the controller will used

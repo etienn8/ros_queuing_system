@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   message_runtime
   rosparam_utils
   actionlib_msgs
+  actionlib
 )
 
 ## System dependencies are found with CMake's conventions

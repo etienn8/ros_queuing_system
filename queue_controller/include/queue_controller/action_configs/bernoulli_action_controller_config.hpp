@@ -11,3 +11,4 @@ typedef ros_queue_msgs::MetricTransmissionVectorPredictions METRIC_CONTROL_PREDI
 typedef ros_queue_msgs::PotentialTransmissionVectorSet POTENTIAL_ACTION_SET_MSG;
 typedef ros_queue_msgs::PotentialTransmissionVectorSpaceFetch POTENTIAL_ACTION_SET_SRV;
 typedef ros_queue_msgs::TransmissionVectorAction ACTION_LIB_OUTPUT_TYPE;
+typedef ros_queue_msgs::TransmissionVectorGoal ACTION_LIB_OUTPUT_GOAL_TYPE;
