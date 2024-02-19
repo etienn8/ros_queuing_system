@@ -1,11 +1,14 @@
 #pragma once
 
+#include <memory>
 #include <mutex>
 
 #include "ros/ros.h"
+#include <actionlib/server/simple_action_server.h>
 
 #include "ros_queue_msgs/TransmissionVector.h"
 #include "ros_queue_msgs/ByteSizeRequest.h"
+#include "ros_queue_msgs/TransmissionVectorAction.h"
 
 /**
  * @brief Class that listen to the output of a queue controller that uses transmission vector as its action and indicates
@@ -21,11 +24,12 @@ class TransmissionActionReceiver
 
     private:
         ros::NodeHandle nh_;
-        
+
         /**
-         * @brief Subscriber that connects to the output of a queue controller that uses transmission vector as its action.
+         * @brief Action server that listens to the output of a queue controller that uses transmission vector as its action
+         * and returns if the action was successful or not.
         */
-        ros::Subscriber action_receiver_subscriber_;
+        std::shared_ptr<actionlib::SimpleActionServer<ros_queue_msgs::TransmissionVectorAction>> action_server_;
         
         /**
          * @brief Service server that returns a number of bytes that can be transmitted based on the last received 
@@ -50,12 +54,16 @@ class TransmissionActionReceiver
         std::mutex byte_to_send_mutex_;
 
         /**
-         * @brief Callback used whenever a best action is outputed from the queue controller. It sets the byte_to_send_
-         * based on the value of the transmission rate of the real queue (index 0 of the transmission vector).
-         * @param msg Optimal transmission vector message sent by the queue_controller. The first entry of the 
-         * transmission vector should be the transmission of the real queue.
+         * @brief Callback used whenever the action server receives a new action from the queue controller. It
+         * cancels the old acctive action and sets the byte_to_send based on the received goal. It also aborts the 
+         * goal if the departure service fails to return a prediction. 
         */
-        void receivedActionCallback(const ros_queue_msgs::TransmissionVector::ConstPtr& msg);
+        void receivedActionCallback();
+
+        /**
+         * @brief Callback used whenever the action server is preempted. It sets the byte_to_send_ to zero.
+        */
+        void receivedPreemptCallback();
 
         /**
          * @brief Callback used whenever a real queue connected to the service wants to know how many bytes it could 

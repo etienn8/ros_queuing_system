@@ -24,7 +24,7 @@
 
     <!-- Create a server that aplies the best action selected by the controller. In this config, it will transmit the real queues. -->
     <node pkg="ros_queue_tests" type="transmission_action_receiver_node" name="transmission_action_receiver_node">
-        <param name="action_subscriber_name" type="string" value="/queue_controller/best_action"/>
+        <param name="action_server_name" type="string" value="transmission_vector_switch"/>
         <param name="departure_evaluation_service" type="string" value="/action_prediction_server_node/queue_0_b"/>
     </node>
 

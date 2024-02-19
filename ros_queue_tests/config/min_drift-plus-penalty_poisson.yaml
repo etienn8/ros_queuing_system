@@ -9,6 +9,9 @@ time_step: 0.1
 # state of the system then find an optimal next action. Default: set to false
 inverse_control_and_steps: false
 
+# Name of the actionlib server to send the action to.
+action_server_name: "transmission_action_receiver_node/transmission_vector_switch"
+
 # Solution space service that provides a list of all available actions.
 solution_space_service_name: "/transmission_vector_server/transmission_vector_action_set"
 
