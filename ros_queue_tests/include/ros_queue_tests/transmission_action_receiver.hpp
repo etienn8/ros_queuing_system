@@ -48,6 +48,17 @@ class TransmissionActionReceiver
         int byte_to_send_ = 0;
 
         /**
+         * @brief Flag that indicates if the service call return from the queue server should be delayed
+         * to simulate a renewal time of a system.
+        */ 
+        bool delay_action_execution_ = false;
+
+        /**
+         * @brief Time to delay the service call return from the queue server to simulate a renewal time of a system.
+        */
+        float delay_action_execution_time_ = 0.0;
+
+        /**
          * @brief Mutex used to protect the access to byte_to_send_ since the service and the subscriber callbacks
          * manipulate it.
         */

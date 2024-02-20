@@ -23,6 +23,14 @@ TransmissionActionReceiver::TransmissionActionReceiver(ros::NodeHandle& nh): nh_
         departure_service_ = nh_.serviceClient<ros_queue_msgs::MetricTransmissionVectorPredictions>(departure_service_name);
     }
 
+    if(nh_.getParam("delay_action_execution", delay_action_execution_))
+    {
+        if(!nh_.getParam("delay_action_execution_time", delay_action_execution_time_))
+        {
+            ROS_WARN("The delay_action_execution_time parameter was not set and was expected since the delay_action_execution param is set to true.");
+        }
+    }
+
     // vector_transmission_service_ = nh_
     byte_size_request_service_server_ = nh_.advertiseService("transmission_request_evaluation", &TransmissionActionReceiver::byteSizeRequestCallback, this);
 }
@@ -30,7 +38,6 @@ TransmissionActionReceiver::TransmissionActionReceiver(ros::NodeHandle& nh): nh_
 
 void TransmissionActionReceiver::receivedActionCallback()
 {
-    std::lock_guard<std::mutex> lock(byte_to_send_mutex_);
 
     // Cancel old goal if new one is received
     if (action_server_->isActive())
@@ -48,6 +55,7 @@ void TransmissionActionReceiver::receivedActionCallback()
 
     if(departure_service_.call(departure_msg) && !departure_msg.response.predictions.empty())
     {
+        std::lock_guard<std::mutex> lock(byte_to_send_mutex_);
         // Hardcoded value for tests. The index 0 matches the RealQueue0 index in the action set.
         byte_to_send_ = departure_msg.response.predictions[0];
     }
@@ -61,30 +69,39 @@ void TransmissionActionReceiver::receivedActionCallback()
 
 void TransmissionActionReceiver::receivedPreemptCallback()
 {
-    std::lock_guard<std::mutex> lock(byte_to_send_mutex_);
     action_server_->setPreempted();
-
 }
 
 bool TransmissionActionReceiver::byteSizeRequestCallback(ros_queue_msgs::ByteSizeRequest::Request& req,
                                 ros_queue_msgs::ByteSizeRequest::Response& res)
 {
-    std::lock_guard<std::mutex> lock(byte_to_send_mutex_);
+    bool success = false;
+    if (action_server_->isActive())
+    {
+        std::lock_guard<std::mutex> lock(byte_to_send_mutex_);
 
-    if (!action_server_->isActive())
-    {
-        return false;
-    }
-    else
-    {
         res.nb_of_bytes = byte_to_send_;
         // Reset the value to simulate if it was a one time request
         byte_to_send_ = 0;
         ros_queue_msgs::TransmissionVectorResult result;
-        result.success = true;
 
-        action_server_->setSucceeded();
+        if(delay_action_execution_)
+        {
+            ros::Duration(delay_action_execution_time_).sleep();
+        }
+
+        if (action_server_->isActive())
+        {
+            success = true;
+            result.success = true;
+            action_server_->setSucceeded(result);
+        }
+        else
+        {
+            // Goal got preempted during the wait time. Don't set the action to sucess 
+            // and return a fialed service call.
+            success = false;
+        }
     }
-    
-    return true;
+    return success;
 }
