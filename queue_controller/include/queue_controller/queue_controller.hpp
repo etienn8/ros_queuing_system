@@ -1014,20 +1014,14 @@ class QueueController
         float controller_time_step_;
 
         /**
-         * @brief Service server that a external node can call to trigger the renewal controller to execute.
-         * Only used by the renewal_min_drift_plus_penalty controller.
-        */
-        ros::ServiceServer renewal_trigger_server_;
-
-        /**
-         * @brief Time after which, if the renewal_trigger_server_ was not call, the controller will be called.
+         * @brief Time after which, if the actionlib output did not succeed, the controller will be called.
          * Only used by the renewal_min_drift_plus_penalty controller.
         */
         float max_renewal_time_ = 0.0f;
 
         /**
-         * @brief Time after which, if the renewal_trigger_server_ was not call, the controller will be called.
-         * Only used by the renewal_min_drift_plus_penalty controller.
+         * @brief Time before which if the actionlib output suceed, the controller will wait for the difference
+         *  before being called. Only used by the renewal_min_drift_plus_penalty controller.
         */
         float min_renewal_time_ = 0.0f;
 
