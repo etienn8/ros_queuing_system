@@ -1,0 +1,35 @@
+<!-- Starts a queue server with queues that are fed by random Poisson distributions and controlled by a queue controller -->
+<launch>
+    <!-- Creates the poisson distribution services -->
+    <include file="$(find ros_queue_tests)/launch/distribution_sample.launch"/>
+
+    <!-- Creates the queue server -->
+    <include file="$(find queue_server)/launch/queue_server_template.launch">
+        <arg name="queue_server_config_path" value="$(find ros_queue_tests)/config/queue_server_config_tests.yaml"/>
+        <arg name="server_name" value="test_queue_server"/>
+    </include>
+
+    <!-- Creates the queue controller-->
+    <include file="$(find queue_controller)/launch/queue_controller_template.launch">
+        <arg name="queue_controller_config_path" value="$(find ros_queue_tests)/config/renewal_min_drift-plus-penalty_poisson.yaml"/>
+    </include>
+
+    <!-- Create a service to give the potentialsrc/ros_queuing_system/ros_queue_tests/launch/controller_queues_with_poisson.launch actions. -->
+    <node pkg="ros_queue_tests" type="transmission_vector_action_server" name="transmission_vector_server"/>
+
+    <!-- Create a server that simulates arrival and departure based on potential action-->
+    <node pkg="ros_queue_tests" type="prediction_server_node" name="action_prediction_server_node">
+        <rosparam command="load" file="$(find ros_queue_tests)/config/prediction_servers.yaml"/>
+    </node>
+
+    <!-- Create a server that aplies the best action selected by the controller. In this config, it will transmit the real queues. -->
+    <node pkg="ros_queue_tests" type="transmission_action_receiver_node" name="transmission_action_receiver_node">
+        <param name="action_server_name" type="string" value="transmission_vector_switch"/>
+        <param name="departure_evaluation_service" type="string" value="/action_prediction_server_node/queue_0_b"/>
+        <param name="delay_action_execution" type="bool" value="true"/>
+        <param name="delay_action_execution_time" type="double" value="1.5"/>
+    </node>
+
+    <!-- Create a server to compute the penalty of a transmission vector action. -->
+    <node pkg="ros_queue_tests" type="penalty_3q_2s_node" name="penalty_3q_2s_node"/>
+</launch>
