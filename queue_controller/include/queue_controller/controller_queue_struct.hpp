@@ -42,6 +42,18 @@ struct ControllerQueueStruct
     bool is_departure_action_dependent;
 
     /**
+     * @brief Flag to indicate if the arrivals of the queue should be multiplied by the renewal time of the frame. Only
+     * used for renewal controler.
+    */
+    bool is_arrival_renewal_dependent = false;
+
+    /**
+     * @brief Flag to indicate if the departures of the queue should be multiplied by the renewal time of the frame. Only
+     * used for renewal controler.
+    */
+    bool is_departure_renewal_dependent = false;
+
+    /**
      * @brief ROS Service used to compute the expected arrivals of a queue based on a the current state
      * of the system and a given potential action. Should not be defined if arrival_based_on_queue_size_service_
      * is used. If both are defined, expected_arrival_service_ will be used.

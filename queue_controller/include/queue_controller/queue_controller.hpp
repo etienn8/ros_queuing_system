@@ -95,6 +95,25 @@ class QueueController
                     can_create_controller = false;
                     ROS_ERROR_STREAM("Missing the min_renewal_time");
                 }
+
+                if(!nh.getParam("is_penalty_renewal_dependent", is_penalty_renewal_dependent_))
+                {
+                    ROS_WARN_STREAM("Missing the flag is_penalty_renewal_dependent that indicates if the penalty is dependent on the renewal time. Will be set to false.");
+                }
+
+                string expected_renewal_time_service_name;
+                if(!nh.getParam("expected_renewal_time_service_name", expected_renewal_time_service_name) || expected_renewal_time_service_name.empty())
+                {
+                    can_create_controller = false;
+                    ROS_ERROR_STREAM("Missing the expected_renewal_time_service_name.");
+                }
+                else
+                {
+                    renewal_service_client_ = nh_.serviceClient<TMetricControlPredictionSrv>(expected_renewal_time_service_name, true);
+                    
+                    ROS_INFO_STREAM("Waiting for the expected renewal time service named :" << expected_renewal_time_service_name);
+                    renewal_service_client_.waitForExistence();
+                }
             }
 
             if(!nh.getParam("inverse_control_and_steps", inversed_control_and_update_steps_))
@@ -154,7 +173,7 @@ class QueueController
 
             options.string_parameter_name_list = std::vector<string>{"expected_arrival_service_name", "expected_departure_service_name"};
             options.float_parameter_name_list = std::vector<string>{"weight"};
-            options.bool_parameter_name_list = std::vector<string>{"arrival_action_dependent", "departure_action_dependent"};
+            options.bool_parameter_name_list = std::vector<string>{"arrival_action_dependent", "departure_action_dependent", "arrival_renewal_dependent", "departure_renewal_dependent"};
 
             const xmlrpc_utils::ParameterPackageFetchStruct fetch_struct(options);
             
@@ -322,6 +341,11 @@ class QueueController
         double last_renewal_time_;
 
         /**
+         * @brief ROS service client used to computed the expected time ot execute each given action.
+        */
+       ros::ServiceClient renewal_service_client_;
+
+        /**
          * @brief ROS service client used to get the current states of the queues in the queue server.
         */
         ros::ServiceClient server_state_client_;
@@ -405,6 +429,15 @@ class QueueController
                         {
                             string& service_name_temp = service_name_pair_it->second.first;
                             
+                            // Verify if the arrivals of the queue is affected by the renewal time.
+                            auto arrival_renewal_flag_it = parsed_queue_config_it->bool_params_.find("arrival_renewal_dependent");
+                            if (controller_type_ == ControllerType::RenewalDriftPlusPenalty && 
+                                arrival_renewal_flag_it != parsed_queue_config_it->bool_params_.end() && 
+                                arrival_renewal_flag_it->second.second)
+                            {
+                                new_controller_struct->is_arrival_renewal_dependent = arrival_renewal_flag_it->second.first;
+                            }
+
                             // Verify if it should subscribe to a srv with an action request.
                             auto action_dependent_flag_it = parsed_queue_config_it->bool_params_.find("arrival_action_dependent");
                             if (action_dependent_flag_it != parsed_queue_config_it->bool_params_.end())
@@ -444,6 +477,15 @@ class QueueController
                         {
                             string& service_name_temp = service_name_pair_it->second.first;
                             
+                            // Verify if the departures of the queue is affected by the renewal time.
+                            auto departure_renewal_flag_it = parsed_queue_config_it->bool_params_.find("departure_renewal_dependent");
+                            if (controller_type_ == ControllerType::RenewalDriftPlusPenalty && 
+                                departure_renewal_flag_it != parsed_queue_config_it->bool_params_.end() && 
+                                departure_renewal_flag_it->second.second)
+                            {
+                                new_controller_struct->is_departure_renewal_dependent = departure_renewal_flag_it->second.first;
+                            }
+
                             // Verify if it should subscribe to a srv with an action request.
                             auto action_dependent_flag_it = parsed_queue_config_it->bool_params_.find("departure_action_dependent");
                             if (action_dependent_flag_it != parsed_queue_config_it->bool_params_.end())
@@ -534,8 +576,17 @@ class QueueController
                 if(getParametersForControlStep(action_set, action_parameters_list))
                 {
                     time_cursor = queue_controller_utils::updateTimePointAndGetTimeDifferenceMS(time_cursor, get_parameters_time_spent);
+                    
+                    ActionParameters best_action_parameters;
+                    if (controller_type_ == ControllerType::DriftPlusPenalty)
+                    {
+                        best_action_parameters = computeMinDriftPlusPenalty(action_parameters_list);
+                    }
+                    else if (controller_type_ == ControllerType::RenewalDriftPlusPenalty)
+                    {
+                        best_action_parameters = computeRenewalMinDriftPlusPenalty(action_parameters_list);
+                    }
 
-                    ActionParameters best_action_parameters = optimizationStep(action_parameters_list);
                     time_cursor = queue_controller_utils::updateTimePointAndGetTimeDifferenceMS(time_cursor, compute_optimization_time_spent);
                 
                     sendBestCommand(best_action_parameters.action);
@@ -552,15 +603,23 @@ class QueueController
             queue_controller_utils::updateTimePointAndGetTimeDifferenceMS(time_0, total_time);
             if (controller_time_step_ != 0.0)
             {
-                const double controller_time_step_ms = controller_time_step_*1000.0;
+                double controller_time_step_ms;
+                if (controller_type_ == ControllerType::RenewalDriftPlusPenalty)
+                {
+                    controller_time_step_ms = min_renewal_time_*1000.0;
+                }
+                else
+                {
+                    controller_time_step_ms = controller_time_step_*1000.0;
+                }
                 ROS_DEBUG_STREAM("Queue controller: Control loop of "<< ros::this_node::getName() << " took " << total_time << " ms to complete. Time spent in each step: \n" 
-                                  << "virtual_queues_current_state_update_time_spent: " << virtual_queues_current_state_update_time_spent << " ms (" << virtual_queues_current_state_update_time_spent/controller_time_step_ms*100<< "%), \n" 
-                                  << "action_set_time_spent: " << action_set_time_spent << " ms (" << action_set_time_spent/controller_time_step_ms*100<< "%), \n" 
-                                  << "get_parameters_time_spent: " << get_parameters_time_spent << " ms (" << get_parameters_time_spent/controller_time_step_ms*100<< "%), \n" 
-                                  << "compute_optimization_time_spent: " << compute_optimization_time_spent << " ms (" << compute_optimization_time_spent/controller_time_step_ms*100<< "%), \n"
-                                  << "send_best_action_time_spent: " << send_best_action_time_spent << " ms (" << send_best_action_time_spent/controller_time_step_ms*100<< "%), \n"
-                                  << "update_virtual_queues_time_spent: " << update_virtual_queues_time_spent << " ms (" << update_virtual_queues_time_spent/controller_time_step_ms*100<< "%), \n"
-                                  << "iddle time:" << controller_time_step_ms - total_time << " ms (" << (controller_time_step_ms - total_time)/controller_time_step_ms*100<< "%)");        
+                                  << "virtual_queues_current_state_update_time_spent: " << virtual_queues_current_state_update_time_spent << " ms (" << virtual_queues_current_state_update_time_spent/total_time*100<< "%), \n" 
+                                  << "action_set_time_spent: " << action_set_time_spent << " ms (" << action_set_time_spent/total_time*100<< "%), \n" 
+                                  << "get_parameters_time_spent: " << get_parameters_time_spent << " ms (" << get_parameters_time_spent/total_time*100<< "%), \n" 
+                                  << "compute_optimization_time_spent: " << compute_optimization_time_spent << " ms (" << compute_optimization_time_spent/total_time*100<< "%), \n"
+                                  << "send_best_action_time_spent: " << send_best_action_time_spent << " ms (" << send_best_action_time_spent/total_time*100<< "%), \n"
+                                  << "update_virtual_queues_time_spent: " << update_virtual_queues_time_spent << " ms (" << update_virtual_queues_time_spent/total_time*100<< "%), \n"
+                                  << "iddle time (based on tmin for renewal):" << controller_time_step_ms - total_time << " ms (" << (controller_time_step_ms - total_time)/controller_time_step_ms*100<< "%)");        
             }
         }
 
@@ -631,7 +690,22 @@ class QueueController
             }
 
             // Expected time
-            // TODO
+            queue_controller_utils::check_persistent_service_connection<TMetricControlPredictionSrv>(nh_, renewal_service_client_);
+            TMetricControlPredictionSrv renewal_time_msg;
+            renewal_time_msg.request.action_set = action_set_msg;
+            if(renewal_service_client_.call(renewal_time_msg))
+            {
+                if(renewal_time_msg.response.predictions.size() != size_of_actions)
+                {
+                    are_parameters_valid = false;
+                    ROS_WARN_STREAM_THROTTLE(2, "Returned renewal time array doesn't contain the same amount of elements has the action set (expected " << size_of_actions << ", received "<< renewal_time_msg.response.predictions.size() <<")");
+                }
+            }
+            else
+            {
+                are_parameters_valid = false;
+                ROS_WARN_STREAM_THROTTLE(2, "Failed to call the renewal time service");
+            }
 
             // Queues services
             for (auto queue_it = queue_list_.begin(); queue_it != queue_list_.end(); ++queue_it)
@@ -644,7 +718,7 @@ class QueueController
                     TMetricControlPredictionSrv arrival_predictions;
                     arrival_predictions.request.action_set = action_set_msg;
 
-                    queue_controller_utils::check_persistent_service_connection<TPotentialActionSetSrv>(nh_, queue_it->second->expected_arrival_service_);
+                    queue_controller_utils::check_persistent_service_connection<TMetricControlPredictionSrv>(nh_, queue_it->second->expected_arrival_service_);
 
                     if(queue_it->second->expected_arrival_service_.call(arrival_predictions))
                     {
@@ -695,7 +769,7 @@ class QueueController
                     TMetricControlPredictionSrv departure_predictions;
                     departure_predictions.request.action_set = action_set_msg;
 
-                    queue_controller_utils::check_persistent_service_connection<TPotentialActionSetSrv>(nh_, queue_it->second->expected_departure_service_);
+                    queue_controller_utils::check_persistent_service_connection<TMetricControlPredictionSrv>(nh_, queue_it->second->expected_departure_service_);
 
                     if(queue_it->second->expected_departure_service_.call(departure_predictions))
                     {
@@ -746,6 +820,8 @@ class QueueController
                 for (int action_index = 0; action_index < size_of_actions; ++action_index)
                 {
                     action_parameters_output[action_index].penalty = penalty_prediction_srv.response.predictions[action_index];
+                    action_parameters_output[action_index].expected_renewal_time = renewal_time_msg.response.predictions[action_index];
+
                     for (auto queue_it = queue_list_.begin(); queue_it != queue_list_.end(); ++queue_it)
                     {
                         const string& queue_name = queue_it->first;
@@ -768,11 +844,11 @@ class QueueController
         }
         
         /**
-         * @brief Used the min drift-plus-penalty algorithm or its renewal version to compute the action that minimize the penalty and stabilizes all the queues (if possible).
+         * @brief Used the min drift-plus-penalty algorithm to compute the action that minimize the penalty and stabilizes all the queues (if possible).
          * @param action_parameters_list All the parameters and variables for the penalty and the queues for each actions.
          * @return Returns the best action including all the metrics.
         */
-        ActionParameters optimizationStep(std::vector<ActionParameters>& action_parameters_list)
+        ActionParameters computeMinDriftPlusPenalty(std::vector<ActionParameters>& action_parameters_list)
         {
             auto best_action = action_parameters_list.begin();
 
@@ -786,8 +862,8 @@ class QueueController
                 {
                     const string& queue_name = queue_it->first;
                     action_parameters_it->cost += queue_list_[queue_name]->weight_ * 
-                                                  queue_it->second.current_size * 
-                                                  (queue_it->second.expected_arrivals - queue_it->second.expected_departures);
+                                                queue_it->second.current_size * 
+                                                (queue_it->second.expected_arrivals - queue_it->second.expected_departures);
                 }
 
                 if (is_first_cost)
@@ -803,7 +879,63 @@ class QueueController
 
             return *best_action;
         }
-        
+
+        /**
+         * @brief Used the renewal min drift-plus-penalty algorithm to compute the action that minimize the penalty and stabilizes all the queues (if possible).
+         * @param action_parameters_list All the parameters and variables for the penalty and the queues for each actions.
+         * @return Returns the best action including all the metrics.
+        */
+        ActionParameters computeRenewalMinDriftPlusPenalty(std::vector<ActionParameters>& action_parameters_list)
+        {
+            auto best_action = action_parameters_list.begin();
+
+            bool is_first_cost = true;
+
+            for (auto action_parameters_it = action_parameters_list.begin(); action_parameters_it != action_parameters_list.end(); ++action_parameters_it)
+            {
+                const double& expected_renewal_time = action_parameters_it->expected_renewal_time;
+
+                action_parameters_it->cost = v_parameter_*action_parameters_it->penalty;
+                for(auto queue_it = action_parameters_it->queue_parameters.begin(); queue_it != action_parameters_it->queue_parameters.end(); ++queue_it)
+                {
+                    const string& queue_name = queue_it->first;
+
+                    // Adjusts the arrivals based on the renewal time. The values are directly changed in the object so the manual
+                    // changes to the virtual queues will be based on the expected_renewal_time in the later controller steps.
+                    if (queue_list_[queue_name]->is_arrival_renewal_dependent)
+                    {
+                        queue_it->second.expected_arrivals = expected_renewal_time*queue_it->second.expected_arrivals;
+                    }
+                    if (queue_list_[queue_name]->is_departure_renewal_dependent)
+                    {
+                        queue_it->second.expected_departures = expected_renewal_time*queue_it->second.expected_departures;
+                    }
+
+                    action_parameters_it->cost += queue_list_[queue_name]->weight_ * 
+                                                queue_it->second.current_size * 
+                                                (queue_it->second.expected_arrivals - queue_it->second.expected_departures);
+                }
+
+                // TODO: Verify formulation
+                if (is_penalty_renewal_dependent_ && expected_renewal_time > 0.0f)
+                {
+                    action_parameters_it->cost = action_parameters_it->cost/expected_renewal_time; 
+                }
+
+                if (is_first_cost)
+                {
+                    is_first_cost = false;
+                    best_action = action_parameters_it;
+                }
+                else if(action_parameters_it->cost < best_action->cost)
+                {
+                    best_action = action_parameters_it;
+                }
+            }
+
+            return *best_action;
+        }
+
         /**
          * @brief Publish the best action.
          * @param best_action The best action that was computed
@@ -919,7 +1051,13 @@ class QueueController
          * sizes and delays. 
         */
         float v_parameter_;
-        
+
+        /**
+         * @brief Indicates if the controller should optimize the time average of the ratio between the penalty and the renewal time.
+         * Only used by the renewal_min_drift_plus_penalty controller.
+        */
+        bool is_penalty_renewal_dependent_ = false;
+
         /**
          * @brief Name of the queue server node linked to the queue_controller. Mainly used as a suffix
          * to solve all the ROS topic and ROS service names provided by the queue server. 
