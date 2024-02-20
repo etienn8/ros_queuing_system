@@ -56,6 +56,14 @@ bool PredictionService::transmissionVectorCb(ros_queue_msgs::MetricTransmissionV
 
         return true;
     }
+    else if(options_.distribution_type == "static")
+    {
+        for (int action_index = 0; action_index < req.action_set.action_set.size(); ++action_index)
+        {
+            res.predictions.push_back(options_.transmission_value);
+        }
+        return true;
+    }
 
     return false;
 }
