@@ -3,11 +3,13 @@
 #include <chrono>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "ros/ros.h"
+#include <ros/callback_queue.h>
 
 #include "controller_queue_struct.hpp"
 #include "queue_controller_utils.hpp"
@@ -46,7 +48,7 @@ class QueueController
             RenewalDriftPlusPenalty
         };
 
-        QueueController(ros::NodeHandle& nh): nh_(nh)
+        QueueController(ros::NodeHandle& nh): nh_(nh), async_spinner_(1, &async_spinner_queue_), async_nh_("~")
         {
             bool can_create_controller = true;
 
@@ -110,10 +112,16 @@ class QueueController
                 else
                 {
                     renewal_service_client_ = nh_.serviceClient<TMetricControlPredictionSrv>(expected_renewal_time_service_name, true);
-                    
+
                     ROS_INFO_STREAM("Waiting for the expected renewal time service named :" << expected_renewal_time_service_name);
                     renewal_service_client_.waitForExistence();
                 }
+
+                // Start an asynchronous spinner to handle the last renewal time service in parallel to the controller.
+                ROS_INFO_STREAM("Creating the last renewal time service server.");
+                async_nh_.setCallbackQueue(&async_spinner_queue_);
+                last_renewal_time_service_server_ = async_nh_.advertiseService("get_last_renewal_time", &QueueController::lastRenewalTimeServiceCallback, this);
+                async_spinner_.start();
             }
 
             if(!nh.getParam("inverse_control_and_steps", inversed_control_and_update_steps_))
@@ -218,6 +226,12 @@ class QueueController
                 // Create ouptut topic
                 best_action_client_ =  std::make_unique<actionlib::SimpleActionClient<TActionLibOutputType>>(action_server_name, true);   
 
+
+                if(controller_type_ == ControllerType::RenewalDriftPlusPenalty)
+                {
+                    async_spinner_.start();
+                } 
+
                 is_initialized_ = true;
             }
         }
@@ -278,15 +292,21 @@ class QueueController
                         best_action_client_waited_ = true;
                     }
 
-                    static bool first_renewal = true;
-                    if(first_renewal)
+                    // Access protection to the last_renewal_time_ variable
                     {
-                        first_renewal = false;
-                        last_renewal_time_point = ros::Time::now();
-                    }
+                        std::lock_guard<std::mutex> lock(last_renewal_time_mutex_);
+                        static bool first_renewal = true;
+                        if(first_renewal)
+                        {
+                            first_renewal = false;
+                            last_renewal_time_point = ros::Time::now();
+                        }
 
-                    // Compute the real elapsed time since the last renewal.
-                    last_renewal_time_ = (ros::Time::now() - last_renewal_time_point).toSec();
+                        // Compute the real elapsed time since the last renewal.
+                        last_renewal_time_ = (ros::Time::now() - last_renewal_time_point).toSec();
+                        ROS_DEBUG_STREAM("Time since last renewal: " << last_renewal_time_);
+                    }
+                    
                     // Compute the controller
                     controllerCallback();
 
@@ -315,8 +335,6 @@ class QueueController
                     {
                         ros::Duration(max_renewal_time_).sleep();      
                     }
-
-                    ROS_DEBUG_STREAM("Time since last renewal: " << last_renewal_time_);
                 }
             }
         }
@@ -328,6 +346,12 @@ class QueueController
         bool is_initialized_ = false;
 
         ros::NodeHandle nh_;
+        
+        /**
+         * @brief Nodehandle that uses the async_spinner_queue_ as its callback queue. It's use as an interface
+         * to create services from that should be manage in parallel with the main thread.
+        */
+        ros::NodeHandle async_nh_;
 
         /**
          * @brief Time at which the last renewal was done. Used by the renewal_min_drift_plus_penalty controller.
@@ -543,6 +567,41 @@ class QueueController
         }
 
         /**
+         * @brief Service callbacks queue to manage in parallel of the queue controller main loop the 
+         * request for the last renewal time.
+        */
+        ros::CallbackQueue async_spinner_queue_;
+
+        /**
+         * @brief Asynchronous spinner that calls the callbacks in the async_spinner_queue_ in parallel of the main
+         * thread.
+        */
+        ros::AsyncSpinner async_spinner_;
+
+        /**
+         * @brief Service server that returns the last renewal time. Used with renewal system.
+         * Mainly called by nodes that need to update the virtual queues based on the current state of the system.
+        */
+        ros::ServiceServer last_renewal_time_service_server_;
+
+        /**
+         * @brief Service callback that returns the last renewal time. Used with renewal system.
+        */
+        bool lastRenewalTimeServiceCallback(ros_queue_msgs::FloatRequest::Request& req, 
+                                            ros_queue_msgs::FloatRequest::Response& res)
+        {
+            std::lock_guard<std::mutex> lock(last_renewal_time_mutex_);
+            res.value = last_renewal_time_;
+            return true;
+        }
+
+        /**
+         * @brief Mutex that protects access to the last_renewal_time_ variable.
+        */
+        std::mutex last_renewal_time_mutex_;
+
+        // ===== Controller steps ======
+        /**
          * @brief Callback of called from the spin to exectute all the steps from the controller.
         */
         void controllerCallback()
@@ -623,8 +682,6 @@ class QueueController
             }
         }
 
-
-        // ===== Controller steps ======
         /**
          * @brief Calls the service to get the all the potential actions that will be evaluated.
          * @return The set of potential actions.
@@ -689,22 +746,25 @@ class QueueController
                 ROS_WARN_STREAM_THROTTLE(2, "Failed to call the queue server state fetch# service");
             }
 
-            // Expected time
-            queue_controller_utils::check_persistent_service_connection<TMetricControlPredictionSrv>(nh_, renewal_service_client_);
             TMetricControlPredictionSrv renewal_time_msg;
-            renewal_time_msg.request.action_set = action_set_msg;
-            if(renewal_service_client_.call(renewal_time_msg))
+            if (controller_type_ == ControllerType::RenewalDriftPlusPenalty)
             {
-                if(renewal_time_msg.response.predictions.size() != size_of_actions)
+                // Expected time
+                queue_controller_utils::check_persistent_service_connection<TMetricControlPredictionSrv>(nh_, renewal_service_client_);
+                renewal_time_msg.request.action_set = action_set_msg;
+                if(renewal_service_client_.call(renewal_time_msg))
+                {
+                    if(renewal_time_msg.response.predictions.size() != size_of_actions)
+                    {
+                        are_parameters_valid = false;
+                        ROS_WARN_STREAM_THROTTLE(2, "Returned renewal time array doesn't contain the same amount of elements has the action set (expected " << size_of_actions << ", received "<< renewal_time_msg.response.predictions.size() <<")");
+                    }
+                }
+                else
                 {
                     are_parameters_valid = false;
-                    ROS_WARN_STREAM_THROTTLE(2, "Returned renewal time array doesn't contain the same amount of elements has the action set (expected " << size_of_actions << ", received "<< renewal_time_msg.response.predictions.size() <<")");
+                    ROS_WARN_STREAM_THROTTLE(2, "Failed to call the renewal time service");
                 }
-            }
-            else
-            {
-                are_parameters_valid = false;
-                ROS_WARN_STREAM_THROTTLE(2, "Failed to call the renewal time service");
             }
 
             // Queues services
