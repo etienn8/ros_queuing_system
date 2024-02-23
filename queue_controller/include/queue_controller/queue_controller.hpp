@@ -25,6 +25,7 @@
 
 #include "rosparam_utils/xmlrpc_utils.hpp"
 #include "rosparam_utils/parameter_package_fetch_struct.hpp"
+#include "rosparam_utils/data_validation.hpp"
 
 #include "queue_server/queue_server_utils.hpp"
 
@@ -660,7 +661,17 @@ class QueueController
             }
 
             queue_controller_utils::updateTimePointAndGetTimeDifferenceMS(time_0, total_time);
-            if (controller_time_step_ != 0.0)
+            bool can_display_iddle_time = true;
+            if (data_validation::float_compare(controller_time_step_, 0.0f))
+            {
+                can_display_iddle_time = false;
+            }
+            else if (controller_type_ == ControllerType::RenewalDriftPlusPenalty && data_validation::float_compare(min_renewal_time_, 0.0f))
+            {
+                can_display_iddle_time = false;
+            }
+
+            if(can_display_iddle_time)
             {
                 double controller_time_step_ms;
                 if (controller_type_ == ControllerType::RenewalDriftPlusPenalty)
@@ -672,13 +683,23 @@ class QueueController
                     controller_time_step_ms = controller_time_step_*1000.0;
                 }
                 ROS_DEBUG_STREAM("Queue controller: Control loop of "<< ros::this_node::getName() << " took " << total_time << " ms to complete. Time spent in each step: \n" 
-                                  << "virtual_queues_current_state_update_time_spent: " << virtual_queues_current_state_update_time_spent << " ms (" << virtual_queues_current_state_update_time_spent/total_time*100<< "%), \n" 
-                                  << "action_set_time_spent: " << action_set_time_spent << " ms (" << action_set_time_spent/total_time*100<< "%), \n" 
-                                  << "get_parameters_time_spent: " << get_parameters_time_spent << " ms (" << get_parameters_time_spent/total_time*100<< "%), \n" 
-                                  << "compute_optimization_time_spent: " << compute_optimization_time_spent << " ms (" << compute_optimization_time_spent/total_time*100<< "%), \n"
-                                  << "send_best_action_time_spent: " << send_best_action_time_spent << " ms (" << send_best_action_time_spent/total_time*100<< "%), \n"
-                                  << "update_virtual_queues_time_spent: " << update_virtual_queues_time_spent << " ms (" << update_virtual_queues_time_spent/total_time*100<< "%), \n"
-                                  << "iddle time (based on tmin for renewal):" << controller_time_step_ms - total_time << " ms (" << (controller_time_step_ms - total_time)/controller_time_step_ms*100<< "%)");        
+                                << "virtual_queues_current_state_update_time_spent: " << virtual_queues_current_state_update_time_spent << " ms (" << virtual_queues_current_state_update_time_spent/total_time*100<< "%), \n" 
+                                << "action_set_time_spent: " << action_set_time_spent << " ms (" << action_set_time_spent/total_time*100<< "%), \n" 
+                                << "get_parameters_time_spent: " << get_parameters_time_spent << " ms (" << get_parameters_time_spent/total_time*100<< "%), \n" 
+                                << "compute_optimization_time_spent: " << compute_optimization_time_spent << " ms (" << compute_optimization_time_spent/total_time*100<< "%), \n"
+                                << "send_best_action_time_spent: " << send_best_action_time_spent << " ms (" << send_best_action_time_spent/total_time*100<< "%), \n"
+                                << "update_virtual_queues_time_spent: " << update_virtual_queues_time_spent << " ms (" << update_virtual_queues_time_spent/total_time*100<< "%), \n"
+                                << "iddle time (based on tmin for renewal):" << controller_time_step_ms - total_time << " ms (" << (controller_time_step_ms - total_time)/controller_time_step_ms*100<< "%)");
+            }
+            else
+            {
+                ROS_DEBUG_STREAM("Queue controller: Control loop of "<< ros::this_node::getName() << " took " << total_time << " ms to complete. Time spent in each step: \n" 
+                                << "virtual_queues_current_state_update_time_spent: " << virtual_queues_current_state_update_time_spent << " ms (" << virtual_queues_current_state_update_time_spent/total_time*100<< "%), \n" 
+                                << "action_set_time_spent: " << action_set_time_spent << " ms (" << action_set_time_spent/total_time*100<< "%), \n" 
+                                << "get_parameters_time_spent: " << get_parameters_time_spent << " ms (" << get_parameters_time_spent/total_time*100<< "%), \n" 
+                                << "compute_optimization_time_spent: " << compute_optimization_time_spent << " ms (" << compute_optimization_time_spent/total_time*100<< "%), \n"
+                                << "send_best_action_time_spent: " << send_best_action_time_spent << " ms (" << send_best_action_time_spent/total_time*100<< "%), \n"
+                                << "update_virtual_queues_time_spent: " << update_virtual_queues_time_spent << " ms (" << update_virtual_queues_time_spent/total_time*100<< "%), \n");
             }
         }
 
