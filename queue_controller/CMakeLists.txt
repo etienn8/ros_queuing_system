@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   rosparam_utils
   actionlib_msgs
   actionlib
+  std_srvs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -109,7 +110,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
    INCLUDE_DIRS include
 #  LIBRARIES queue_controller
-   CATKIN_DEPENDS queue_server ros_queue_msgs roscpp message_runtime 
+   CATKIN_DEPENDS queue_server ros_queue_msgs roscpp message_runtime std_srvs actionlib_msgs actionlib
 #  DEPENDS system_lib
 )
 

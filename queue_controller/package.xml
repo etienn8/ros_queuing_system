@@ -29,6 +29,7 @@
   <depend>rosparam_utils</depend>
   <depend>actionlib_msgs</depend>
   <depend>actionlib</depend>
+  <depend>std_srvs</depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->
