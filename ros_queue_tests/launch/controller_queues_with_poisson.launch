@@ -10,7 +10,7 @@
     </include>
 
     <!-- Creates the queue controller-->
-    <include file="$(find queue_controller)/launch/queue_controller_template.launch">
+    <include file="$(find queue_controller)/launch/queue_controller.launch">
         <arg name="queue_controller_config_path" value="$(find ros_queue_tests)/config/min_drift-plus-penalty_poisson.yaml"/>
     </include>
 

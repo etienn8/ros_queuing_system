@@ -10,7 +10,7 @@
     </include>
 
     <!-- Creates the queue controller-->
-    <include file="$(find queue_controller)/launch/queue_controller_template.launch">
+    <include file="$(find queue_controller)/launch/queue_controller.launch">
         <arg name="queue_controller_config_path" value="$(find ros_queue_tests)/config/renewal_min_drift-plus-penalty_poisson.yaml"/>
     </include>
 
@@ -27,7 +27,7 @@
         <param name="action_server_name" type="string" value="transmission_vector_switch"/>
         <param name="departure_evaluation_service" type="string" value="/action_prediction_server_node/queue_0_b"/>
         <param name="delay_action_execution" type="bool" value="true"/>
-        <param name="delay_action_execution_time" type="double" value="1.5"/>
+        <param name="delay_action_execution_time" type="double" value="0.0"/>
     </node>
 
     <!-- Create a server to compute the penalty of a transmission vector action. -->

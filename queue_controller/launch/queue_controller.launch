@@ -1,10 +1,12 @@
 <?xml version="1.0"?>
 <launch>
   <arg name="queue_controller_name" default="queue_controller"/>
+  <!-- The type of controller supported depends on the targets defined in the CMakeList-->
+  <arg name="queue_controller_type" default="transmission_vector_queue_controller_node"/>
 
   <arg name="queue_controller_config_path" default="$(find queue_controller)/config/min_drift-plus-penalty_template.yaml"/>
 
-  <node name="$(arg queue_controller_name)" pkg="queue_controller" type="queue_controller" output="screen">
+  <node name="$(arg queue_controller_name)" pkg="queue_controller" type="$(arg queue_controller_type)" output="screen">
     <rosparam file="$(arg queue_controller_config_path)" command="load" subst_value="true"/>
   </node>
 </launch>
