@@ -1,7 +1,7 @@
 #include "ros/ros.h"
 
 #include "queue_controller/queue_controller.hpp"
-#include "queue_controller/action_configs/bernoulli_action_controller_config.hpp"
+#include "queue_controller/action_configs/transmission_vector_controller_config.hpp"
 
 int main(int argc, char **argv)
 {
