@@ -21,6 +21,7 @@
 
 #include <actionlib/client/simple_action_client.h>
 
+#include "std_msgs/Float32.h"
 #include "std_srvs/Empty.h"
 
 #include "rosparam_utils/xmlrpc_utils.hpp"
@@ -103,6 +104,8 @@ class QueueController
                 {
                     ROS_WARN_STREAM("Missing the flag is_penalty_renewal_dependent that indicates if the penalty is dependent on the renewal time. Will be set to false.");
                 }
+
+                renewal_time_pub_ = nh_.advertise<std_msgs::Float32>("renewal_time", 10);
 
                 string expected_renewal_time_service_name;
                 if(!nh.getParam("expected_renewal_time_service_name", expected_renewal_time_service_name) || expected_renewal_time_service_name.empty())
@@ -293,6 +296,7 @@ class QueueController
                         best_action_client_waited_ = true;
                     }
 
+                    std_msgs::Float32 renewal_time_msg;
                     // Access protection to the last_renewal_time_ variable
                     {
                         std::lock_guard<std::mutex> lock(last_renewal_time_mutex_);
@@ -305,8 +309,11 @@ class QueueController
 
                         // Compute the real elapsed time since the last renewal.
                         last_renewal_time_ = (ros::Time::now() - last_renewal_time_point).toSec();
+                        
+                        renewal_time_msg.data = last_renewal_time_;
                         ROS_DEBUG_STREAM("Time since last renewal: " << last_renewal_time_);
                     }
+                    renewal_time_pub_.publish(renewal_time_msg);
                     
                     // Compute the controller
                     controllerCallback();
@@ -369,6 +376,11 @@ class QueueController
          * @brief ROS service client used to computed the expected time ot execute each given action.
         */
        ros::ServiceClient renewal_service_client_;
+
+        /**
+         * @brief ROS topic publisher that periodically sends the last renewal time.
+        */
+       ros::Publisher renewal_time_pub_;
 
         /**
          * @brief ROS service client used to get the current states of the queues in the queue server.

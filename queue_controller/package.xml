@@ -30,6 +30,7 @@
   <depend>actionlib_msgs</depend>
   <depend>actionlib</depend>
   <depend>std_srvs</depend>
+  <depend>std_msgs</depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->
