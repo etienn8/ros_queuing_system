@@ -913,7 +913,10 @@ class QueueController
                 for (int action_index = 0; action_index < size_of_actions; ++action_index)
                 {
                     action_parameters_output[action_index].penalty = penalty_prediction_srv.response.predictions[action_index];
-                    action_parameters_output[action_index].expected_renewal_time = renewal_time_msg.response.predictions[action_index];
+                    if (controller_type_ == ControllerType::RenewalDriftPlusPenalty)
+                    {
+                        action_parameters_output[action_index].expected_renewal_time = renewal_time_msg.response.predictions[action_index];
+                    }
 
                     for (auto queue_it = queue_list_.begin(); queue_it != queue_list_.end(); ++queue_it)
                     {
