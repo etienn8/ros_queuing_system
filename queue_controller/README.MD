@@ -99,7 +99,7 @@ Once the best action is found, the queues will be updated based on the arrivals 
 ## System explanation
 The following figure shows a generic example in which the controller could be installed. It mainly shows all the important interfaces that needs to be provided so the queue controller can find an optimal action:
 
-![[ros_queuing_system_architecture.drawio.png]]
+![](.assets/ros_queuing_system_architecture.png)
 Like shown in the above figure, the queue_controller and the [queue_server](https://github.com/etienn8/ros_queuing_system/tree/main/queue_server) are two main important components provided in the [ros_queue_system](https://github.com/etienn8/ros_queuing_system) . While the queue_server can be used as standalone node that holds queues, the queue_controller tries to stabilize queues and is designed to connect to the interfaces of a queue_server. Outside of the queue_server, the user needs to provide all other interfaces listed in the configuration section (except for certain parameters that are required for specific controller types). 
 
 The main steps of the queue controllers are the following:
