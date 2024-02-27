@@ -68,7 +68,7 @@ penalty_service_name:  ""
 # this parameter balances the tradeoff between a lower penalty or lower queue delays. A high V will prioritize the minimization
 # of the penalty while a low V will prioritize low queue sizes and delays.
 v_parameter: 1.0
-# If set to true, the controler will optimize the ratio of the time averae penalty over the expected renewal frame duration.
+# If set to true, the controller will optimize the ratio of the time average penalty over the expected renewal frame duration.
 # If set to false, the controller will optimize the time average penalty.
 # Only used for the renewal_min_drift_plus_penalty type of controller.
 is_penalty_renewal_dependent: false
