@@ -60,7 +60,6 @@
 
   <depend>message_generation</depend>
   <depend>ros_queue_msgs</depend>
-  <depend>actionlib_msgs</depend>
   <exec_depend>message_runtime</exec_depend>
 
   <depend>rosparam_utils</depend>
