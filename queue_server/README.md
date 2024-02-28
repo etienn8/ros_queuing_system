@@ -81,6 +81,7 @@ To monitor the state of the servers and the queues, you can print them in the te
 
 * **queue_server_config_template.yaml**: This is a template that contains the server parameters and the configuration of its queues.
 	* `queue_server_name` (string): Indicates the name of the queue and thus will be used as a prefix for all the ROS interfaces of the server and its queues.
+  	* `compute_statistics` (bool, default:false): When true, queues will publish a topic with their time average metrics (queue size, arrivals and departures).
 	* `server_spin_rate` (float): The frquency in loops/sec at which the queue sizes will be published and the real queue will be checked for transmission.
 	* `queue_list` (list): Its a list of the queue configurations. Any number of queues can be defined in the list. To not forget any queue configurations, copy-paste the content of `queue_config.yaml` in the list to add a new queue and configure it as needed.
 ## Launch files
@@ -117,6 +118,12 @@ For all real queues configured in the config files:
 	Messages from that topic will be stored in its corresponding real queue.
 
 #### Published Topics
+* **`server_state`** ((ros_queue_msgs/QueueServerState)[https://github.com/etienn8/ros_queuing_system/blob/main/ros_queue_msgs/msg/QueueServerState.msg])
+	Publishes the states of each queue. It's mainly containing the size of the queues.
+
+* **`server_stats`** ((ros_queue_msgs/QueueServerStats)[https://github.com/etienn8/ros_queuing_system/blob/main/ros_queue_msgs/msg/QueueServerStats.msg])
+	Publishes stats about the mean average metrics of the real queues (time average arrivals and departures and mean queue size). Only active if the param `compute_statistics` is set to true.
+
 For all real queues configured in the config files
 * **`<queue_name>/<tranmission_topic_name>`** ([Type of first message received on the arrival_topic_name of a real queue])
 	Message to transmit from the real queue.
