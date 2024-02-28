@@ -11,7 +11,7 @@ This package describes all the ROS messages and services used by the ros_queuing
 The source code is released under a MIT license.
 
 **Author: Étienne Villemure**
-**Affiliation: MoreLab and [IntRoLab](https://introlab.3it.usherbrooke.ca/mediawiki-introlab/index.php/Main_Page)**
+**Affiliation: [MoreLab](https://morelab.ca/) and [IntRoLab](https://introlab.3it.usherbrooke.ca/mediawiki-introlab/index.php/Main_Page)**
 **Maintainer: Étienne Villemure, etienne.villemure@usherbrooke.ca**
 
 The ros_queue_msgs package has been tested under [ROS] Noetic on Ubuntu 20.04.

@@ -27,7 +27,7 @@ For the virtual queues, it mainly provides ROS services to evaluate by how much 
 The source code is released under a MIT license.
 
 **Author: Étienne Villemure**
-**Affiliation: MoreLab and [IntRoLab](https://introlab.3it.usherbrooke.ca/mediawiki-introlab/index.php/Main_Page)**
+**Affiliation: [MoreLab](https://morelab.ca/) and [IntRoLab](https://introlab.3it.usherbrooke.ca/mediawiki-introlab/index.php/Main_Page)**
 **Maintainer: Étienne Villemure, etienne.villemure@usherbrooke.ca**
 
 The ros_queuing_system package has been tested under [ROS] Noetic on Ubuntu 20.04.
