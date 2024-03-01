@@ -54,6 +54,7 @@
   <depend>queue_server</depend>
   <depend>ros_queue_msgs</depend>
   <depend>ros_queue_tests</depend>
+  <depend>queue_controller</depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

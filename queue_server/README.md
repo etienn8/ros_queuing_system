@@ -12,7 +12,7 @@ An extra node, *periodic_update_caller_node*, is also included if the update of 
 The source code is released under a MIT license.
 
 **Author: Étienne Villemure**
-**Affiliation: MoreLab and [IntRoLab](https://introlab.3it.usherbrooke.ca/mediawiki-introlab/index.php/Main_Page)**
+**Affiliation: [MoreLab](https://morelab.ca/) and [IntRoLab](https://introlab.3it.usherbrooke.ca/mediawiki-introlab/index.php/Main_Page)**
 **Maintainer: Étienne Villemure, etienne.villemure@usherbrooke.ca**
 
 The ros_queuing_system package has been tested under [ROS] Noetic on Ubuntu 20.04.
@@ -81,14 +81,12 @@ To monitor the state of the servers and the queues, you can print them in the te
 
 * **queue_server_config_template.yaml**: This is a template that contains the server parameters and the configuration of its queues.
 	* `queue_server_name` (string): Indicates the name of the queue and thus will be used as a prefix for all the ROS interfaces of the server and its queues.
-	* `update_trigger_service_name` (string): Name of the advertised service, that when called, will trigger the update of all virtual queues. 
-	* `server_state_topic_name` (string): Name of the topic on which the queue server will periodically publish the size of its queues.
+  	* `compute_statistics` (bool, default:false): When true, queues will publish a topic with their time average metrics (queue size, arrivals and departures).
 	* `server_spin_rate` (float): The frquency in loops/sec at which the queue sizes will be published and the real queue will be checked for transmission.
 	* `queue_list` (list): Its a list of the queue configurations. Any number of queues can be defined in the list. To not forget any queue configurations, copy-paste the content of `queue_config.yaml` in the list to add a new queue and configure it as needed.
 ## Launch files
 
 * **periodic_udpate_caller.launch:** Starts a node that periodically calls, at a specified rate, the virtual queues update of a queue_server node
-     - **`trigger_service_name`** Name of the trigger service of the queue server. Should match its `update_trigger_service_name`. Default: "queue_server/trigger_service".
      - **`update_rate`** Rate at which the update will be triggered. Default: 2.0
 
 * **queue_server_template.launch:** Starts a queue server based on queue server configuration file.
@@ -112,11 +110,20 @@ Periodically calls an empty service. Usually used to trigger the virtual queue u
 Creates [ros_queue](https://github.com/etienn8/ros_queuing_system/tree/main/ros_queue) queues based on a given configuration file, stores the queues, publishes periodically the queue states, transmits periodically the real queues based on a given amount of data to transmit given by a service and updates the virtual queues whenever it receives a trigger. In a nutshell, it's responsible to hold queues and it manages the interactions from other nodes with those queues. 
 
 #### Subscribed Topics
+* **`virtual_queue_manual_changes`** ([ros_queue_msgs/VirtualQueueChangesList](https://github.com/etienn8/ros_queuing_system/blob/main/ros_queue_msgs/msg/VirtualQueueChangesList.msg))
+	Topic that contains a list of virtual queues' name and manual changes that needs to be performed on the specified queues.
+
 For all real queues configured in the config files:
 * **`<queue_name>/<arrival_topic_name>`** ([Any type of ROS message])
 	Messages from that topic will be stored in its corresponding real queue.
 
 #### Published Topics
+* **`server_state`** ((ros_queue_msgs/QueueServerState)[https://github.com/etienn8/ros_queuing_system/blob/main/ros_queue_msgs/msg/QueueServerState.msg])
+	Publishes the states of each queue. It's mainly containing the size of the queues.
+
+* **`server_stats`** ((ros_queue_msgs/QueueServerStats)[https://github.com/etienn8/ros_queuing_system/blob/main/ros_queue_msgs/msg/QueueServerStats.msg])
+	Publishes stats about the mean average metrics of the real queues (time average arrivals and departures and mean queue size). Only active if the param `compute_statistics` is set to true.
+
 For all real queues configured in the config files
 * **`<queue_name>/<tranmission_topic_name>`** ([Type of first message received on the arrival_topic_name of a real queue])
 	Message to transmit from the real queue.
@@ -124,6 +131,11 @@ For all real queues configured in the config files
 #### Services
 * **`trigger_service`** ([std_srvs/Empty])
 	Triggers an update of all the virtual queues when called. During updates, the virtual queues will call their arrival and transmission evaluation services to compute the change in the queue size. For example, you can trigger the update from the console with:
+
+		rosservice call /<queue_server_name>/trigger_service
+
+* **`get_server_state`** ([std_queue_msgs/QueueServerStateFetch](https://github.com/etienn8/ros_queuing_system/blob/main/ros_queue_msgs/msg/QueueServerState.msg))
+	Returns the current server states. It mainly includes the current queue sizes. For example, you can display the server states from the console with:
 
 		rosservice call /<queue_server_name>/trigger_service
 

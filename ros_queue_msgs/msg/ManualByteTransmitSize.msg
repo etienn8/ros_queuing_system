@@ -1,0 +1,1 @@
+int32 nb_bytes_to_transmit

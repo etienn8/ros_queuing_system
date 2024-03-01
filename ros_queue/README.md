@@ -27,7 +27,7 @@ For the virtual queues, it mainly provides ROS services to evaluate by how much 
 The source code is released under a MIT license.
 
 **Author: Étienne Villemure**
-**Affiliation: MoreLab and [IntRoLab](https://introlab.3it.usherbrooke.ca/mediawiki-introlab/index.php/Main_Page)**
+**Affiliation: [MoreLab](https://morelab.ca/) and [IntRoLab](https://introlab.3it.usherbrooke.ca/mediawiki-introlab/index.php/Main_Page)**
 **Maintainer: Étienne Villemure, etienne.villemure@usherbrooke.ca**
 
 The ros_queuing_system package has been tested under [ROS] Noetic on Ubuntu 20.04.
@@ -343,6 +343,9 @@ q0.transmitBasedOnQoS(); // Calls the transmission_evaluation_service_name to kn
 Subscriber:
 - `<arrival_topic_name>`: (Can be any ROS messages)
 	The messages from this topic will be stored in the queue. After the first reception of the message, a publisher will be created.
+	
+- `nb_bytes_to_transmit`: (std_msgs/Int32)
+	The queue will try to transmit the number of bytes specified by the integer received in this incoming message.
 
 Publisher:
 - `<transmission_topic_name>`: (Type of the first message received at the <arrival_topic_name>)

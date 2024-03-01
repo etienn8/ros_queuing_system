@@ -1,24 +1,27 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(queue_server)
+project(queue_controller)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
-
-SET(QUEUE_SERVER_LIB_NAME "queue_server_lib")
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  ros_queue
-  roscpp
+  queue_server
   ros_queue_msgs
+  roscpp
+  message_runtime
   rosparam_utils
+  actionlib_msgs
+  actionlib
   std_srvs
+  std_msgs
 )
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
+
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -50,15 +53,18 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-#add_message_files(
-#  FILES
-#)
+# add_message_files(
+#   FILES
+#   Message1.msg
+#   Message2.msg
+# )
 
 ## Generate services in the 'srv' folder
-#add_service_files(
-#  FILES
-#  
-#)
+# add_service_files(
+#   FILES
+#   Service1.srv
+#   Service2.srv
+# )
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -68,10 +74,10 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate added messages and services with any dependencies listed here
-#generate_messages(
+# generate_messages(
 #   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
-#)
+#   ros_queue_msgs
+# )
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -103,9 +109,9 @@ find_package(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-  INCLUDE_DIRS include
-  LIBRARIES ${QUEUE_SERVER_LIB_NAME}
-  CATKIN_DEPENDS ros_queue ros_queue_msgs roscpp message_runtime rosparam_utils std_srvs
+   INCLUDE_DIRS include
+#  LIBRARIES queue_controller
+   CATKIN_DEPENDS queue_server ros_queue_msgs roscpp message_runtime std_srvs std_msgs actionlib_msgs actionlib
 #  DEPENDS system_lib
 )
 
@@ -121,22 +127,19 @@ include_directories(
 )
 
 ## Declare a C++ library
-add_library(${QUEUE_SERVER_LIB_NAME}
-   src/queue_server.cpp
-   src/queue_server_utils.cpp
- )
+# add_library(${PROJECT_NAME}
+#   src/${PROJECT_NAME}/queue_controller.cpp
+# )
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
-add_dependencies(${QUEUE_SERVER_LIB_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+# add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(queue_server_node src/queue_server_node.cpp)
-
-add_executable(periodic_update_caller_node src/periodic_update_caller_node.cpp)
+add_executable(transmission_vector_queue_controller_node src/transmission_vector_queue_controller_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -146,23 +149,11 @@ add_executable(periodic_update_caller_node src/periodic_update_caller_node.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
-add_dependencies(queue_server_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
-add_dependencies(periodic_update_caller_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(transmission_vector_queue_controller_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-
-target_link_libraries(${QUEUE_SERVER_LIB_NAME}
-   ${catkin_LIBRARIES}
-)
-
-target_link_libraries(queue_server_node
-   ${catkin_LIBRARIES}
-   ${QUEUE_SERVER_LIB_NAME}
-)
-
-target_link_libraries(periodic_update_caller_node
-   ${catkin_LIBRARIES}
+target_link_libraries(transmission_vector_queue_controller_node
+  ${catkin_LIBRARIES}
 )
 
 #############
@@ -212,7 +203,7 @@ target_link_libraries(periodic_update_caller_node
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_queue_server.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_queue_controller.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

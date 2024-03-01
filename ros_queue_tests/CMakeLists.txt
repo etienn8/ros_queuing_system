@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   ros_queue_msgs
   roscpp
   rosparam_utils
+  actionlib
 )
 
 ## System dependencies are found with CMake's conventions
@@ -85,7 +86,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
   INCLUDE_DIRS include
 #  LIBRARIES ros_queue_tests
-  CATKIN_DEPENDS ros_queue_msgs roscpp queue_server
+  CATKIN_DEPENDS ros_queue_msgs roscpp queue_server queue_controller
 #  DEPENDS system_lib
 )
 
@@ -113,10 +114,17 @@ add_library(distribution_sample_server
   src/distribution_sample_server.cpp
 )
 
+add_library(prediction_server_lib
+  src/prediction_server.cpp
+  src/prediction_service.cpp
+)
+
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
 add_dependencies(distribution_sample_server ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(prediction_server_lib ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
 
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
@@ -124,9 +132,25 @@ add_dependencies(distribution_sample_server ${${PROJECT_NAME}_EXPORTED_TARGETS} 
 add_executable(distribution_services_node 
               src/distribution_services_node.cpp)
 
+add_executable(transmission_vector_action_server
+              src/transmission_vector_action_server.cpp)
+              
+add_executable(prediction_server_node
+              src/prediction_server_node.cpp)
+
+add_executable(transmission_action_receiver_node
+               src/transmission_action_receiver.cpp
+               src/transmission_action_receiver_node.cpp)
+
+add_executable(penalty_3q_2s_node
+               src/penalty_3q_2s_node.cpp)       
+
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 add_dependencies(distribution_services_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(transmission_vector_action_server ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(transmission_action_receiver_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(penalty_3q_2s_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(distribution_sample_server
@@ -138,4 +162,25 @@ target_link_libraries(distribution_services_node
   ${catkin_LIBRARIES}
   inversed_cumuluative_distributions_lib
   distribution_sample_server
+)
+
+target_link_libraries(prediction_server_lib
+  ${catkin_LIBRARIES}
+  inversed_cumuluative_distributions_lib
+)
+
+target_link_libraries(prediction_server_node
+  ${catkin_LIBRARIES}
+  prediction_server_lib
+)
+
+target_link_libraries(transmission_vector_action_server
+  ${catkin_LIBRARIES}
+)
+
+target_link_libraries(transmission_action_receiver_node
+  ${catkin_LIBRARIES}
+)
+target_link_libraries(penalty_3q_2s_node
+  ${catkin_LIBRARIES}
 )

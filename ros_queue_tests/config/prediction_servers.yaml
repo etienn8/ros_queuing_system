@@ -1,0 +1,67 @@
+prediction_service_list:
+  # Name of the service
+  - prediction_0: 
+    # The control action type specifies what type of msg the request of the service should use.
+    # Currently supports "none" (empty request) and "transmission_vector" that uses the PotentialAction.msg
+    - control_action_type: "none"  
+    # Indicate if a distribution type is used. Supports currently "static" which returns a static value.
+    # Unused if the control_action_type is "transmission_vector"
+    - distribution_type: "static"
+    # Indicate the value to output when called. When used with transmission vectors, its the value if 
+    # the transmission_vector_id matches the ones in the transmission vector action.
+    - transmission_value: 4.0 
+    # Index in the transmission action vectors that will be look up. If the value at that index is a one,
+    # The service will return the value specified by transmission_value.
+    # Only set when control_action_type = transmission_vector".
+    # - transmission_vector_id: 0
+
+  - prediction_1:
+    - control_action_type: "none"
+    - distribution_type: "static"
+    - transmission_value: 4.0 
+
+  - queue_0_b:
+    - control_action_type: "transmission_vector"
+    - transmission_vector_id: 0
+    - transmission_value: 500.0
+
+  - queue_1_b:
+    - control_action_type: "transmission_vector"
+    - transmission_vector_id: 1
+    - transmission_value: 20.0
+  
+  - queue_2_b:
+    - control_action_type: "transmission_vector"
+    - transmission_vector_id: 2
+    - transmission_value: 10.0
+
+  - static_0: 
+    # The control action type specifies what type of msg the request of the service should use.
+    # Currently supports "none" (empty request) and "transmission_vector" that uses the PotentialAction.msg
+    - control_action_type: "none"  
+    # Indicate if a distribution type is used. Supports currently "static" which returns a static value.
+    # Unused if the control_action_type is "transmission_vector"
+    - distribution_type: "static"
+    # Indicate the value to output when called. When used with transmission vectors, its the value if 
+    # the transmission_vector_id matches the ones in the transmission vector action.
+    - transmission_value: 0.0
+    # Index in the transmission action vectors that will be look up. If the value at that index is a one,
+    # The service will return the value specified by transmission_value.
+    # Only set when control_action_type = transmission_vector".
+    # - transmission_vector_id: 0
+
+  - static_expected_renewal_time: 
+    # The control action type specifies what type of msg the request of the service should use.
+    # Currently supports "none" (empty request) and "transmission_vector" that uses the PotentialAction.msg
+    - control_action_type: "transmission_vector"  
+    # Indicate if a distribution type is used. Supports currently "static" which returns a static value.
+    # Unused if the control_action_type is "transmission_vector"
+    - distribution_type: "static"
+    # Indicate the value to output when called. When used with transmission vectors, its the value if 
+    # the transmission_vector_id matches the ones in the transmission vector action.
+    - transmission_value: 1.5
+    # Index in the transmission action vectors that will be look up. If the value at that index is a one,
+    # The service will return the value specified by transmission_value.
+    # Only set when control_action_type = transmission_vector".
+    # - transmission_vector_id: 0
+  

@@ -12,8 +12,8 @@
 #include "ros_queue/lib_queue/dynamic_virtual_queue.hpp"
 
 #include "ros_queue_msgs/QueueState.h"
-#include "ros_queue_msgs/QueueStatesPrediction.h"
 #include "ros_queue_msgs/QueueServerStateFetch.h"
+#include "ros_queue_msgs/VirtualQueueChangesList.h"
 
 #include "std_srvs/Empty.h"
 
@@ -118,12 +118,24 @@ class QueueServer
         */
         string queue_server_name_;
 
+        /**
+         * @brief Parameter that indicate if queues should compute additionnal statistics via a topic.
+         * Only useful at configuration time.
+        */
+        bool should_queues_compute_stats_ = false;
+
         /****************************************************************************
          *  ROS interfaces.
         */
 
         /**
-         * @brief Publisher that periodically publish and table of all the size of the queues.
+         * @brief Publisher that periodically publishes a list of all the queues and stats about their
+         * time average metrics.
+        */
+        ros::Publisher queue_server_stats_pub_;
+
+        /**
+         * @brief Publisher that periodically publishes a table of all the size of the queues.
         */
         ros::Publisher queue_server_states_pub_;
 
@@ -152,6 +164,12 @@ class QueueServer
         void publishServerStates();
 
         /**
+         * @brief Publishes a ROS that contrains time averages statistics about the queues if the 
+         * stats publishing flag is set  
+        */
+        void publishServerStats();
+
+        /**
          * @brief For each real queues, verify how much data could be sent and the queue will transmit up to that quanity if possible.
         */
         void transmitRealQueues();
@@ -167,6 +185,11 @@ class QueueServer
         ros::ServiceServer queue_server_states_service_;
 
         /**
+         * @brief Callback function that returns the queue server states including the size of the queues.
+        */
+        bool serverStateCallback(ros_queue_msgs::QueueServerStateFetch::Request& req, ros_queue_msgs::QueueServerStateFetch::Response& res);
+
+        /**
          * @brief Service server that provides on demand the meta information of all queues.
         */
         ros::ServiceServer queue_server_queue_infos_service_;
@@ -174,7 +197,20 @@ class QueueServer
         /**
          * @brief Service server that updates all the virtual queues on demand.
         */
-        ros::ServiceServer queue_server_update_virtual_queues_service;
+        ros::ServiceServer queue_server_update_virtual_queues_service_;
+
+        /**
+         * @brief Callback of the virtual_queue_manual_changes_ that updates the virtual queues based 
+         * on manual changes specified in the received message. If a queue name doesn't match an existing queue
+         * the entry will be ignored.
+         * @param msg Received msg that contains a list of virtual queue names and changes to be applied.
+        */
+        void virtualQueuesManualChangesCallback(const ros_queue_msgs::VirtualQueueChangesList::ConstPtr& msg);
+
+        /**
+         * @brief ROS topic subscriber that can change the virtual queues based on specify changes.
+        */
+        ros::Subscriber virtual_queue_manual_changes_;
 
         /**
          * @brief Callback function of an empty service that updates all the virtual queues. 

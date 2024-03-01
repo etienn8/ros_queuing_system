@@ -1,10 +1,12 @@
 # Template a of configurations for the queue server. See the queue_config.yaml to copy the configuration of queues.
 queue_server_name: "$(arg server_name)"
-update_trigger_service_name: "trigger_service"
-server_state_topic_name: "server_state"
 
-# The frquency in loops/sec at which the queue sizes will be published and the real queue will be checked for transmission.
+# The frequency in loops/sec at which the queue sizes will be published and the real queue will be checked for transmission.
 server_spin_rate: 20.0 
+
+# When true, queues will publish a topic with their time average metrics (queue size, arrivals and departures).
+# Default is false.
+compute_statistics: false
 
 queue_list:
   - VirtualQueue0: # Queue name

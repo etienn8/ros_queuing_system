@@ -3,16 +3,16 @@
 ## Overview
 This repos contains all the necessary components to build a stabilizing queuing system based on stochastic network optimization in ROS[1]. 
 
-This implementation stores ROS messages in queues and uses virtual queues to represent any other scalar metrics that needs to be controlled (ex: temperature, connectivity, battery state of charge,...). When combined with a queue controller, an optimization framework can be formulated where an action from a set of action will be taken to optimize a given metric and to stabilized all the queues (if possible). 
+This implementation stores ROS messages in queues and uses virtual queues to represent any other scalar metrics that needs to be controlled (ex: temperature, connectivity, battery state of charge,...). When combined with a queue controller, an optimization framework can be formulated where an action from a set of action will be taken to optimize a given metric and to stabilized all the queues (if feasible). 
 
 The stabilization of the queue means that the expected time average size of the queue will be fixed. In other words, this framework will greedily find an action at each time step, so in general (related to the time average), the given metrics constraint will be respected and the desired delay in the transmission of the real queues will be respected.
 
 This gives a general and soft multi-objective decision making framework in robotics where some metrics might be sacrificed for another metric at each time step but the overall given average time constraints will be respected.
 
-All this implementation is based on the work of Neely [1].
+All this implementation is based on the work of Neely [1]. The core concepts all also shown in the [queue_controller](https://github.com/etienn8/ros_queuing_system/tree/main/queue_controller) package.
 
 ## System components
-*To be added*
+![](queue_controller/.assets/ros_queuing_system_architecture.png)
 
 ## How to get started?
 Here's a procedure on how to get started with the configurations and the launching of the queuing system.
@@ -20,6 +20,7 @@ Here's a procedure on how to get started with the configurations and the launchi
 #### Dependencies
 
 - [Robot Operating System (ROS)](http://wiki.ros.org) (middleware for robotics).
+- [queue_controller](https://github.com/etienn8/ros_queuing_system/tree/main/queue_controller) (Server of queues, included already in the ros_queuing_system repo).
 - [queue_server](https://github.com/etienn8/ros_queuing_system/tree/main/queue_server) (Server of queues, included already in the ros_queuing_system repo).
 - [ros_queue](https://github.com/etienn8/ros_queuing_system/tree/main/ros_queue) (Libraries of queues, included already in the ros_queuing_system repo).
 - [ros_queue_msgs](https://github.com/etienn8/ros_queuing_system/tree/main/ros_queue_msgs) (ROS messages and services used as interface for the ros_queuing system, included already in the ros_queuing_system repo).
@@ -45,7 +46,6 @@ If you're using [catkin tools](https://catkin-tools.readthedocs.io/en/latest/ins
 
 ### Starting a queue server
 Follow the [queue_server](https://github.com/etienn8/ros_queuing_system/tree/main/queue_server)'s readme to configure the queues and the sever, and then start the server.
-
 
 ## Bugs & Feature Requests
 
