@@ -1,9 +1,10 @@
 #include "queue_server/queue_server.hpp"
 
-#include <string>
-#include <utility>
+#include <future>
 #include <map>
 #include <memory>
+#include <string>
+#include <utility>
 
 #include "ros_queue/ros_virtual_queue.hpp"
 #include "ros_queue/lib_queue/dynamic_virtual_queue.hpp"
@@ -337,16 +338,31 @@ bool QueueServer::serverStateCallback(ros_queue_msgs::QueueServerStateFetch::Req
 
 bool QueueServer::queueUpdateCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Request& res)
 {
-    // Updates all the inequality constraint virtual queues.
+    std::vector<std::future<void>> future_list;
+
+    // Updates all the inequality constraint virtual queues in a parallel fashion.
     for(auto it = inequality_constraint_virtual_queues_.begin(); it != inequality_constraint_virtual_queues_.end(); ++it)
     {
-        it->second->update();
+        std::future<void> update_future = std::async(std::launch::async,[](auto map_it)
+        {
+            map_it->second->update();
+        }, it);
+        future_list.push_back(std::move(update_future));
     }
 
-    // Updates all the equality constraint virtual queues.
+    // Updates all the equality constraint virtual queues in a parallel fashion.
     for(auto it = equality_constraint_virtual_queues_.begin(); it != equality_constraint_virtual_queues_.end(); ++it)
     {
-        it->second->update();
+        std::future<void> update_future = std::async(std::launch::async,[](auto map_it)
+        {
+            map_it->second->update();
+        }, it);
+        future_list.push_back(std::move(update_future));
+    }
+
+    for (auto &queue_future : future_list)
+    {
+        queue_future.wait();
     }
 
     return true;
