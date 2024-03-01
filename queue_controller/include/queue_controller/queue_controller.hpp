@@ -1,6 +1,7 @@
 #pragma once
 
 #include <chrono>
+#include <future>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -733,6 +734,109 @@ class QueueController
 
             return potential_set_srv.response.action_set;
         }
+
+        /**
+         * @brief Enumeration that help to differentiate the type of the parameters to get for the control step.
+        */
+        enum ParameterType
+        {
+            Penalty=0,
+            RenewalTime,
+            Arrival,
+            Departure
+        };
+
+        /**
+         * @brief Structure that holds the information to call a service, to hold the input and the output of 
+         * asynchronous service calls.
+         * @tparam TSrvType The type of the service that will be called asynchronously.
+        */
+        template<typename TSrvType>
+        struct AsyncMetricFutureStruct
+        {
+            std::shared_ptr<ros::ServiceClient> client_;
+            TSrvType current_srv_msg_;
+            bool current_call_succeeded_;
+
+            string queue_name_;
+
+            ParameterType parameter_type_;
+        };
+
+        /**
+         * @brief Adds an asynchronous service call to a future array where the definition of the service call is TMetricControlPredictionSrv.
+         * @param client The service client that will be used to call the service.
+         * @param action_set_msg The action set that will be used as input for the service call.
+         * @param parameter_type The type of the parameter to fetch. It could be the penalty, the renewal time, 
+         * the arrival or the departure.
+         * @param queue_name The name of the queue that will be used as input for the service call. It's only used
+         * if the parameter_type is arrival or departure.
+        */
+        void addServiceCallToActionFutureArray(std::vector<std::future<std::shared_ptr<AsyncMetricFutureStruct<TMetricControlPredictionSrv>>>>& future_array, 
+                            ros::ServiceClient& client,
+                            const TPotentialActionSetMsg& action_set_msg,
+                            ParameterType parameter_type,
+                            string queue_name = "")
+        {
+            auto temp_metric_control_future_struct = std::make_shared<AsyncMetricFutureStruct<TMetricControlPredictionSrv>>();
+            temp_metric_control_future_struct->client_ = std::make_shared<ros::ServiceClient>(client);
+            temp_metric_control_future_struct->current_srv_msg_.request.action_set = action_set_msg;
+            temp_metric_control_future_struct->parameter_type_ = parameter_type;
+
+            if (parameter_type == ParameterType::Arrival || parameter_type == ParameterType::Departure)
+            {
+                temp_metric_control_future_struct->queue_name_ = queue_name;
+            }
+
+            future_array.push_back(std::async(std::launch::async, [](std::shared_ptr<AsyncMetricFutureStruct<TMetricControlPredictionSrv>> async_future_struct){
+                if (async_future_struct->client_->call(async_future_struct->current_srv_msg_))
+                {
+                    async_future_struct->current_call_succeeded_ = true;
+                }
+                else
+                {
+                    async_future_struct->current_call_succeeded_ = false;
+                }
+                return async_future_struct;
+            }, temp_metric_control_future_struct));
+        }
+
+        /**
+         * @brief Adds an asynchronous service call to a future array where the definition of the service call is ros_queueu_msgs::FloatRequest.
+         * @param client The service client that will be used to call the service.
+         * @param action_set_msg The action set that will be used as input for the service call.
+         * @param parameter_type The type of the parameter to fetch. It could be the penalty, the renewal time, 
+         * the arrival or the departure.
+         * @param queue_name The name of the queue that will be used as input for the service call. It's only used
+         * if the parameter_type is arrival or departure.
+        */
+        void addServiceCallToFloatFutureArray(std::vector<std::future<std::shared_ptr<AsyncMetricFutureStruct<ros_queue_msgs::FloatRequest>>>>& future_array, 
+                            ros::ServiceClient& client,
+                            const TPotentialActionSetMsg& action_set_msg,
+                            ParameterType parameter_type,
+                            string queue_name = "")
+        {
+            auto temp_metric_control_future_struct = std::make_shared<AsyncMetricFutureStruct<ros_queue_msgs::FloatRequest>>();
+            temp_metric_control_future_struct->client_ = std::make_shared<ros::ServiceClient>(client);
+            temp_metric_control_future_struct->parameter_type_ = parameter_type;
+
+            if (parameter_type == ParameterType::Arrival || parameter_type == ParameterType::Departure)
+            {
+                temp_metric_control_future_struct->queue_name_ = queue_name;
+            }
+
+            future_array.push_back(std::async(std::launch::async, [](std::shared_ptr<AsyncMetricFutureStruct<ros_queue_msgs::FloatRequest>> async_future_struct){
+                if (async_future_struct->client_->call(async_future_struct->current_srv_msg_))
+                {
+                    async_future_struct->current_call_succeeded_ = true;
+                }
+                else
+                {
+                    async_future_struct->current_call_succeeded_ = false;
+                }
+                return async_future_struct;
+            }, temp_metric_control_future_struct));
+        }
         
         /**
          * @brief Evaluates the penalty, the queues sizes and the queue changes for each action.
@@ -752,25 +856,6 @@ class QueueController
 
             bool are_parameters_valid = true;
 
-            // Penalty service
-            queue_controller_utils::check_persistent_service_connection<TMetricControlPredictionSrv>(nh_, penalty_service_client_);
-
-            TMetricControlPredictionSrv penalty_prediction_srv;
-            penalty_prediction_srv.request.action_set = action_set_msg;
-            if (penalty_service_client_.call(penalty_prediction_srv))
-            {
-                if (penalty_prediction_srv.response.predictions.size() != size_of_actions)
-                {
-                    are_parameters_valid = false;
-                    ROS_WARN_STREAM_THROTTLE(2, "Returned penalty array doesn't contain the same amount of elements has the action set (expected " << size_of_actions << ", received "<< penalty_prediction_srv.response.predictions.size() <<")");
-                }
-            }
-            else
-            {
-                are_parameters_valid = false;
-                ROS_WARN_STREAM_THROTTLE(2, "Failed to call the penalty evalution service");
-            }
-
             // Get queue sizes
             ros_queue_msgs::QueueServerStateFetch server_state_msg;
             if(!server_state_client_.call(server_state_msg))
@@ -779,25 +864,19 @@ class QueueController
                 ROS_WARN_STREAM_THROTTLE(2, "Failed to call the queue server state fetch# service");
             }
 
-            TMetricControlPredictionSrv renewal_time_msg;
+            // Create std::future arrays to asynchronously call and wait for the service calls
+            std::vector<std::future<std::shared_ptr<AsyncMetricFutureStruct<TMetricControlPredictionSrv>>>> metric_control_future_array;
+            std::vector<std::future<std::shared_ptr<AsyncMetricFutureStruct<ros_queue_msgs::FloatRequest>>>> float_request_future_array;
+
+            // Penalty service
+            queue_controller_utils::check_persistent_service_connection<TMetricControlPredictionSrv>(nh_, penalty_service_client_);
+            addServiceCallToActionFutureArray(metric_control_future_array, penalty_service_client_, action_set_msg, ParameterType::Penalty);
+
             if (controller_type_ == ControllerType::RenewalDriftPlusPenalty)
             {
                 // Expected time
                 queue_controller_utils::check_persistent_service_connection<TMetricControlPredictionSrv>(nh_, renewal_service_client_);
-                renewal_time_msg.request.action_set = action_set_msg;
-                if(renewal_service_client_.call(renewal_time_msg))
-                {
-                    if(renewal_time_msg.response.predictions.size() != size_of_actions)
-                    {
-                        are_parameters_valid = false;
-                        ROS_WARN_STREAM_THROTTLE(2, "Returned renewal time array doesn't contain the same amount of elements has the action set (expected " << size_of_actions << ", received "<< renewal_time_msg.response.predictions.size() <<")");
-                    }
-                }
-                else
-                {
-                    are_parameters_valid = false;
-                    ROS_WARN_STREAM_THROTTLE(2, "Failed to call the renewal time service");
-                }
+                addServiceCallToActionFutureArray(metric_control_future_array, renewal_service_client_, action_set_msg, ParameterType::RenewalTime);
             }
 
             // Queues services
@@ -808,12 +887,85 @@ class QueueController
                 // Arrivals
                 if(queue_it->second->is_arrival_action_dependent)
                 {
-                    TMetricControlPredictionSrv arrival_predictions;
-                    arrival_predictions.request.action_set = action_set_msg;
-
                     queue_controller_utils::check_persistent_service_connection<TMetricControlPredictionSrv>(nh_, queue_it->second->expected_arrival_service_);
+                    addServiceCallToActionFutureArray(metric_control_future_array, queue_it->second->expected_arrival_service_, action_set_msg, ParameterType::Arrival, queue_name);
+                }
+                else
+                {
+                    queue_controller_utils::check_persistent_service_connection<ros_queue_msgs::FloatRequest>(nh_, queue_it->second->arrival_independent_from_action_service_);
+                    addServiceCallToFloatFutureArray(float_request_future_array, queue_it->second->arrival_independent_from_action_service_, action_set_msg, ParameterType::Arrival, queue_name);
+                }
 
-                    if(queue_it->second->expected_arrival_service_.call(arrival_predictions))
+                // Departures
+                if(queue_it->second->is_departure_action_dependent)
+                {
+                    queue_controller_utils::check_persistent_service_connection<TMetricControlPredictionSrv>(nh_, queue_it->second->expected_departure_service_);
+                    addServiceCallToActionFutureArray(metric_control_future_array, queue_it->second->expected_departure_service_, action_set_msg, ParameterType::Departure, queue_name);
+                }
+                else
+                {
+                    queue_controller_utils::check_persistent_service_connection<ros_queue_msgs::FloatRequest>(nh_, queue_it->second->departure_independent_from_action_service_);
+                    addServiceCallToFloatFutureArray(float_request_future_array, queue_it->second->departure_independent_from_action_service_, action_set_msg, ParameterType::Departure, queue_name);
+                }
+            }
+
+            for (auto future_it = metric_control_future_array.begin(); future_it != metric_control_future_array.end(); ++future_it)
+            {
+                 std::shared_ptr<AsyncMetricFutureStruct<TMetricControlPredictionSrv>> future_result = future_it->get();
+
+                if (future_result->parameter_type_ == ParameterType::Penalty)
+                {
+                    if (future_result->current_call_succeeded_)
+                    {
+                        auto& penalty_prediction_srv = future_result->current_srv_msg_;
+                        if (penalty_prediction_srv.response.predictions.size() == size_of_actions)
+                        {
+                            for (int action_index = 0; action_index < size_of_actions; ++action_index)
+                            {
+                                action_parameters_output[action_index].penalty = penalty_prediction_srv.response.predictions[action_index];
+                            }
+                        }
+                        else
+                        {
+                            are_parameters_valid = false;
+                            ROS_WARN_STREAM_THROTTLE(2, "Returned penalty array doesn't contain the same amount of elements has the action set (expected " << size_of_actions << ", received "<< penalty_prediction_srv.response.predictions.size() <<")");
+                        }
+                    }
+                    else
+                    {
+                        are_parameters_valid = false;
+                        ROS_WARN_STREAM_THROTTLE(2, "Failed to call the penalty evalution service");
+                    }
+                }
+                else if (future_result->parameter_type_ == ParameterType::RenewalTime)
+                {
+                    if (future_result->current_call_succeeded_)
+                    {
+                        auto& renewal_time_msg = future_result->current_srv_msg_;
+                        if (renewal_time_msg.response.predictions.size() == size_of_actions)
+                        {
+                            for (int action_index = 0; action_index < size_of_actions; ++action_index)
+                            {
+                                action_parameters_output[action_index].expected_renewal_time = renewal_time_msg.response.predictions[action_index];
+                            }
+                        }
+                        else
+                        {
+                            are_parameters_valid = false;
+                            ROS_WARN_STREAM_THROTTLE(2, "Returned renewal time array doesn't contain the same amount of elements has the action set (expected " << size_of_actions << ", received "<< renewal_time_msg.response.predictions.size() <<")");
+                        }
+                    }
+                    else
+                    {
+                        are_parameters_valid = false;
+                        ROS_WARN_STREAM_THROTTLE(2, "Failed to call the renewal time service");
+                    }
+                }
+                else if (future_result->parameter_type_ == ParameterType::Arrival)
+                {
+                    auto& arrival_predictions = future_result->current_srv_msg_;
+                    string& queue_name = future_result->queue_name_;
+                    if(future_result->current_call_succeeded_)
                     {
                         const int& returned_size = arrival_predictions.response.predictions.size();
                         
@@ -833,38 +985,14 @@ class QueueController
                     else
                     {
                         are_parameters_valid = false;
-                        ROS_WARN_STREAM_THROTTLE(2, "Failed to call the expected arrival service named: " << queue_it->second->expected_arrival_service_.getService());
+                        ROS_WARN_STREAM_THROTTLE(2, "Failed to call the expected arrival service named: " << future_result->client_->getService());
                     }
                 }
-                else
+                else if(future_result->parameter_type_ == ParameterType::Departure)
                 {
-                    ros_queue_msgs::FloatRequest arrival_prediction;
-
-                    queue_controller_utils::check_persistent_service_connection<ros_queue_msgs::FloatRequest>(nh_, queue_it->second->arrival_independent_from_action_service_);
-                    
-                    if(queue_it->second->arrival_independent_from_action_service_.call(arrival_prediction))
-                    {
-                        for (int action_index =0; action_index < size_of_actions; ++action_index)
-                        {
-                            action_parameters_output[action_index].queue_parameters[queue_name].expected_arrivals = arrival_prediction.response.value;
-                        }
-                    }
-                    else
-                    {
-                        are_parameters_valid = false;
-                        ROS_WARN_STREAM_THROTTLE(2, "Failed to call the expected arrival service independent from actions named: " << queue_it->second->arrival_independent_from_action_service_.getService());
-                    }
-                }
-
-                // Departures
-                if(queue_it->second->is_departure_action_dependent)
-                {
-                    TMetricControlPredictionSrv departure_predictions;
-                    departure_predictions.request.action_set = action_set_msg;
-
-                    queue_controller_utils::check_persistent_service_connection<TMetricControlPredictionSrv>(nh_, queue_it->second->expected_departure_service_);
-
-                    if(queue_it->second->expected_departure_service_.call(departure_predictions))
+                    auto& departure_predictions = future_result->current_srv_msg_;
+                    string& queue_name = future_result->queue_name_;
+                    if(future_result->current_call_succeeded_)
                     {
                         const int& returned_size = departure_predictions.response.predictions.size();
                         
@@ -884,17 +1012,39 @@ class QueueController
                     else
                     {
                         are_parameters_valid = false;
-                        ROS_WARN_STREAM_THROTTLE(2, "Failed to call the expected departure service named: " << queue_it->second->expected_departure_service_.getService());
+                        ROS_WARN_STREAM_THROTTLE(2, "Failed to call the expected departure service named: " << future_result->client_->getService());
                     }
                 }
-                else
+
+            }
+
+            for (auto future_it = float_request_future_array.begin(); future_it != float_request_future_array.end(); ++future_it)
+            {
+                std::shared_ptr<AsyncMetricFutureStruct<ros_queue_msgs::FloatRequest>> future_result = future_it->get();
+                string& queue_name = future_result->queue_name_;
+
+                if(future_result->parameter_type_ == ParameterType::Arrival)
                 {
-                    ros_queue_msgs::FloatRequest departure_prediction;
-
-                    queue_controller_utils::check_persistent_service_connection<ros_queue_msgs::FloatRequest>(nh_, queue_it->second->departure_independent_from_action_service_);
-
-                    if(queue_it->second->departure_independent_from_action_service_.call(departure_prediction))
+                    if(future_result->current_call_succeeded_)
                     {
+                        auto& arrival_prediction = future_result->current_srv_msg_;
+
+                        for (int action_index =0; action_index < size_of_actions; ++action_index)
+                        {
+                            action_parameters_output[action_index].queue_parameters[queue_name].expected_arrivals = arrival_prediction.response.value;
+                        }
+                    }
+                    else
+                    {
+                        are_parameters_valid = false;
+                        ROS_WARN_STREAM_THROTTLE(2, "Failed to call the expected arrival service independent from actions named: " << future_result->client_->getService());
+                    }
+                }
+                else if(future_result->parameter_type_ == ParameterType::Departure)
+                {
+                    if(future_result->current_call_succeeded_)
+                    {
+                        auto& departure_prediction = future_result->current_srv_msg_;
                         for (int action_index =0; action_index < size_of_actions; ++action_index)
                         {
                             action_parameters_output[action_index].queue_parameters[queue_name].expected_departures = departure_prediction.response.value;
@@ -903,21 +1053,16 @@ class QueueController
                     else
                     {
                         are_parameters_valid = false;
-                        ROS_WARN_STREAM_THROTTLE(2, "Failed to call the expected depature service independent from actions named: " << queue_it->second->departure_independent_from_action_service_.getService());
+                        ROS_WARN_STREAM_THROTTLE(2, "Failed to call the expected departure service independent from actions named: " << future_result->client_->getService());
                     }
                 }
             }
+
             // Populate the output if the parameters are valid
             if (are_parameters_valid)
             {
                 for (int action_index = 0; action_index < size_of_actions; ++action_index)
                 {
-                    action_parameters_output[action_index].penalty = penalty_prediction_srv.response.predictions[action_index];
-                    if (controller_type_ == ControllerType::RenewalDriftPlusPenalty)
-                    {
-                        action_parameters_output[action_index].expected_renewal_time = renewal_time_msg.response.predictions[action_index];
-                    }
-
                     for (auto queue_it = queue_list_.begin(); queue_it != queue_list_.end(); ++queue_it)
                     {
                         const string& queue_name = queue_it->first;
