@@ -254,7 +254,7 @@ void QueueServer::checkAndCreateQueue(QueueParamStruct& queue_param_struct)
 
             if (!is_a_parameter_missing)
             {
-                ROS_INFO_STREAM("Creating virtual real queue: " << queue_param_struct.queue_name_);
+                ROS_INFO_STREAM("Creating virtual queue: " << queue_param_struct.queue_name_);
                 ros_queue_msgs::QueueInfo info;
                 info.is_virtual = queue_server_utils::isQueueTypeVirtual(queue_param_struct.type_of_queue_);
                 info.queue_name = queue_param_struct.queue_name_;
@@ -269,7 +269,7 @@ void QueueServer::checkAndCreateQueue(QueueParamStruct& queue_param_struct)
                                                                 .arrival_evaluation_service_name = queue_param_struct.arrival_evaluation_service_name_,
                                                                 .departure_evaluation_service_name = queue_param_struct.departure_evaluation_service_name_
                                                             });
-
+                new_queue->mean_stats_.should_compute_means_ = should_queues_compute_stats_;
                 addInequalityConstraintVirtualQueue(std::move(new_queue));
             }
             else
@@ -293,7 +293,7 @@ void QueueServer::checkAndCreateQueue(QueueParamStruct& queue_param_struct)
 
             if (!is_a_parameter_missing)
             {
-                ROS_INFO_STREAM("Creating virtual real queue: " << queue_param_struct.queue_name_);
+                ROS_INFO_STREAM("Creating virtual queue: " << queue_param_struct.queue_name_);
                 ros_queue_msgs::QueueInfo info;
                 info.is_virtual = queue_server_utils::isQueueTypeVirtual(queue_param_struct.type_of_queue_);
                 info.queue_name = queue_param_struct.queue_name_;
@@ -308,7 +308,8 @@ void QueueServer::checkAndCreateQueue(QueueParamStruct& queue_param_struct)
                                                                 .arrival_evaluation_service_name = queue_param_struct.arrival_evaluation_service_name_,
                                                                 .departure_evaluation_service_name = queue_param_struct.departure_evaluation_service_name_
                                                             });
-
+                                                            
+                new_queue->mean_stats_.should_compute_means_ = should_queues_compute_stats_;
                 addEqualityConstraintVirtualQueue(std::move(new_queue));
             }
             else
@@ -379,12 +380,12 @@ void QueueServer::virtualQueuesManualChangesCallback(const ros_queue_msgs::Virtu
         if (in_it != inequality_constraint_virtual_queues_.end())
         {
             // If found, update the queue based on requested manual changes.
-            in_it->second->update(changes_it->arrival - changes_it->departure);
+            in_it->second->update(changes_it->arrival, changes_it->departure);
         }
         else if (eq_it != equality_constraint_virtual_queues_.end())
         {
             // If found, update the queue based on requested manual changes.
-            eq_it->second->update(changes_it->arrival - changes_it->departure);
+            eq_it->second->update(changes_it->arrival, changes_it->departure);
         }
     }
 }
@@ -416,9 +417,44 @@ void QueueServer::publishServerStats()
             queue_stats.queue_name = queue_it->first;
             queue_stats.arrival_mean = queue_it->second->mean_stats_.getArrivalMean();
             queue_stats.departure_mean = queue_it->second->mean_stats_.getDepartureMean();
+            queue_stats.real_departure_mean = queue_it->second->mean_stats_.getRealDepartureMean();
             queue_stats.current_size = queue_it->second->getSize();
             queue_stats.size_mean = queue_it->second->mean_stats_.getSizeMean();
             queue_stats.converted_remaining_mean = queue_it->second->mean_stats_.getConvertedRemainingMean();
+            
+            server_stats_msg.queue_stats.push_back(std::move(queue_stats));
+        }
+    }
+
+    for (auto queue_it = inequality_constraint_virtual_queues_.begin(); queue_it != inequality_constraint_virtual_queues_.end(); ++queue_it)
+    {
+        if (queue_it->second->mean_stats_.should_compute_means_)
+        {
+            ros_queue_msgs::QueueStats queue_stats;
+            queue_stats.queue_name = queue_it->first;
+            queue_stats.arrival_mean = queue_it->second->mean_stats_.getArrivalMean();
+            queue_stats.departure_mean = queue_it->second->mean_stats_.getDepartureMean();
+            queue_stats.real_departure_mean = queue_it->second->mean_stats_.getRealDepartureMean();
+            queue_stats.current_size = queue_it->second->getSize();
+            queue_stats.size_mean = queue_it->second->mean_stats_.getSizeMean();
+            queue_stats.change_mean = queue_it->second->mean_stats_.getChangeMean();
+
+            server_stats_msg.queue_stats.push_back(std::move(queue_stats));
+        }
+    }
+
+    for (auto queue_it = equality_constraint_virtual_queues_.begin(); queue_it != equality_constraint_virtual_queues_.end(); ++queue_it)
+    {
+        if (queue_it->second->mean_stats_.should_compute_means_)
+        {
+            ros_queue_msgs::QueueStats queue_stats;
+            queue_stats.queue_name = queue_it->first;
+            queue_stats.arrival_mean = queue_it->second->mean_stats_.getArrivalMean();
+            queue_stats.departure_mean = queue_it->second->mean_stats_.getDepartureMean();
+            queue_stats.real_departure_mean = queue_it->second->mean_stats_.getRealDepartureMean();
+            queue_stats.current_size = queue_it->second->getSize();
+            queue_stats.size_mean = queue_it->second->mean_stats_.getSizeMean();
+            queue_stats.change_mean = queue_it->second->mean_stats_.getChangeMean();
             
             server_stats_msg.queue_stats.push_back(std::move(queue_stats));
         }

@@ -139,6 +139,10 @@ class DynamicConvertedQueue: public IDynamicQueue<deque<ElementWithConvertedSize
                 // Protect access to queue
                 lock_guard<mutex> lock(queue_manipulation_mutex_);
 
+                if (mean_stats_.should_compute_means_)
+                {
+                    mean_stats_.increaseDepartureMean(nb_departing_converted_size);
+                }
 
                 int total_departures = 0;
                 if (!this->internal_queue_.empty())
@@ -165,7 +169,8 @@ class DynamicConvertedQueue: public IDynamicQueue<deque<ElementWithConvertedSize
 
                 if (mean_stats_.should_compute_means_)
                 {
-                    mean_stats_.increaseDepartureMean(total_departures);
+                    mean_stats_.increaseRealDepartureMean(total_departures);
+                    mean_stats_.increaseConvertedRemainingMean(nb_departing_converted_size);
                 }
 
                 int total_arrivals = 0;
@@ -249,7 +254,8 @@ class DynamicConvertedQueue: public IDynamicQueue<deque<ElementWithConvertedSize
 
                 if (mean_stats_.should_compute_means_)
                 {
-                    mean_stats_.increaseDepartureMean(total_departures);
+                    mean_stats_.increaseDepartureMean(nb_departing_elements);
+                    mean_stats_.increaseRealDepartureMean(nb_departing_elements);
                 }
 
                 int total_arrivals = 0;
@@ -526,6 +532,11 @@ class DynamicConvertedQueue<TQueueElementType, void>: public IDynamicQueue<deque
                 // Protect access to queue
                 lock_guard<mutex> lock(queue_manipulation_mutex_);
 
+                if (mean_stats_.should_compute_means_)
+                {
+                    mean_stats_.increaseDepartureMean(nb_departing_converted_size);
+                }
+
                 int total_departure = 0;
                 if (!this->internal_queue_.empty())
                 {
@@ -551,7 +562,7 @@ class DynamicConvertedQueue<TQueueElementType, void>: public IDynamicQueue<deque
 
                 if (mean_stats_.should_compute_means_)
                 {
-                    mean_stats_.increaseDepartureMean(total_departure);
+                    mean_stats_.increaseRealDepartureMean(total_departure);
                     mean_stats_.increaseConvertedRemainingMean(nb_departing_converted_size);
                 }
 
@@ -640,6 +651,7 @@ class DynamicConvertedQueue<TQueueElementType, void>: public IDynamicQueue<deque
                 if (mean_stats_.should_compute_means_)
                 {
                     mean_stats_.increaseDepartureMean(total_departures);
+                    mean_stats_.increaseRealDepartureMean(total_departures);
                 }
 
                 int total_arrivals = 0;

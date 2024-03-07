@@ -152,7 +152,7 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType, public ROSQueueCommonInt
             
             if (was_arrival_evaluated && was_departure_evaluated)
             {
-                update(arrival-departure);
+                update(arrival, departure);
             }
             else 
             {

@@ -122,7 +122,7 @@ For all real queues configured in the config files:
 	Publishes the states of each queue. It's mainly containing the size of the queues.
 
 * **`server_stats`** ((ros_queue_msgs/QueueServerStats)[https://github.com/etienn8/ros_queuing_system/blob/main/ros_queue_msgs/msg/QueueServerStats.msg])
-	Publishes stats about the mean average metrics of the real queues (time average arrivals and departures and mean queue size). Only active if the param `compute_statistics` is set to true.
+	Publishes stats about the mean average metrics of the queues (time average arrivals and departures and mean queue size). Only active if the param `compute_statistics` is set to true.
 
 For all real queues configured in the config files
 * **`<queue_name>/<tranmission_topic_name>`** ([Type of first message received on the arrival_topic_name of a real queue])
