@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   queue_server
   ros_queue_msgs
   roscpp
+  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -48,11 +49,10 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+add_message_files(
+  FILES
+  AuvStates.msg
+)
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -69,16 +69,17 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  std_msgs  # Or other packages containing msgs
+  ros_queue_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
 ################################################
 
-## To declare and build dynamic reconfigure parameters within this
+## To declare antransmissiond build dynamic reconfigure parameters within this
 ## package, follow these steps:
 ## * In the file package.xml:
 ##   * add a build_depend and a exec_depend tag for "dynamic_reconfigure"
@@ -106,7 +107,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES ros_queue_experiments
-#  CATKIN_DEPENDS msgs queue_controller queue_server ros_queue_ roscpp
+  CATKIN_DEPENDS queue_controller queue_server ros_queue_msgs roscpp
 #  DEPENDS system_lib
 )
 
@@ -117,7 +118,7 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-# include
+  include
   ${catkin_INCLUDE_DIRS}
 )
 

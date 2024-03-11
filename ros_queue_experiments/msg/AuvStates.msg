@@ -1,0 +1,5 @@
+ros_queue_msgs/TransmissionVector current_zone
+
+float32 temperature
+float32 localization
+float32 penalty
