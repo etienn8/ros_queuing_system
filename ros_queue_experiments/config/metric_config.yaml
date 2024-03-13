@@ -1,0 +1,49 @@
+temp:
+  - real_model:
+    - TaskZone:
+      - increase: 4.1      # Celcius Degree per second
+      - decrease: 5.1    # Celcius Degree per second
+    - HighLocZone:
+      - increase: 4.2      # Celcius Degree per second
+      - decrease: 5.2    # Celcius Degree per second
+    - ColdZone:
+      - increase: 4.3      # Celcius Degree per second
+      - decrease: 5.3    # Celcius Degree per second
+  - prediction_model:
+    - TaskZone:
+      - increase: 4.4      # Celcius Degree per second
+      - decrease: 5.4    # Celcius Degree per second
+    - HighLocZone:
+      - increase: 4.5      # Celcius Degree per second
+      - decrease: 5.5    # Celcius Degree per second
+    - ColdZone:
+      - increase: 4.6      # Celcius Degree per second
+      - decrease: 5.6    # Celcius Degree per second
+
+renewal_time:
+  - real_model:
+    - fromTaskZone:
+      - toTaskZone: 0.01
+      - toHighLocZone: 2.0
+      - toColdZone: 2.0
+    - fromHighLocZone:
+      - toTaskZone: 2.0
+      - toHighLocZone: 0.01
+      - toColdZone: 1.0
+    - fromColdZone:
+      - toTaskZone: 2.0
+      - toHighLocZone: 1.0
+      - toColdZone: 0.01
+  - prediction_model:
+    - fromTaskZone:
+      - toTaskZone: 0.01
+      - toHighLocZone: 2.0
+      - toColdZone: 2.0
+    - fromHighLocZone:
+      - toTaskZone: 2.0
+      - toHighLocZone: 0.01
+      - toColdZone: 1.0
+    - fromColdZone:
+      - toTaskZone: 2.0
+      - toHighLocZone: 1.0
+      - toColdZone: 0.01
