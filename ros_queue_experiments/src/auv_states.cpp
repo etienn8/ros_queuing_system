@@ -19,7 +19,7 @@ AUVStates::Zones AUVStates::getZoneFromTransmissionVector(const ros_queue_msgs::
             zone = AUVStates::Zones::HighLocZone;
             transition_found = true;
         }
-        else if
+        else
         {
             ROS_ERROR("More than one transition found in the transmission vector. This is not allowed.");
         }
@@ -31,7 +31,7 @@ AUVStates::Zones AUVStates::getZoneFromTransmissionVector(const ros_queue_msgs::
             zone = AUVStates::Zones::ColdZone;
             transition_found = true;
         }
-        else if
+        else
         {
             ROS_ERROR("More than one transition found in the transmission vector. This is not allowed.");
         }
