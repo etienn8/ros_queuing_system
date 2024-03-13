@@ -1,4 +1,4 @@
-#include "ros_queue_experiments/metric_services.hpp"
+#include "ros_queue_experiments/metrics/metric_services.hpp"
 
 MetricServices::MetricServices(ros::NodeHandle nh, std::string metric_name, std::shared_ptr<AUVStateManager> auv_state_manager): nh_(nh), metric_name_(metric_name), auv_state_manager_(auv_state_manager)
 {

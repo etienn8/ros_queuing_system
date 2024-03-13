@@ -5,7 +5,7 @@
 #include <string>
 #include <memory>
 
-#include "auv_state_manager.hpp"
+#include "ros_queue_experiments/auv_state_manager.hpp"
 
 #include <ros_queue_msgs/FloatRequest.h>
 #include <ros_queue_msgs/MetricTransmissionVectorPredictions.h>
@@ -40,6 +40,4 @@ class MetricServices
 
         bool expectedServiceMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
                                            ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res);
-        
-        
 };
