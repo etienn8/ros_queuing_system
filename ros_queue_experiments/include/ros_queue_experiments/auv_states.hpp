@@ -4,13 +4,15 @@
 namespace AUVStates
 {
     /**
-     * @brief Possible zones (states) that the AUV can be in. 
+     * @brief Possible zones (states) that the AUV can be in. The count enumerator is not a zone
+     * and is only used to know the number of states there is.
     */
     enum Zones
     {
         TaskZone =0,
         HighLocZone,
         ColdZone,
+        count
     };
 
     /**
