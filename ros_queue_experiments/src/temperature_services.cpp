@@ -6,9 +6,14 @@
 
 using std::string;
 
-TemperatureServices::TemperatureServices(ros::NodeHandle nh, std::string metric_name, std::shared_ptr<AUVStateManager> auv_state_manager, std::shared_ptr<RenewalTimeServices> renewal_time_services): MetricServices(nh, metric_name, auv_state_manager), nh_(nh), renewal_time_services_(renewal_time_services)
+TemperatureServices::TemperatureServices(ros::NodeHandle nh, std::string metric_name, std::shared_ptr<AUVStateManager> auv_state_manager, std::shared_ptr<RenewalTimeServices> renewal_time_services): DualMetricServices(nh, metric_name, auv_state_manager), nh_(nh), renewal_time_services_(renewal_time_services)
 {
     XmlRpc::XmlRpcValue temperature_config;
+
+    if(!nh_.getParam("temp_target", temp_target_))
+    {
+        ROS_ERROR("Missing temp_target parameter.");
+    }
 
     if(nh_.getParam("temp", temperature_config))
     {
@@ -76,7 +81,7 @@ TemperatureServices::TemperatureServices(ros::NodeHandle nh, std::string metric_
     }
 }
 
-bool TemperatureServices::realMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
+bool TemperatureServices::realArrivalMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
                                 ros_queue_msgs::FloatRequest::Response& res)
 {
     ros_queue_experiments::AuvStates current_states = getCurrentStates();
@@ -84,7 +89,7 @@ bool TemperatureServices::realMetricCallback(ros_queue_msgs::FloatRequest::Reque
     return true;
 }
 
-bool TemperatureServices::expectedMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+bool TemperatureServices::expectedArrivalMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
                                     ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
 {
     if(renewal_time_services_)
@@ -112,4 +117,21 @@ bool TemperatureServices::expectedMetricCallback(ros_queue_msgs::MetricTransmiss
         return true;
     }
     return false;
+}
+
+bool TemperatureServices::realDepartureMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
+                                ros_queue_msgs::FloatRequest::Response& res)
+{
+    res.value = temp_target_;
+    return true;
+}
+
+bool TemperatureServices::expectedDepartureMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                    ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
+{
+    for(int action_index = 0; action_index < req.action_set.action_set.size(); ++action_index)
+    {
+        res.predictions.push_back(temp_target_);
+    }
+    return true;
 }
