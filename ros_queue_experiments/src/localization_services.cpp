@@ -7,9 +7,13 @@
 
 using std::string;
 
-LocalizationServices::LocalizationServices(ros::NodeHandle nh, std::string metric_name, std::shared_ptr<AUVStateManager> auv_state_manager): MetricServices(nh, metric_name, auv_state_manager), nh_(nh)
+LocalizationServices::LocalizationServices(ros::NodeHandle nh, std::string metric_name, std::shared_ptr<AUVStateManager> auv_state_manager): DualMetricServices(nh, metric_name, auv_state_manager), nh_(nh)
 {
     XmlRpc::XmlRpcValue localization_config;
+    if(!nh_.getParam("localization_target", localization_target_))
+    {
+        ROS_ERROR("Localization target is not set");
+    }
 
     if(nh_.getParam("localization", localization_config))
     {
@@ -70,7 +74,7 @@ LocalizationServices::LocalizationServices(ros::NodeHandle nh, std::string metri
     }
 }
 
-bool LocalizationServices::realMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
+bool LocalizationServices::realArrivalMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
                                 ros_queue_msgs::FloatRequest::Response& res)
 {
     ros_queue_experiments::AuvStates current_states = getCurrentStates();
@@ -78,7 +82,7 @@ bool LocalizationServices::realMetricCallback(ros_queue_msgs::FloatRequest::Requ
     return true;
 }
 
-bool LocalizationServices::expectedMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+bool LocalizationServices::expectedArrivalMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
                                     ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
 {
     ros_queue_experiments::AuvStates current_states = getCurrentStates();
@@ -91,5 +95,22 @@ bool LocalizationServices::expectedMetricCallback(ros_queue_msgs::MetricTransmis
         res.predictions.push_back(predicted_localization_uncertainties_[zone]);
     }
 
+    return true;
+}
+
+ bool LocalizationServices::realDepartureMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
+                                ros_queue_msgs::FloatRequest::Response& res)
+{
+    res.value = localization_target_;
+    return true;
+}
+
+ bool LocalizationServices::expectedDepartureMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                    ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
+{
+    for(int action_index =0; action_index < req.action_set.action_set.size(); ++action_index)
+    {
+        res.predictions.push_back(localization_target_);
+    }
     return true;
 }
