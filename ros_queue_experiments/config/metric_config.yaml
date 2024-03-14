@@ -21,6 +21,7 @@ temp:
       - increase: 4.6      # Celcius Degree per second
       - decrease: 5.6    # Celcius Degree per second
 
+localization_target: 0.5
 localization:
   - real_model:
     - TaskZone:
