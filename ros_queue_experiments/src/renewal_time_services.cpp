@@ -19,7 +19,7 @@ RenewalTimeServices::RenewalTimeServices(ros::NodeHandle nh, std::string metric_
             {
                 is_real_model = true;
             }
-            for (int from_zone_index = 0 ; model_configs.size(); ++from_zone_index)
+            for (int from_zone_index = 0 ; from_zone_index < model_configs.size(); ++from_zone_index)
             {
                 auto from_zone_xmlrp_it = model_configs[from_zone_index].begin();
 
@@ -93,6 +93,32 @@ float RenewalTimeServices::getPredictedRenewalTimeWithStateTransition(AUVStates:
     return predicted_renewal_time_transitions_[from_zone][to_zone];
 }
 
+float RenewalTimeServices::getRealRenewalTimeWithTransitionFromCurrentState(AUVStates::Zones to_zone)
+{
+    if(auv_state_manager_)
+    {
+        const ros_queue_experiments::AuvStates current_states = auv_state_manager_->getCurrentStates();
+        const AUVStates::Zones current_zone = AUVStates::getZoneFromTransmissionVector(current_states.current_zone);
+
+        return getRealRenewalTimeWithStateTransition(current_zone, to_zone);
+    }
+
+    return 0.0;
+}
+
+float RenewalTimeServices::getPredictedRenewalTimeWithTransitionFromCurrentState(AUVStates::Zones to_zone)
+{
+    if(auv_state_manager_)
+    {
+        const ros_queue_experiments::AuvStates current_states = auv_state_manager_->getCurrentStates();
+        const AUVStates::Zones current_zone = AUVStates::getZoneFromTransmissionVector(current_states.current_zone);
+
+        return getPredictedRenewalTimeWithStateTransition(current_zone, to_zone);
+    }
+    
+    return 0.0;
+}
+
 bool RenewalTimeServices::realMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
                         ros_queue_msgs::FloatRequest::Response& res)
 {
@@ -119,4 +145,4 @@ bool RenewalTimeServices::expectedMetricCallback(ros_queue_msgs::MetricTransmiss
     }
     return false;
 }
-        
+

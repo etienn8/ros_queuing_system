@@ -16,6 +16,9 @@ class RenewalTimeServices: public MetricServices
         
         float getRealRenewalTimeWithStateTransition(AUVStates::Zones from_zone, AUVStates::Zones to_zone);
         float getPredictedRenewalTimeWithStateTransition(AUVStates::Zones from_zone, AUVStates::Zones to_zone);
+        
+        float getRealRenewalTimeWithTransitionFromCurrentState(AUVStates::Zones to_zone);
+        float getPredictedRenewalTimeWithTransitionFromCurrentState(AUVStates::Zones to_zone);
 
     protected:
         virtual bool realMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
