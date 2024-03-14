@@ -9,6 +9,12 @@
 class AUVStateManager
 {
     public:
+
+        /**
+         * @brief Initialization of the states.
+        */
+        AUVStateManager();
+        
         /**
          * @brief Get the current states of the AUV
          * 
