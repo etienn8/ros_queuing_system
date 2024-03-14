@@ -23,8 +23,6 @@ LocalizationServices::LocalizationServices(ros::NodeHandle nh, std::string metri
 
             XmlRpc::XmlRpcValue loc_prediction_config = model_it->second;
 
-
-
             for(int zone_config_index = 0; zone_config_index < loc_prediction_config.size(); ++zone_config_index)
             {
                 auto zone_config_it = loc_prediction_config[zone_config_index].begin();
