@@ -17,40 +17,50 @@ TemperatureServices::TemperatureServices(ros::NodeHandle nh, std::string metric_
             auto model_it = temperature_config[model_index].begin();
 
             XmlRpc::XmlRpcValue temp_prediction_config = model_it->second;
+              
+            for(int zone_config_index = 0; zone_config_index < temp_prediction_config.size(); ++zone_config_index)
+            {
+                auto zone_config_it = temp_prediction_config[zone_config_index].begin();
 
-            if(model_it->first == "prediction_model")
-            {  
-                for(int zone_config_index = 0; zone_config_index < temp_prediction_config.size(); ++zone_config_index)
+                const string& zone_name = zone_config_it->first;
+                XmlRpc::XmlRpcValue zone_values = zone_config_it->second;
+
+                AUVStates::Zones zone_from_config = AUVStates::Zones::TaskZone;
+
+                if (zone_name == "TaskZone")
                 {
-                    auto zone_config_it = temp_prediction_config[zone_config_index].begin();
+                    zone_from_config = AUVStates::Zones::TaskZone;
+                }
+                else if(zone_name == "ColdZone")
+                {
+                    zone_from_config = AUVStates::Zones::ColdZone; 
+                }
+                else if(zone_name == "HighLocZone")
+                {
+                    zone_from_config = AUVStates::Zones::HighLocZone; 
+                }
+                else
+                {
+                    break;
+                }
 
-                    const string& zone_name = zone_config_it->first;
-                    XmlRpc::XmlRpcValue zone_values = zone_config_it->second;
-
-                    AUVStates::Zones zone_from_config = AUVStates::Zones::TaskZone;
-
-                    if (zone_name == "TaskZone")
+                for(int value_index = 0; value_index < zone_values.size(); ++value_index)
+                {
+                    auto value_param = zone_values[value_index].begin();
+                    const string& value_name = value_param->first;
+                    if(model_it->first == "prediction_model")
                     {
-                        zone_from_config = AUVStates::Zones::TaskZone;
+                        if (value_name == "increase")
+                        {
+                            arrival_predictions_[zone_from_config] = static_cast<float>(static_cast<double>(value_param->second));
+                        }
+                        else if (value_name == "decrease")
+                        {
+                            departure_predictions_[zone_from_config] = static_cast<float>(static_cast<double>(value_param->second));
+                        }
                     }
-                    else if(zone_name == "ColdZone")
+                    if(model_it->first == "real_model")
                     {
-                       zone_from_config = AUVStates::Zones::ColdZone; 
-                    }
-                    else if(zone_name == "HighLocZone")
-                    {
-                       zone_from_config = AUVStates::Zones::HighLocZone; 
-                    }
-                    else
-                    {
-                        break;
-                    }
-
-                    for(int value_index = 0; value_index < zone_values.size(); ++value_index)
-                    {
-                        auto value_param = zone_values[value_index].begin();
-                        const string& value_name = value_param->first;
-                        
                         if (value_name == "increase")
                         {
                             arrival_predictions_[zone_from_config] = static_cast<float>(static_cast<double>(value_param->second));
