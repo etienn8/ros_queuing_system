@@ -47,20 +47,18 @@ AUVStates::Zones AUVStates::getZoneFromTransmissionVector(const ros_queue_msgs::
 ros_queue_msgs::TransmissionVector AUVStates::getTransmissionVectorFromZone(AUVStates::Zones zone)
 {
     ros_queue_msgs::TransmissionVector transmission_vector;
-    transmission_vector.transmission_vector[0] = false;
-    transmission_vector.transmission_vector[1] = false;
-    transmission_vector.transmission_vector[2] = false;
+    transmission_vector.transmission_vector = std::vector<uint8_t>{0, 0, 0};
 
     switch (zone)
     {
         case AUVStates::Zones::TaskZone:
-            transmission_vector.transmission_vector[0] = true;
+            transmission_vector.transmission_vector[0] = 1;
             break;
         case AUVStates::Zones::HighLocZone:
-            transmission_vector.transmission_vector[1] = true;
+            transmission_vector.transmission_vector[1] = 1;
             break;
         case AUVStates::Zones::ColdZone:
-            transmission_vector.transmission_vector[2] = true;
+            transmission_vector.transmission_vector[2] = 1;
             break;
         default:
             ROS_ERROR("Zone not recognized. Transmission vector will be set to all false.");
