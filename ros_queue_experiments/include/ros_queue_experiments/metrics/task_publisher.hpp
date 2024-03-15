@@ -7,6 +7,7 @@
 
 #include "dual_metric_services.hpp"
 #include "renewal_time_services.hpp"
+#include "ros_queue_msgs/ByteSizeRequest.h"
 
 class TaskPublisher: public DualMetricServices
 {
@@ -29,7 +30,7 @@ class TaskPublisher: public DualMetricServices
 
     private:
         ros::NodeHandle nh_;
-        
+
         ros::Publisher publisher_;
         ros::Timer timer_;
 
@@ -42,4 +43,10 @@ class TaskPublisher: public DualMetricServices
 
         float arrival_task_per_second_ = 0.1f;
         int last_task_id_ = 0;
+
+        ros::ServiceServer qos_transmission_service_;
+        ros::Time last_transmission_time_;
+        double accumulated_untransmitted_time_ = 0.0;
+        bool qosTransmissionCallback(ros_queue_msgs::ByteSizeRequest::Request& req, 
+                                     ros_queue_msgs::ByteSizeRequest::Response& res);
 };

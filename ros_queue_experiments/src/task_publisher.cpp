@@ -5,6 +5,8 @@
 #include "ros_queue_experiments/AuvStates.h"
 #include "ros_queue_experiments/auv_states.hpp"
 
+#include "ros_queue_msgs/ByteSizeRequest.h"
+
 #include "std_msgs/Int32.h"
 
 using std::string;
@@ -88,6 +90,40 @@ TaskPublisher::TaskPublisher(ros::NodeHandle& nh, std::string metric_name,
     {
         ROS_ERROR("Arrival tasks per second is not set");
     }
+
+    
+    last_transmission_time_ = ros::Time::now();
+    qos_transmission_service_ = nh_.advertiseService("qos_transmission",&TaskPublisher::qosTransmissionCallback,this);
+}
+
+bool TaskPublisher::qosTransmissionCallback(ros_queue_msgs::ByteSizeRequest::Request& req, 
+                                           ros_queue_msgs::ByteSizeRequest::Response& res)
+{
+    ros::Time current_time = ros::Time::now();
+    double time_diff = (current_time - last_transmission_time_).toSec() + accumulated_untransmitted_time_;
+    
+    ros_queue_experiments::AuvStates current_states = getCurrentStates();
+    AUVStates::Zones current_zone = AUVStates::getZoneFromTransmissionVector(current_states.current_zone);
+    
+    if (abs(real_task_departure_rates_[current_zone] - 1e6) > 0.0f)
+    {
+        const float second_between_messages = 1.0/real_task_departure_rates_[current_zone];
+        while((time_diff - second_between_messages) >= second_between_messages)
+        {
+            res.nb_of_bytes += sizeof(std_msgs::Int32);;
+            time_diff -= second_between_messages;
+        }
+
+        accumulated_untransmitted_time_ = time_diff;
+    }
+    else
+    {
+        accumulated_untransmitted_time_ = 0.0;
+        res.nb_of_bytes = 0;
+    }
+
+    last_transmission_time_ = current_time;
+    return true;
 }
 
 void TaskPublisher::publishTask(const ros::TimerEvent& event)
@@ -102,7 +138,7 @@ bool TaskPublisher::realArrivalMetricCallback(ros_queue_msgs::FloatRequest::Requ
                                 ros_queue_msgs::FloatRequest::Response& res)
 {
     res.value = arrival_task_per_second_;
-    return true; 
+    return true;
 }
 
 bool TaskPublisher::expectedArrivalMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
