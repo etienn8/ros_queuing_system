@@ -65,3 +65,21 @@ renewal_time:
       - toTaskZone: 2.0
       - toHighLocZone: 1.0
       - toColdZone: 0.01
+
+
+arrival_task_per_second: 1.5
+task_metrics:
+  - real_model:
+    - TaskZone:
+      - departing_tasks_rate: 1.1      # Tasks per second
+    - HighLocZone:
+      - departing_tasks_rate: 1.2      # Tasks per second
+    - ColdZone:
+      - departing_tasks_rate: 1.3      # Tasks per second
+  - prediction_model:
+    - TaskZone:
+      - departing_tasks_rate: 1.4      # Tasks per second
+    - HighLocZone:
+      - departing_tasks_rate: 1.5      # Tasks per second
+    - ColdZone:
+      - departing_tasks_rate: 1.6      # Tasks per second
