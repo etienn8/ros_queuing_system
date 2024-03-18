@@ -2,8 +2,9 @@
 
 #include <mutex>
 
-#include "auv_states.hpp"
+#include "auv_forward_declarations.hpp"
 
+#include "auv_states.hpp"
 #include "ros_queue_experiments/AuvStates.h"
 
 class AUVStateManager
@@ -13,7 +14,7 @@ class AUVStateManager
         /**
          * @brief Initialization of the states.
         */
-        AUVStateManager();
+        AUVStateManager(AUVSystem* auv_system);
         
         /**
          * @brief Get the current states of the AUV
@@ -40,4 +41,9 @@ class AUVStateManager
          * @brief Mutex to protect the current zone.
          */
         std::mutex state_access_mutex_;
+
+        /**
+         * @brief Pointer to the AUVSystem class to have access to the metrics.
+        */
+        AUVSystem* auv_system_;
 };

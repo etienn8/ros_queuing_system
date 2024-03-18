@@ -1,9 +1,10 @@
 #include "ros_queue_experiments/auv_system.hpp"
+#include "ros_queue_experiments/auv_state_manager.hpp"
 
 AUVSystem::AUVSystem(ros::NodeHandle& nh): nh_(nh)
 {
     // Initialize the state manager
-    auv_state_manager_ = std::make_shared<AUVStateManager>();
+    auv_state_manager_ = std::make_shared<AUVStateManager>(this);
     
     expected_time_services_ = std::make_shared<RenewalTimeServices>(nh_, "renewal_time", auv_state_manager_);
     temperature_services_ = std::make_shared<TemperatureServices>(nh_, "temperature", auv_state_manager_, expected_time_services_);

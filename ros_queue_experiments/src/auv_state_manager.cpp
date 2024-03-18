@@ -1,7 +1,8 @@
 #include "ros_queue_experiments/auv_state_manager.hpp"
+#include "ros_queue_experiments/auv_system.hpp"
 #include "ros_queue_experiments/auv_states.hpp"
 
-AUVStateManager::AUVStateManager()
+AUVStateManager::AUVStateManager(AUVSystem* auv_system): auv_system_(auv_system)
 {
     // Initialize to cold zone 
     ros_queue_experiments::AuvStates initial_states;

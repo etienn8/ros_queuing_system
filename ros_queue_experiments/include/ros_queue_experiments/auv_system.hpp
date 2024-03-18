@@ -1,5 +1,7 @@
 #pragma once
 
+#include "auv_forward_declarations.hpp"
+
 #include "ros/ros.h"
 
 #include <memory>
@@ -10,8 +12,6 @@
 #include "ros_queue_experiments/metrics/localization_services.hpp"
 #include "ros_queue_experiments/metrics/task_publisher.hpp"
 #include "ros_queue_experiments/metrics/penalty_services.hpp"
-
-#include "auv_state_manager.hpp"
 
 #include "ros_queue_experiments/AuvStates.h"
 
