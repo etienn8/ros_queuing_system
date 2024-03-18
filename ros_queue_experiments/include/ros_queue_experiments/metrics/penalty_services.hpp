@@ -13,7 +13,8 @@ class PenaltyServices: public MetricServices
 {
     public:
         PenaltyServices(ros::NodeHandle nh, std::string metric_name, std::shared_ptr<AUVStateManager> auv_state_manager);
-
+        
+        float getRealPenaltyTransition(AUVStates::Zones from_zone, AUVStates::Zones to_zone);
     protected:
 
         virtual bool realMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 

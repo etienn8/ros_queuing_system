@@ -112,3 +112,8 @@ bool LocalizationServices::expectedArrivalMetricCallback(ros_queue_msgs::MetricT
     }
     return true;
 }
+
+float LocalizationServices::getLocalizationUncertainty(AUVStates::Zones zone)
+{
+    return real_localization_uncertainties_[zone];
+}

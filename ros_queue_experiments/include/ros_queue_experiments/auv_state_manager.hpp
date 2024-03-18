@@ -17,25 +17,31 @@ class AUVStateManager
         AUVStateManager(AUVSystem* auv_system);
         
         /**
-         * @brief Get the current states of the AUV
+         * @brief Get the current states of the AUV. 
+         * It will the state at the start of the last transition et extrapolate the current states.
          * 
          * @return AUVStates::Zones 
          */
         ros_queue_experiments::AuvStates getCurrentStates();
 
         /**
-         * @brief Set the current states of the AUV
+         * @brief Set the auv to a new zone and take a snapshot of the current states.
          * 
          * @param states 
          */
-        void setCurrentStates(ros_queue_experiments::AuvStates&& states);
+        void commandToNextZone(AUVStates::Zones new_zone);
 
     private:
 
         /**
-         * @brief Current zone that the AUV is in currently.
+         * @brief Time of when the last action was performed.
+        */
+        ros::Time last_transition_time_;
+
+        /**
+         * @brief Current zone that the AUV is in currently and states at the moment of transitions.
          */
-        ros_queue_experiments::AuvStates current_states_;
+        ros_queue_experiments::AuvStates states_at_last_transition_;
 
         /**
          * @brief Mutex to protect the current zone.

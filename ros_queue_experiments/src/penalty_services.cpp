@@ -112,6 +112,11 @@ float PenaltyServices::getPredictedRenewalTimeWithTransitionFromCurrentState(AUV
     return 0.0;
 }*/
 
+float PenaltyServices::getRealPenaltyTransition(AUVStates::Zones from_zone, AUVStates::Zones to_zone)
+{
+    return real_penalty_transitions_[from_zone][to_zone];
+}
+
 bool PenaltyServices::realMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
                         ros_queue_msgs::FloatRequest::Response& res)
 {

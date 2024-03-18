@@ -15,6 +15,9 @@ class TemperatureServices: public DualMetricServices
     public:
         TemperatureServices(ros::NodeHandle nh, std::string metric_name, std::shared_ptr<AUVStateManager> auv_state_manager, std::shared_ptr<RenewalTimeServices> renewal_time_services);
 
+        float getRealArrival(AUVStates::Zones zone);
+        float getRealDeparture(AUVStates::Zones zone);
+
     protected:
         virtual bool realArrivalMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
                                         ros_queue_msgs::FloatRequest::Response& res) override;

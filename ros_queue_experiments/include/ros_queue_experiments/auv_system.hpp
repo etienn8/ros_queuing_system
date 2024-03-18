@@ -20,18 +20,18 @@ class AUVSystem
     public:
         AUVSystem(ros::NodeHandle& nh);
 
-    private:
-        /**
-         * @brief Current states of the auv and its metrics.
-        */
-        std::shared_ptr<AUVStateManager> auv_state_manager_;
-        
         // Metric service servers
         std::shared_ptr<PenaltyServices> penalty_metric_services_;
         std::shared_ptr<RenewalTimeServices> expected_time_services_; 
         std::shared_ptr<TemperatureServices> temperature_services_;
         std::shared_ptr<LocalizationServices> localization_services_;
         std::shared_ptr<TaskPublisher> task_services_;
+
+    private:
+        /**
+         * @brief Current states of the auv and its metrics.
+        */
+        std::shared_ptr<AUVStateManager> auv_state_manager_;
 
         /**
          * @brief ROS node handle to manage the servers.

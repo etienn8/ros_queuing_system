@@ -81,6 +81,16 @@ TemperatureServices::TemperatureServices(ros::NodeHandle nh, std::string metric_
     }
 }
 
+float TemperatureServices::getRealArrival(AUVStates::Zones zone)
+{
+    return arrival_predictions_[zone];
+}
+
+float TemperatureServices::getRealDeparture(AUVStates::Zones zone)
+{
+    return departure_predictions_[zone];
+}
+
 bool TemperatureServices::realArrivalMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
                                 ros_queue_msgs::FloatRequest::Response& res)
 {
