@@ -1,6 +1,5 @@
 #include "ros_queue_experiments/metrics/renewal_time_services.hpp"
 
-
 RenewalTimeServices::RenewalTimeServices(ros::NodeHandle nh, std::string metric_name, std::shared_ptr<AUVStateManager> auv_state_manager): MetricServices(nh, metric_name, auv_state_manager), nh_(nh)
 {
     XmlRpc::XmlRpcValue renewal_time_config;
