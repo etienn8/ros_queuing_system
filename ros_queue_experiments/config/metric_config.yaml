@@ -66,6 +66,33 @@ renewal_time:
       - toHighLocZone: 1.0
       - toColdZone: 0.01
 
+penalty:
+  - real_model:
+    - fromTaskZone:
+      - toTaskZone: 0.01
+      - toHighLocZone: 2.0
+      - toColdZone: 2.0
+    - fromHighLocZone:
+      - toTaskZone: 2.0
+      - toHighLocZone: 0.01
+      - toColdZone: 1.0
+    - fromColdZone:
+      - toTaskZone: 2.0
+      - toHighLocZone: 1.0
+      - toColdZone: 0.01
+  - prediction_model:
+    - fromTaskZone:
+      - toTaskZone: 0.01
+      - toHighLocZone: 2.0
+      - toColdZone: 2.0
+    - fromHighLocZone:
+      - toTaskZone: 2.0
+      - toHighLocZone: 0.01
+      - toColdZone: 1.0
+    - fromColdZone:
+      - toTaskZone: 2.0
+      - toHighLocZone: 1.0
+      - toColdZone: 0.01
 
 arrival_task_per_second: 1.5
 task_metrics:
