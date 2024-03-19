@@ -15,6 +15,8 @@
 
 #include "ros_queue_experiments/AuvStates.h"
 
+#include "ros_queue_msgs/PotentialTransmissionVectorSpaceFetch.h"
+
 class AUVSystem
 {
     public:
@@ -44,12 +46,13 @@ class AUVSystem
         ros::Publisher state_pub_;
 
         /**
-         * @brief AUV system spin to propagate the dynamic of the states and publish metrics. 
+         * @brief Service to get all the possible actions
         */
-        void spin();
+        ros::ServiceServer action_set_service_;
 
         /**
-         * @brief Update the states of the metrics based on the current of the UAV.
+         * @brief Callback the service to return all the possible actions
         */
-        void stateTransitions();
+        bool potentialActionSetCallback(ros_queue_msgs::PotentialTransmissionVectorSpaceFetch::Request& req,
+                                        ros_queue_msgs::PotentialTransmissionVectorSpaceFetch::Response& res);
 };
