@@ -13,6 +13,8 @@ find_package(catkin REQUIRED COMPONENTS
   ros_queue_msgs
   roscpp
   message_generation
+  actionlib
+  actionlib_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -118,8 +120,8 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-  include
   ${catkin_INCLUDE_DIRS}
+  include
 )
 
 ## Declare a C++ library
@@ -135,22 +137,57 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/ros_queue_experiments_node.cpp)
+
+add_executable(AUV_system_node
+  src/auv_system.cpp
+  src/auv_node.cpp
+  src/auv_states.cpp
+  src/dual_metric_services.cpp
+  src/metric_services.cpp
+  src/auv_state_manager.cpp
+  src/temperature_services.cpp
+  src/renewal_time_services.cpp
+  src/localization_services.cpp
+  src/task_publisher.cpp
+  src/penalty_services.cpp
+)
+
+add_executable(perturbation_action_node
+  src/disturbed_action_server_node.cpp
+  src/disturbed_action_server.cpp
+  src/auv_states.cpp
+)
+
+add_executable(service_tester_node
+  src/test_services.cpp
+  src/auv_states.cpp
+)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
 ## target back to the shorter version for ease of user use
 ## e.g. "rosrun someones_pkg node" instead of "rosrun someones_pkg someones_pkg_node"
-# set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME node PREFIX "")
+#set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME node PREFIX "")
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
-# add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(AUV_system_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(service_tester_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(perturbation_action_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(${PROJECT_NAME}_node
-#   ${catkin_LIBRARIES}
-# )
+target_link_libraries(AUV_system_node
+  ${catkin_LIBRARIES}
+)
+
+target_link_libraries(service_tester_node
+  ${catkin_LIBRARIES}
+)
+
+target_link_libraries(perturbation_action_node
+  ${catkin_LIBRARIES}
+)
 
 #############
 ## Install ##
