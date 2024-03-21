@@ -7,7 +7,7 @@
 
 #include <string>
 
-DisturbedActionServer::DisturbedActionServer(ros::NodeHandle& nh): nh_(nh), action_server_(nh_, "Disturbed_action_server", boost::bind<void>(&DisturbedActionServer::executeActionCallback, this, _1), false)
+DisturbedActionServer::DisturbedActionServer(ros::NodeHandle& nh): nh_(nh), action_server_(nh_, "disturbed_action_server", boost::bind<void>(&DisturbedActionServer::executeActionCallback, this, _1), false)
 {
     if(nh_.getParam("pertubation_at_each_x_control_steps", perturbation_at_each_x_control_steps_))
     {
