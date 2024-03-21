@@ -45,9 +45,17 @@ DisturbedActionServer::DisturbedActionServer(ros::NodeHandle& nh): nh_(nh), acti
             ROS_ERROR("Pertubation type not recognized. No perturbations will be applied. Supported types: not_moving, offset_next_step.");
         }
     }
-    auv_state_client_ = nh_.serviceClient<ros_queue_experiments::GetRealAUVStates>("get_auv_state");
-    auv_action_client_ = nh_.serviceClient<ros_queue_experiments::SendNewAUVCommand>("new_command");
-    
+
+    auv_state_client_ = nh_.serviceClient<ros_queue_experiments::GetRealAUVStates>("/auv_system_node/get_auv_state");
+    ROS_INFO("Waiting for the AUV state service to be ready...");
+    auv_state_client_.waitForExistence();
+    ROS_INFO("AUV state service is ready.");
+
+    auv_action_client_ = nh_.serviceClient<ros_queue_experiments::SendNewAUVCommand>("/auv_system_node/new_command");
+    ROS_INFO("Waiting for the AUV action service to be ready...");
+    auv_action_client_.waitForExistence();
+    ROS_INFO("AUV action service is ready.");
+
     action_server_.start();
 }
 
