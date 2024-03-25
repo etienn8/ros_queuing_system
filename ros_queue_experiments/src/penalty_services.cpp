@@ -86,32 +86,6 @@ PenaltyServices::PenaltyServices(ros::NodeHandle nh, std::string metric_name, st
     }
 }
 
-/*float PenaltyServices::getRealRenewalTimeWithTransitionFromCurrentState(AUVStates::Zones to_zone)
-{
-    if(auv_state_manager_)
-    {
-        const ros_queue_experiments::AuvStates current_states = auv_state_manager_->getCurrentStates();
-        const AUVStates::Zones current_zone = AUVStates::getZoneFromTransmissionVector(current_states.current_zone);
-
-        return getRealRenewalTimeWithStateTransition(current_zone, to_zone);
-    }
-
-    return 0.0;
-}
-
-float PenaltyServices::getPredictedRenewalTimeWithTransitionFromCurrentState(AUVStates::Zones to_zone)
-{
-    if(auv_state_manager_)
-    {
-        const ros_queue_experiments::AuvStates current_states = auv_state_manager_->getCurrentStates();
-        const AUVStates::Zones current_zone = AUVStates::getZoneFromTransmissionVector(current_states.current_zone);
-
-        return getPredictedRenewalTimeWithStateTransition(current_zone, to_zone);
-    }
-    
-    return 0.0;
-}*/
-
 float PenaltyServices::getRealPenaltyTransition(AUVStates::Zones from_zone, AUVStates::Zones to_zone)
 {
     return real_penalty_transitions_[from_zone][to_zone];
@@ -124,8 +98,7 @@ bool PenaltyServices::realMetricCallback(ros_queue_msgs::FloatRequest::Request& 
     AUVStates::Zones current_zone = AUVStates::getZoneFromTransmissionVector(current_states.current_zone);
     AUVStates::Zones from_zone = AUVStates::getZoneFromTransmissionVector(current_states.last_zone);
     
-    float remaining_distance = (1.0-current_states.transition_completion)*real_penalty_transitions_[from_zone][from_zone];
-    res.value = remaining_distance;
+    res.value = real_penalty_transitions_[from_zone][from_zone];
     return true; 
 }
 

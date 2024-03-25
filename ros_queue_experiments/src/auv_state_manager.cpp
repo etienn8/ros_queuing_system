@@ -41,9 +41,8 @@ ros_queue_experiments::AuvStates AUVStateManager::getCurrentStates()
             current_states.transition_completion = 1.0;
         }
         
-        // The penalty is the remaining distance to the end of the path
-        float lenght_of_path = auv_system_->penalty_metric_services_->getRealPenaltyTransition(last_zone, current_zone);
-        current_states.penalty = (1.0-current_states.transition_completion)*lenght_of_path;
+        // The penalty is the total accumulated energy spent during transitions since the beginning.
+        current_states.penalty += auv_system_->penalty_metric_services_->getRealPenaltyTransition(last_zone, current_zone);
 
         //auv_system_->localization_services_->getLocalizationUncertainty(current_zone);
         return current_states;
