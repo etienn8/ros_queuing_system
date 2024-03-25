@@ -149,7 +149,7 @@ class DynamicConvertedQueue: public IDynamicQueue<deque<ElementWithConvertedSize
                 {
                      int front_element_size = static_cast<int>(this->internal_queue_.front().converted_size_);
 
-                    while(nb_departing_converted_size > front_element_size)
+                    while(nb_departing_converted_size >= front_element_size)
                     {
                         if(this->internal_queue_.empty())
                         {
@@ -537,12 +537,12 @@ class DynamicConvertedQueue<TQueueElementType, void>: public IDynamicQueue<deque
                     mean_stats_.increaseDepartureMean(nb_departing_converted_size);
                 }
 
-                int total_departure = 0;
+                int total_departures = 0;
                 if (!this->internal_queue_.empty())
                 {
                      int front_element_size = static_cast<int>(this->internal_queue_.front().converted_size_);
 
-                    while(nb_departing_converted_size > front_element_size)
+                    while(nb_departing_converted_size >= front_element_size)
                     {
                         if(this->internal_queue_.empty())
                         {
@@ -551,7 +551,7 @@ class DynamicConvertedQueue<TQueueElementType, void>: public IDynamicQueue<deque
                         
                         converted_queue_size_ -= front_element_size;
                         nb_departing_converted_size -= front_element_size;
-                        total_departure += front_element_size;
+                        total_departures += front_element_size;
 
                         queue_to_transmit.push_back(std::move(this->internal_queue_.front().element_));
                         this->internal_queue_.pop_front();
@@ -562,7 +562,7 @@ class DynamicConvertedQueue<TQueueElementType, void>: public IDynamicQueue<deque
 
                 if (mean_stats_.should_compute_means_)
                 {
-                    mean_stats_.increaseRealDepartureMean(total_departure);
+                    mean_stats_.increaseRealDepartureMean(total_departures);
                     mean_stats_.increaseConvertedRemainingMean(nb_departing_converted_size);
                 }
 
