@@ -11,11 +11,7 @@ int main(int argc, char **argv)
 
     AUVSystem auv_system(nh);
 
-    while (ros::ok())
-    {
-        ros::spinOnce();
-        loop_rate.sleep();
-    }
+    ros::spin();
 
     return 0;
 }
