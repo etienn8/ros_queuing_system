@@ -83,5 +83,4 @@ class AUVSystem
         */
         bool commandCallback(ros_queue_experiments::SendNewAUVCommand::Request& req,
                              ros_queue_experiments::SendNewAUVCommand::Response& res);
-
 };
