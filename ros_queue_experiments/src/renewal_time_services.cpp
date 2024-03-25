@@ -121,8 +121,14 @@ float RenewalTimeServices::getPredictedRenewalTimeWithTransitionFromCurrentState
 bool RenewalTimeServices::realMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
                         ros_queue_msgs::FloatRequest::Response& res)
 {
-    // The real metric of how much time it took is given by the controller
-    return false;
+    if(auv_state_manager_)
+    {
+        const ros_queue_experiments::AuvStates current_states = auv_state_manager_->getCurrentStates();
+        const AUVStates::Zones current_zone = AUVStates::getZoneFromTransmissionVector(current_states.current_zone);
+        const AUVStates::Zones to_zone = AUVStates::getZoneFromTransmissionVector(current_states.last_zone);
+        return getRealRenewalTimeWithStateTransition(current_zone, to_zone);
+    }
+    return true;
 }
 
 bool RenewalTimeServices::expectedMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
