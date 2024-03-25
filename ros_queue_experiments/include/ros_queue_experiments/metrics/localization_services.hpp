@@ -14,7 +14,7 @@ class LocalizationServices: public DualMetricServices
     public:
         LocalizationServices(ros::NodeHandle nh, std::string metric_name, std::shared_ptr<AUVStateManager> auv_state_manager);
         
-        float getLocalizationUncertainty(AUVStates::Zones zone);
+        float getRealLocalizationUncertainty(AUVStates::Zones zone);
 
     protected:
         virtual bool realArrivalMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 

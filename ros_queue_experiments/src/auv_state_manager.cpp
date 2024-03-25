@@ -44,7 +44,7 @@ ros_queue_experiments::AuvStates AUVStateManager::getCurrentStates()
         // The penalty is the total accumulated energy spent during transitions since the beginning.
         current_states.penalty += auv_system_->penalty_metric_services_->getRealPenaltyTransition(last_zone, current_zone);
 
-        //auv_system_->localization_services_->getLocalizationUncertainty(current_zone);
+        current_states.localization = auv_system_->localization_services_->getRealLocalizationUncertainty(current_zone);
         return current_states;
     }
 
