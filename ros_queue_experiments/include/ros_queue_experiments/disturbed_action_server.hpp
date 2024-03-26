@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <mutex>
 
 #include "ros/ros.h"
 #include "actionlib/server/simple_action_server.h"
@@ -35,13 +36,36 @@ class DisturbedActionServer
         void executeActionCallback(const ros_queue_msgs::TransmissionVectorGoalConstPtr& goal);
 
         /**
+         * @brief Callback when a command is received from the queue controller. 
+         * It sets the states of the AUV system and waits for the renewal. If a new goal is received
+         * while the old one is still active, the old one is aborted.
+        */
+        void commandReceivedCallback();
+        
+        /**
+         * @brief Callback when a preempt is received from the queue controller.
+        */
+        void preemptActionCallback();
+        
+        /**
          * @brief Control steps between each pertubations.
         */
         int perturbation_at_each_x_control_steps_ = 0;
 
         /**
-         * @brief Number of steps since the last perturbation.
-        
+         * @brief Timer that sends a sucess for the current action based on the renewal the last renewal received.
+         * It's reset a each new received action. 
+        */
+        ros::Timer send_sucess_timer_;
+
+        /**
+         * @brief Callback called when the timer expires. It sends a success to the queue controller for the current action.
+         * @param event Timer event.
+        */
+        void sendSuccessCallback(const ros::TimerEvent& event);
+
+        /**
+         * @brief Number of steps since the last perturbation.        
         */
         int steps_since_last_perturbation_ = 0;
 

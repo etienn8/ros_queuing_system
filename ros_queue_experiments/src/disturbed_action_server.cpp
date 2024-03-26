@@ -7,7 +7,7 @@
 
 #include <string>
 
-DisturbedActionServer::DisturbedActionServer(ros::NodeHandle& nh): nh_(nh), action_server_(nh_, "disturbed_action_server", boost::bind<void>(&DisturbedActionServer::executeActionCallback, this, _1), false)
+DisturbedActionServer::DisturbedActionServer(ros::NodeHandle& nh): nh_(nh), action_server_(nh_, "disturbed_action_server", false)
 {
     if(nh_.getParam("pertubation_at_each_x_control_steps", perturbation_at_each_x_control_steps_))
     {
@@ -56,22 +56,33 @@ DisturbedActionServer::DisturbedActionServer(ros::NodeHandle& nh): nh_(nh), acti
     auv_action_client_.waitForExistence();
     ROS_INFO("AUV action service is ready.");
 
+    action_server_.registerGoalCallback(boost::bind(&DisturbedActionServer::commandReceivedCallback, this));
+    action_server_.registerPreemptCallback(boost::bind(&DisturbedActionServer::preemptActionCallback, this));
     action_server_.start();
+    send_sucess_timer_ = nh_.createTimer(ros::Duration(1.0), &DisturbedActionServer::sendSuccessCallback, this, true);
+    send_sucess_timer_.stop();
 }
 
-void DisturbedActionServer::executeActionCallback(const ros_queue_msgs::TransmissionVectorGoalConstPtr& goal)
+void DisturbedActionServer::commandReceivedCallback()
 {
     ros::Time start_time = ros::Time::now();
 
-    ros_queue_msgs::TransmissionVectorResult result;
-    result.success = true;
-
+    // Cancel old action if its still active and stop it's success callback from being called
+    if (action_server_.isActive())
+    {
+        action_server_.setAborted();
+        send_sucess_timer_.stop();
+    }
+    
+    auto goal = action_server_.acceptNewGoal();
     ros_queue_msgs::TransmissionVector disturbed_action = goal->action_goal;
+
     // Add perturbations to the action
     ros_queue_experiments::GetRealAUVStates states_srv;
     if(auv_state_client_.call(states_srv))
     {
-        if (steps_since_last_perturbation_ == perturbation_at_each_x_control_steps_)
+        if ((perturbation_at_each_x_control_steps_ != 0) &&
+            (steps_since_last_perturbation_ == perturbation_at_each_x_control_steps_))
         {
             if (perturbation_type_ == PerturbationType::NotMoving)
             {
@@ -83,7 +94,7 @@ void DisturbedActionServer::executeActionCallback(const ros_queue_msgs::Transmis
                 {
                     if (disturbed_action.transmission_vector[zone_index] == 1)
                     {
-                        // If last zone, put set it the first zone
+                        // If last zone, set it to the first zone
                         if ((zone_index + 1) == disturbed_action.transmission_vector.size())
                         {
                             disturbed_action.transmission_vector[0] = 1;
@@ -99,25 +110,17 @@ void DisturbedActionServer::executeActionCallback(const ros_queue_msgs::Transmis
                 }
             }
         }
+        ++steps_since_last_perturbation_;
+        if (steps_since_last_perturbation_ > perturbation_at_each_x_control_steps_)
+        {
+            steps_since_last_perturbation_ = 0;
+        }
     }
     else
     {
         ROS_ERROR("Failed to call service to get the current AUV states. No perturbations will be applied.");
     }
     
-    ++steps_since_last_perturbation_;
-    
-    if (steps_since_last_perturbation_ > perturbation_at_each_x_control_steps_)
-    {
-        steps_since_last_perturbation_ = 0;
-    }
-
-    if(action_server_.isPreemptRequested())
-    {
-        result.success = false;
-        action_server_.setPreempted();
-        return;
-    }
 
     // Send the disturbed action to the AUV system
     ros_queue_experiments::SendNewAUVCommand action_srv;
@@ -132,19 +135,22 @@ void DisturbedActionServer::executeActionCallback(const ros_queue_msgs::Transmis
          ROS_ERROR("Failed to call service to send the disturbed action to the AUV system.");
     }
 
-    // Wait for the amount of time that the AUV system needs to execute the action.
+    // Reset the time of the success callback and start it.
     float elapsed_time = (ros::Time::now() - start_time).toSec();
-    ros::Duration(time_to_execute - elapsed_time).sleep();
+    send_sucess_timer_.setPeriod(ros::Duration(time_to_execute-elapsed_time), true);
+    send_sucess_timer_.start();
+}
 
-    if(action_server_.isPreemptRequested())
-    {
-        result.success = false;
-        action_server_.setPreempted();
-        return;
-    }
+void DisturbedActionServer::preemptActionCallback()
+{
+    ROS_INFO("Preempting the action.");
+    action_server_.setPreempted();
+    send_sucess_timer_.stop();
+}
 
-    if (result.success)
-    {
-        action_server_.setSucceeded(result);
-    }
+void DisturbedActionServer::sendSuccessCallback(const ros::TimerEvent& event)
+{
+    ros_queue_msgs::TransmissionVectorResult result;
+    result.success = true;
+    action_server_.setSucceeded(result);
 }
