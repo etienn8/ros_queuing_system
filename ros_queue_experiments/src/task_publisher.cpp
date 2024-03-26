@@ -105,7 +105,7 @@ bool TaskPublisher::qosTransmissionCallback(ros_queue_msgs::ByteSizeRequest::Req
     ros_queue_experiments::AuvStates current_states = getCurrentStates();
     AUVStates::Zones current_zone = AUVStates::getZoneFromTransmissionVector(current_states.current_zone);
     
-    if (abs(real_task_departure_rates_[current_zone] - 1e6) > 0.0f)
+    if (abs(real_task_departure_rates_[current_zone]) > 1e-6)
     {
         const float second_between_messages = 1.0/real_task_departure_rates_[current_zone];
         while((time_diff - second_between_messages) >= second_between_messages)
@@ -185,7 +185,6 @@ bool TaskPublisher::expectedDepartureMetricCallback(ros_queue_msgs::MetricTransm
 
             AUVStates::Zones zone = AUVStates::getZoneFromTransmissionVector(req.action_set.action_set[action_index]);
             res.predictions.push_back(predicted_task_departure_rates_[zone]*renewal_time);
-
         }
     }
     else
