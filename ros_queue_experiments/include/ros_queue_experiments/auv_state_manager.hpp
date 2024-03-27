@@ -4,6 +4,8 @@
 
 #include "auv_forward_declarations.hpp"
 
+#include "proportion_time_spent.hpp"
+
 #include "auv_states.hpp"
 #include "ros_queue_experiments/AuvStates.h"
 
@@ -52,4 +54,9 @@ class AUVStateManager
          * @brief Pointer to the AUVSystem class to have access to the metrics.
         */
         AUVSystem* auv_system_;
+
+        /**
+         * @brief Object that keeps track of the time spent in each zone.
+        */
+        ProportionTimeSpent time_spent_in_zones_;
 };

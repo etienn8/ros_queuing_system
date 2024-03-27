@@ -1,6 +1,8 @@
 #include "ros_queue_experiments/auv_system.hpp"
 #include "ros_queue_experiments/auv_state_manager.hpp"
 
+#include "ros_queue_experiments/AuvStates.h"
+
 AUVSystem::AUVSystem(ros::NodeHandle& nh): nh_(nh)
 {
     // Initialize the state manager
@@ -18,6 +20,9 @@ AUVSystem::AUVSystem(ros::NodeHandle& nh): nh_(nh)
 
     // Initialize the action set service
     action_set_service_ = nh_.advertiseService("potential_action_set", &AUVSystem::potentialActionSetCallback, this);
+
+    // Initialize the publishers
+    state_pub_ = nh_.advertise<ros_queue_experiments::AuvStates>("auv_state", 1);
 }
 
 bool AUVSystem::potentialActionSetCallback(ros_queue_msgs::PotentialTransmissionVectorSpaceFetch::Request& req,
@@ -60,6 +65,9 @@ bool AUVSystem::commandCallback(ros_queue_experiments::SendNewAUVCommand::Reques
         AUVStates::Zones new_zone = AUVStates::getZoneFromTransmissionVector(req.command);
         res.time_to_execute = expected_time_services_->getRealRenewalTimeWithTransitionFromCurrentState(new_zone);
         auv_state_manager_->commandToNextZone(new_zone);
+        ROS_INFO("New command received. Going to zone %d", new_zone);
+
+        state_pub_.publish(auv_state_manager_->getCurrentStates());
     }
     else
     {

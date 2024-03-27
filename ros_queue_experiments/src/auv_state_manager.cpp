@@ -13,6 +13,10 @@ AUVStateManager::AUVStateManager(AUVSystem* auv_system): auv_system_(auv_system)
     states_at_last_transition_.penalty = 0.0;
     states_at_last_transition_.transition_completion = 0.0;
 
+    time_spent_in_zones_.addState();
+    time_spent_in_zones_.addState();
+    time_spent_in_zones_.addState();
+
     last_transition_time_ = ros::Time::now();
 }
 
@@ -45,6 +49,10 @@ ros_queue_experiments::AuvStates AUVStateManager::getCurrentStates()
         current_states.penalty += auv_system_->penalty_metric_services_->getRealPenaltyTransition(last_zone, current_zone);
 
         current_states.localization = auv_system_->localization_services_->getRealLocalizationUncertainty(current_zone);
+        
+        // Get the proportion of time spent in each zone
+        current_states.proportion_time_spent_in_zones = time_spent_in_zones_.getProportionTimeSpent();
+
         return current_states;
     }
 
@@ -56,7 +64,11 @@ void AUVStateManager::commandToNextZone(AUVStates::Zones new_zone)
     ros_queue_experiments::AuvStates current_state = getCurrentStates();
 
     std::lock_guard<std::mutex> lock(state_access_mutex_);
-
+    
+    // Save the time spent in the last zone
+    float elapsed_time = (ros::Time::now() - last_transition_time_).toSec();
+    time_spent_in_zones_.addTimeSpentInState(elapsed_time, AUVStates::getZoneFromTransmissionVector(current_state.current_zone));
+    
     // Save the current states to serve as the new point to evaluate the future states from.
     states_at_last_transition_ = current_state;
 
@@ -64,6 +76,7 @@ void AUVStateManager::commandToNextZone(AUVStates::Zones new_zone)
     states_at_last_transition_.last_zone = states_at_last_transition_.current_zone;
     states_at_last_transition_.current_zone = AUVStates::getTransmissionVectorFromZone(new_zone);
     states_at_last_transition_.transition_completion = 0.0;
+
     last_transition_time_ = ros::Time::now();
 }
 

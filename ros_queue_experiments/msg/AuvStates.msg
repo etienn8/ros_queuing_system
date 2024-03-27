@@ -6,3 +6,5 @@ float32 localization
 float32 penalty
 
 float32 transition_completion
+
+float32[] proportion_time_spent_in_zones

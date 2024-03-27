@@ -150,6 +150,7 @@ add_executable(AUV_system_node
   src/localization_services.cpp
   src/task_publisher.cpp
   src/penalty_services.cpp
+  src/proportion_time_spent.cpp
 )
 
 add_executable(perturbation_action_node
