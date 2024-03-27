@@ -137,7 +137,7 @@ void TaskPublisher::publishTask(const ros::TimerEvent& event)
 bool TaskPublisher::realArrivalMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
                                 ros_queue_msgs::FloatRequest::Response& res)
 {
-    res.value = arrival_task_per_second_;
+    res.value = arrival_task_per_second_*sizeof(std_msgs::Int32);
     return true;
 }
 
@@ -151,7 +151,9 @@ bool TaskPublisher::expectedArrivalMetricCallback(ros_queue_msgs::MetricTransmis
             AUVStates::Zones target_zone = AUVStates::getZoneFromTransmissionVector(req.action_set.action_set[action_index]);
             
             float renewal_time = renewal_time_services_->getPredictedRenewalTimeWithTransitionFromCurrentState(target_zone);
-            res.predictions.push_back(arrival_task_per_second_*renewal_time);
+            int nb_tasks  = static_cast<int>(arrival_task_per_second_*renewal_time);
+            //ROS_WARN_STREAM("Expected arrival float: "<< arrival_task_per_second_*renewal_time<< std::endl<<"Expected arrival int: "<< nb_tasks);
+            res.predictions.push_back(nb_tasks*sizeof(std_msgs::Int32));
         }
     }
     else
@@ -167,7 +169,7 @@ bool TaskPublisher::realDepartureMetricCallback(ros_queue_msgs::FloatRequest::Re
 {
     ros_queue_experiments::AuvStates current_states = getCurrentStates();
     AUVStates::Zones current_zone = AUVStates::getZoneFromTransmissionVector(current_states.current_zone);
-    res.value = real_task_departure_rates_[current_zone];
+    res.value = real_task_departure_rates_[current_zone]*sizeof(std_msgs::Int32);
 
     return true;
 }
@@ -183,8 +185,9 @@ bool TaskPublisher::expectedDepartureMetricCallback(ros_queue_msgs::MetricTransm
                 
             float renewal_time = renewal_time_services_->getPredictedRenewalTimeWithTransitionFromCurrentState(target_zone);
 
-            AUVStates::Zones zone = AUVStates::getZoneFromTransmissionVector(req.action_set.action_set[action_index]);
-            res.predictions.push_back(predicted_task_departure_rates_[zone]*renewal_time);
+            int nb_tasks  = static_cast<int>(predicted_task_departure_rates_[target_zone]*renewal_time);
+            //ROS_WARN_STREAM("Expected arrival float: "<< predicted_task_departure_rates_[target_zone]*renewal_time<< std::endl<<"Expected arrival int: "<< nb_tasks);
+            res.predictions.push_back(nb_tasks*sizeof(std_msgs::Int32));
         }
     }
     else
