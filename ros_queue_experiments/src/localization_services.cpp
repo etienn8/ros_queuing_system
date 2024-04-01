@@ -76,7 +76,7 @@ bool LocalizationServices::realArrivalMetricCallback(ros_queue_msgs::FloatReques
                                 ros_queue_msgs::FloatRequest::Response& res)
 {
     ros_queue_experiments::AuvStates current_states = getCurrentStates();
-    res.value = current_states.temperature;
+    res.value = current_states.localization;
     return true;
 }
 
