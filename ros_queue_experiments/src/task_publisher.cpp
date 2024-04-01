@@ -108,9 +108,9 @@ bool TaskPublisher::qosTransmissionCallback(ros_queue_msgs::ByteSizeRequest::Req
     if (abs(real_task_departure_rates_[current_zone]) > 1e-6)
     {
         const float second_between_messages = 1.0/real_task_departure_rates_[current_zone];
-        while((time_diff - second_between_messages) >= second_between_messages)
+        while(time_diff >= second_between_messages)
         {
-            res.nb_of_bytes += sizeof(std_msgs::Int32);;
+            res.nb_of_bytes += sizeof(std_msgs::Int32);
             time_diff -= second_between_messages;
         }
 
