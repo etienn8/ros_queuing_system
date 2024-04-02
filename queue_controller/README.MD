@@ -136,20 +136,30 @@ Five messages and services definition needs to be defined at compilation for the
 	---
 	# The feedback
 	```
+6.  The message used to log the internal cost of each controller metrics for a given action. Two fields should be defined: A variable named `action` with the type of the action type and a variable name `costs` of the type [ros_queue_msgs/ControllerActionCosts](https://github.com/etienn8/ros_queuing_system/tree/main/ros_queue_msgs/msg/ControllerActionCosts.msg). Add it in the [ros_queue_msgs/msg](https://github.com/etienn8/ros_queuing_system/tree/main/ros_queue_msgs/msg) directory. Following the same example, the content of `TransmissionVectorControllerCosts.msg` defined in [ros_queue_msgs/msg](https://github.com/etienn8/ros_queuing_system/tree/main/ros_queue_msgs/msg)is :
+	```
+	ros_queue_msgs/TransmissionVector action
+	ros_queue_msgs/ControllerActionCosts costs
+	```
+7.  The message of the list of all the internal costs for each action for a control steps. It should have a single field named `action_costs_list` that is an array of the message defined in step 6. Add it in the [ros_queue_msgs/msg](https://github.com/etienn8/ros_queuing_system/tree/main/ros_queue_msgs/msg) directory. Following the same example, the content of `TransmissionVectorControllerCosts.msg` defined in [ros_queue_msgs/msg](https://github.com/etienn8/ros_queuing_system/tree/main/ros_queue_msgs/msg)is :
+	```
+	ros_queue_msgs/TransmissionVectorControllerCosts[] action_costs_list
+	```
+
 Once all the new messages created, don't forget to include to the [CMakeList.txt](https://github.com/etienn8/ros_queuing_system/blob/main/ros_queue_msgs/CMakeLists.txt) of the ros_queue_msgs package to generate them.  Once done, build the catkin workspace.
 
 #### Create the new source files
 1. In the directory `queue_controller/include/queue_controller/action_configs/`, copy and paste the `transmission_vector_controller_config.hpp` file in the same directory.
 2. Renamed it with a relevant name linked to the new added action.
 3. Edit the content of the new file:
-	1. Replace all the `#include` of the old messages with the five new messages created above.
+	1. Replace all the five first `#include` of the old messages with the first five new messages created above. The the last include should be replaced by the message created at the step 7.
 	2. Change the type of the `typedef` (not the the name of the `typedef`) in the following manner (be careful to add the "Action" and "Goal" suffix at the end of the two last message definitions respectively):
 	```
 	typedef ros_queue_msgs::<Name of the metric prediction message defined at the step 4. of "Create the messages"> METRIC_CONTROL_PREDICTION_SRV;
 	typedef ros_queue_msgs::<Name of the action message set defined at the step 2. of "Create the messages"> POTENTIAL_ACTION_SET_MSG;
 	typedef ros_queue_msgs::<Name of the action set fetch service defined at the step 3. of "Create the messages"> POTENTIAL_ACTION_SET_SRV;
 	typedef ros_queue_msgs::<Name of the action lib message defined at the step 5. of "Create the messages">Action ACTION_LIB_OUTPUT_TYPE;
-	typedef ros_queue_msgs::<Name of the action lib message defined at the step 5. of "Create the messages">Goal ACTION_LIB_OUTPUT_GOAL_TYPE;
+	typedef ros_queue_msgs::<Name of the action lib message defined at the step 7. of "Create the messages">Goal CONTROLLER_COSTS_LIST_TYPE;
 	```
 4. In the directory `queue_controller/src/` copy and paste the `transmission_vector_queue_controller_node.cpp` file in the same directory.
 5. Renamed it with a relevant name linked to the new added action.
@@ -174,6 +184,7 @@ Since most of the configuration is required (except when it's indicated that it 
 - `controller_type`(string): The type of controller that should be used. The two supported types are: `min_drift_plus_penalty` and `renewal_min_drift_plus_penalty`.
 - `time_step` (float): Period between each controller optimization process. Only used for the min_drift_plus_penalty type of controller.
 - `inverse_control_and_steps` (bool, default: false): If set to false, the controller will 1)find an optimal  action to take and then 2) update the virtual queues based on that optimal solution. If set to true, the controller will 1)update the virtual queues based on the current of state of the system and then 2)find an optimal next action. 
+- `measure_cost: false`(bool): When true, a topic will be published name "controller_costs" that will output the cost of each action and each internal metric of the actions at each controller step. Default is set to false.
 - `min_renewal_time`(float): Lower bound time for the renewal process. The controller will not start again before that time even if the action is reached. The action reached is triggered by a message to a goal_reached topic. Only used if the controller is of type `renewal_min_drift_plus_penalty`.
 - `max_renewal_time`(float): Upper bound time for the renewal process. The controller will start again at that time if the action is not reached. The action reached is triggered by a message to a goal_reached topic. Only used if the controller is of type `renewal_min_drift_plus_penalty`.
 - `action_server_name`(string): Name of the actionlib server to which the best action will be sent as a goal. That server as the responsibility to send back a goal reached for the renewal system if it reaches the action.
@@ -228,6 +239,8 @@ For each queues:
 * **`/<queue_server_name>/<queue_name>/getQueueInfo`** ([ros_queue_msgs/QueueInfoFetch](https://github.com/etienn8/ros_queuing_system/blob/main/ros_queue_msgs/srv/QueueInfoFetch.srv))
 	 Service that gets the meta information of the queue from the [queue_server](https://github.com/etienn8/ros_queuing_system/tree/main/queue_server) . Mainly it gets if the queue is virtual.
 #### Published Topics
+* **`measure_cost`** [ros_queue_msgs/TransmissionVectorControllerCostsList](https://github.com/etienn8/ros_queuing_system/blob/main/ros_queue_msgs/msg/TransmissionVectorControllerCostsList.msg)
+	 Message that contains all the costs for each action and its metrics (penalty and queue). This message is sent at each end of the controller's loop. This topic isn't advertised if the `measure_cost` parameter is set to false.
 * **`renewal_time`** (std_msgs/Float32)
 	 Message that indicates the elapsed time between the start of the current controller call and the start of the previous controller call.
 * **`/<queue_server_name>/virtual_queue_manual_changes`** ([ros_queue_msgs/VirtualQueueChangesList](https://github.com/etienn8/ros_queuing_system/blob/main/ros_queue_msgs/msg/VirtualQueueChangesList.msg))

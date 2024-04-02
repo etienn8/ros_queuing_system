@@ -8,6 +8,9 @@ time_step: 0.1
 # on that optimal solution. If set to true, the controller will update the virtual queues based on the current of 
 # state of the system then find an optimal next action. Default: set to false
 inverse_control_and_steps: false
+# When true, a topic will be published name "controller_costs" that will output the cost of each action
+# and each internal metric of the actions. Default is set to false.
+measure_cost: false
 
 # Renewal timing parameters.
 # Minimum time for the renewal process. The controller will not start before that time even if the action is reached. 

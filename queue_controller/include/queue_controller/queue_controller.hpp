@@ -15,10 +15,13 @@
 #include "controller_queue_struct.hpp"
 #include "queue_controller_utils.hpp"
 
+#include "ros_queue_msgs/ControllerActionCosts.h"
 #include "ros_queue_msgs/FloatRequest.h"
+#include "ros_queue_msgs/MetricCosts.h"
 #include "ros_queue_msgs/QueueInfoFetch.h"
 #include "ros_queue_msgs/QueueServerStateFetch.h"
 #include "ros_queue_msgs/VirtualQueueChangesList.h"
+#include "ros_queue_msgs/TransmissionVectorControllerCostsList.h"
 
 #include <actionlib/client/simple_action_client.h>
 
@@ -39,11 +42,17 @@ struct ActionTrait {
   using ActionType = typename TActionSetType::_action_set_type::value_type;
 };
 
-template<typename TMetricControlPredictionSrv, typename TPotentialActionSetMsg, typename TPotentialActionSetSrv, typename TActionLibOutputType, typename TActionLibOutputGoalType>
+template <typename TControllerCostListType>
+struct ActionCostTrait {
+  using ActionCostType = typename TControllerCostListType::_action_costs_list_type::value_type;
+};
+
+template<typename TMetricControlPredictionSrv, typename TPotentialActionSetMsg, typename TPotentialActionSetSrv, typename TActionLibOutputType, typename TActionLibOutputGoalType, typename TControllerCostListType>
 class QueueController
 {
     public:
         typedef typename ActionTrait<TPotentialActionSetMsg>::ActionType ActionType;
+        typedef typename ActionCostTrait<TControllerCostListType>::ActionCostType ActionCostType;
 
         enum ControllerType
         {
@@ -173,6 +182,18 @@ class QueueController
             {
                 can_create_controller = false;
                 ROS_ERROR_STREAM("Missing the v_parameter.");
+            }
+
+            if(nh_.getParam("measure_cost", measure_cost_))
+            {
+                if(measure_cost_)
+                {
+                    cost_publisher_ = nh_.advertise<TControllerCostListType>("controller_costs", 10);
+                }
+            }
+            else
+            {
+                ROS_WARN_STREAM("Missing the measure_cost parameter. Will be set to false.");
             }
 
             if(!nh.getParam("queue_server_name", queue_server_name_))
@@ -376,12 +397,12 @@ class QueueController
         /**
          * @brief ROS service client used to computed the expected time ot execute each given action.
         */
-       ros::ServiceClient renewal_service_client_;
+        ros::ServiceClient renewal_service_client_;
 
         /**
          * @brief ROS topic publisher that periodically sends the last renewal time.
         */
-       ros::Publisher renewal_time_pub_;
+        ros::Publisher renewal_time_pub_;
 
         /**
          * @brief ROS service client used to get the current states of the queues in the queue server.
@@ -410,6 +431,16 @@ class QueueController
          * @brief Flag that indicates if the best action client already waited for the server to be online. 
         */
         bool best_action_client_waited_ = false; 
+
+        /**
+         * @brief Publisher that publishes the cost of each action and all its internal metrics.
+        */
+        ros::Publisher cost_publisher_;
+
+        /**
+         * @brief Flag that indicates if we should measure and publish the cost of the controller steps.
+        */
+        bool measure_cost_ = false;
 
         /**
          * @brief Map of all the queues used by the queue_controller from a queue_server. The key
@@ -1094,17 +1125,48 @@ class QueueController
             auto best_action = action_parameters_list.begin();
 
             bool is_first_cost = true;
+            
+            TControllerCostListType action_costs_lists;
 
             for (auto action_parameters_it = action_parameters_list.begin(); action_parameters_it != action_parameters_list.end(); ++action_parameters_it)
             {
-                action_parameters_it->cost = v_parameter_*action_parameters_it->penalty;
+                ActionCostType action_named_action_costs;
+                ros_queue_msgs::ControllerActionCosts action_costs_msg;
+                
+                const float penalty_cost = v_parameter_*action_parameters_it->penalty;
+                action_parameters_it->cost = penalty_cost;
+                
+                if(measure_cost_)
+                {                  
+                    ros_queue_msgs::MetricCosts penalty_cost_msg;
+                    penalty_cost_msg.metric_name = "penalty";
+                    penalty_cost_msg.cost = penalty_cost;
+                    action_costs_msg.metric_costs.push_back(std::move(penalty_cost_msg));
+                }
                 
                 for(auto queue_it = action_parameters_it->queue_parameters.begin(); queue_it != action_parameters_it->queue_parameters.end(); ++queue_it)
                 {
                     const string& queue_name = queue_it->first;
-                    action_parameters_it->cost += queue_list_[queue_name]->weight_ * 
-                                                queue_it->second.current_size * 
-                                                (queue_it->second.expected_arrivals - queue_it->second.expected_departures);
+                    const float queue_cost = queue_list_[queue_name]->weight_ * 
+                                       queue_it->second.current_size * 
+                                       (queue_it->second.expected_arrivals - queue_it->second.expected_departures);
+                    action_parameters_it->cost += queue_cost;
+
+                    if(measure_cost_)
+                    {
+                        ros_queue_msgs::MetricCosts queue_cost_msg;
+                        queue_cost_msg.metric_name = queue_name;
+                        queue_cost_msg.cost = queue_cost;
+                        action_costs_msg.metric_costs.push_back(std::move(queue_cost_msg));
+                    }
+                }
+
+                if(measure_cost_)
+                {
+                    action_costs_msg.total_cost = action_parameters_it->cost;
+                    action_named_action_costs.action = action_parameters_it->action;
+                    action_named_action_costs.costs = action_costs_msg;
+                    action_costs_lists.action_costs_list.push_back(std::move(action_named_action_costs));
                 }
 
                 if (is_first_cost)
@@ -1116,6 +1178,15 @@ class QueueController
                 {
                     best_action = action_parameters_it;
                 }
+                else if(action_parameters_it->cost == best_action->cost)
+                {
+                    ROS_WARN("Queue controller: Two actions have the same cost. The first one will be selected.");
+                }
+            }
+            
+            if(measure_cost_)
+            {
+                cost_publisher_.publish(action_costs_lists);
             }
 
             return *best_action;
@@ -1132,11 +1203,26 @@ class QueueController
 
             bool is_first_cost = true;
 
+            TControllerCostListType action_costs_lists;
+
             for (auto action_parameters_it = action_parameters_list.begin(); action_parameters_it != action_parameters_list.end(); ++action_parameters_it)
             {
+                ActionCostType action_named_action_costs;
+                ros_queue_msgs::ControllerActionCosts action_costs_msg;
+
                 const double& expected_renewal_time = action_parameters_it->expected_renewal_time;
 
-                action_parameters_it->cost = v_parameter_*action_parameters_it->penalty;
+                float penalty_cost = v_parameter_*action_parameters_it->penalty;
+                action_parameters_it->cost = penalty_cost;
+
+                if(measure_cost_)
+                {                  
+                    ros_queue_msgs::MetricCosts penalty_cost_msg;
+                    penalty_cost_msg.metric_name = "penalty";
+                    penalty_cost_msg.cost = penalty_cost;
+                    action_costs_msg.metric_costs.push_back(std::move(penalty_cost_msg));
+                }
+
                 for(auto queue_it = action_parameters_it->queue_parameters.begin(); queue_it != action_parameters_it->queue_parameters.end(); ++queue_it)
                 {
                     const string& queue_name = queue_it->first;
@@ -1152,15 +1238,34 @@ class QueueController
                         queue_it->second.expected_departures = expected_renewal_time*queue_it->second.expected_departures;
                     }
 
-                    action_parameters_it->cost += queue_list_[queue_name]->weight_ * 
-                                                queue_it->second.current_size * 
-                                                (queue_it->second.expected_arrivals - queue_it->second.expected_departures);
+                    float queue_cost = queue_list_[queue_name]->weight_ * 
+                                       queue_it->second.current_size * 
+                                       (queue_it->second.expected_arrivals - queue_it->second.expected_departures);
+
+                    action_parameters_it->cost += queue_cost;
+
+                    if(measure_cost_)
+                    {
+                        ros_queue_msgs::MetricCosts queue_cost_msg;
+                        queue_cost_msg.metric_name = queue_name;
+                        queue_cost_msg.cost = queue_cost;
+                        action_costs_msg.metric_costs.push_back(std::move(queue_cost_msg));
+                    }
                 }
 
                 // TODO: Verify formulation
                 if (is_penalty_renewal_dependent_ && expected_renewal_time > 0.0f)
                 {
                     action_parameters_it->cost = action_parameters_it->cost/expected_renewal_time; 
+                }
+
+                if(measure_cost_)
+                {
+                    // Note here that the total cost is the cost per renewal time and not the sum of the costs.
+                    action_costs_msg.total_cost = action_parameters_it->cost;
+                    action_named_action_costs.action = action_parameters_it->action;
+                    action_named_action_costs.costs = action_costs_msg;
+                    action_costs_lists.action_costs_list.push_back(std::move(action_named_action_costs));
                 }
 
                 if (is_first_cost)
