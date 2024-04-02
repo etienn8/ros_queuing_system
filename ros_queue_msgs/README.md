@@ -42,8 +42,12 @@ To build from source, clone the latest version from this repository into your ca
 If you're using [catkin tools](https://catkin-tools.readthedocs.io/en/latest/installing.html), you could use `catkin build` command instead of `catkin_make`.
 
 ## Messages definitions
+* **`ControllerActionCosts.msg`**
+	List of all the metrics name and values in a control action and its total cost.
 * **`ManualByteTransmitSize.msg`**
 	Structure that contains an integer indicating how many bytes a real queue should manually transfer.
+* **`MetricCosts.msg`**
+	Name of the metric and its cost from a given control step.
 * **`PotentialTransmissionVectorSet.msg`**
 	Structure that contains an array of TransmissionVector.msg messages that represents a set of potential actions.
 * **`QueueInfo.msg`**
@@ -62,6 +66,10 @@ If you're using [catkin tools](https://catkin-tools.readthedocs.io/en/latest/ins
 	Its an array of element that could be stored in queues. Its message template that should be copied where its array type should be changed to reflect the stored elements in a real queue. In this implementation, the type of the array is  `ros_queue_msgs/QueueIntElement`. Changing this value would required to change some include files in [ros_queue](https://github.com/etienn8/ros_queuing_system/tree/main/ros_queue) and to recompile the code.
 * **`TransmissionVector.msg`**
 	Contains an array with a size that represents the number of queues in a system and where their boloean values indicate if they could transmit or not.
+* **`TransmissionVectorControllerCosts.msg`**
+	Implementation of a TransmissionVector action linked to a **`ControllerActionCosts`** for a given action.
+* **`TransmissionVectorControllerCostsList.msg`**
+	List of **`TransmissionVectorControllerCosts`** that gives all the costs of all the metrics of each action evaluated in one controller step.
 * **`VirtualQueueChanges.msg`**
 	Manual changes on the arrival and the departures that should be manually applied to a specified(based on name of the queue) virtual queue.
 * **`VirtualQueueChangesList.msg`**
