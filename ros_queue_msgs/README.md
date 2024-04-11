@@ -88,7 +88,9 @@ If you're using [catkin tools](https://catkin-tools.readthedocs.io/en/latest/ins
 * **`QueueinfoFetch.srv`**
 	Empty request service call that returns the `ros_queue_msgs/QueueInfo`. It's used to fetch the meta information of a queue. 
 * **`QueueServerStateFetch.srv`**
-	Empty request service call that returns a `ros_queue_msgs /QueueServerState`. It's mainly used to fetch the current state of a [queue_server](https://github.com/etienn8/ros_queuing_system/tree/main/ros_queue)
+	Empty request service call that returns a `ros_queue_msgs /QueueServerState`. It's mainly used to fetch the current state of a [queue_server](https://github.com/etienn8/ros_queuing_system/tree/main/queue_server)
+* **`QueueServerStatsFetch.srv`**
+	Empty request service call that returns a `ros_queue_msgs /QueueServerStats`. It's mainly used to fetch the current stats of a [queue_server](https://github.com/etienn8/ros_queuing_system/tree/main/queue_server)
 * **`QueueStatesPredictions.srv`**
 	Service call that takes arbitrary `ros_queue_msgs/States` and it returns a prediction in the form of an int. This is used for predicting the value of a metric based on the current state of the system. This definition is mainly designed to be copied to change the definition of the `ros_queue_msgs/States` for any `States`. However, doing so will required to recompile the code and change the included files in the queue_controller. *Subject to change since it should return a float*. 
 * **`MetricTransmissionVectorPredictions.srv`**

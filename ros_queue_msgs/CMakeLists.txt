@@ -81,6 +81,7 @@ add_service_files(
   MetricPredictions.srv
   MetricTransmissionVectorPredictions.srv
   QueueServerStateFetch.srv
+  QueueServerStatsFetch.srv
   PotentialTransmissionVectorSpaceFetch.srv
 )
 

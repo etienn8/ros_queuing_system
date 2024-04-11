@@ -42,6 +42,8 @@ QueueServer::QueueServer(ros::NodeHandle& nh, float spin_rate): nh_(nh)
         if(should_queues_compute_stats_)
         {
             queue_server_stats_pub_ = nh_.advertise<ros_queue_msgs::QueueServerStats>("server_stats", 10);
+            queue_server_stats_service_ = nh_.advertiseService("get_server_stats", 
+                                                                &QueueServer::serverStatsCallback, this);
         }
     }
     {
@@ -337,6 +339,12 @@ bool QueueServer::serverStateCallback(ros_queue_msgs::QueueServerStateFetch::Req
     return true;
 }
 
+bool QueueServer::serverStatsCallback(ros_queue_msgs::QueueServerStatsFetch::Request& req, ros_queue_msgs::QueueServerStatsFetch::Response& res)
+{
+    res.queue_stats = getCurrentServerStats();
+    return true;
+}
+
 bool QueueServer::queueUpdateCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Request& res)
 {
     std::vector<std::future<void>> future_list;
@@ -403,7 +411,7 @@ void QueueServer::publishServerStates()
     queue_server_states_pub_.publish(server_state_msg);
 }
 
-void QueueServer::publishServerStats()
+ros_queue_msgs::QueueServerStats QueueServer::getCurrentServerStats()
 {
     ros_queue_msgs::QueueServerStats server_stats_msg;
 
@@ -459,7 +467,13 @@ void QueueServer::publishServerStats()
             server_stats_msg.queue_stats.push_back(std::move(queue_stats));
         }
     }
-    queue_server_stats_pub_.publish(server_stats_msg);
+    
+    return server_stats_msg;
+}
+
+void QueueServer::publishServerStats()
+{
+    queue_server_stats_pub_.publish(getCurrentServerStats());
 }
 
 void QueueServer::transmitRealQueues()

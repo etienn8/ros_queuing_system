@@ -13,6 +13,7 @@
 
 #include "ros_queue_msgs/QueueState.h"
 #include "ros_queue_msgs/QueueServerStateFetch.h"
+#include "ros_queue_msgs/QueueServerStatsFetch.h"
 #include "ros_queue_msgs/VirtualQueueChangesList.h"
 
 #include "std_srvs/Empty.h"
@@ -170,6 +171,12 @@ class QueueServer
         void publishServerStats();
 
         /**
+         * @brief Compute and get the current statistics about the time average of the queues and
+         * other pefromance metrics.
+        */
+        ros_queue_msgs::QueueServerStats getCurrentServerStats();
+
+        /**
          * @brief For each real queues, verify how much data could be sent and the queue will transmit up to that quanity if possible.
         */
         void transmitRealQueues();
@@ -188,6 +195,16 @@ class QueueServer
          * @brief Callback function that returns the queue server states including the size of the queues.
         */
         bool serverStateCallback(ros_queue_msgs::QueueServerStateFetch::Request& req, ros_queue_msgs::QueueServerStateFetch::Response& res);
+
+        /**
+         * @brief Service server that provides on demand the stats of the queues.
+        */
+        ros::ServiceServer queue_server_stats_service_;
+
+        /**
+         * @brief Callback function that returns the queue server stats.
+        */
+        bool serverStatsCallback(ros_queue_msgs::QueueServerStatsFetch::Request& req, ros_queue_msgs::QueueServerStatsFetch::Response& res);
 
         /**
          * @brief Service server that provides on demand the meta information of all queues.
