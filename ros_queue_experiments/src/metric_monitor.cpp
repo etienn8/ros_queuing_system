@@ -23,6 +23,8 @@ void MetricMonitor::realStateMetricCallback(const ros_queue_experiments::AuvStat
     
     if(queue_stats_metric_client_.call(queue_stats_metric_srv_))
     {
+        metric_performance_msgs.metric_name = metric_name_;
+        
         double real_state_metric_value = getMetricFromAuvState(msg);
         metric_performance_msgs.current_real_value = real_state_metric_value;
         

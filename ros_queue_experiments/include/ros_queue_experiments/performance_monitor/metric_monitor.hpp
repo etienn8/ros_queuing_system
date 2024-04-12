@@ -1,6 +1,7 @@
 #pragma once
 
 #include <ros/ros.h>
+#include <string>
 
 #include "ros_queue_experiments/AuvStates.h"
 #include "ros_queue_msgs/QueueServerStatsFetch.h"
@@ -16,6 +17,11 @@ class MetricMonitor
         MetricMonitor(ros::NodeHandle& nh);
 
     protected:
+        /**
+         * @brief Name of the metric. Used for logging.
+        */
+        std::string metric_name_;
+
         /**
          * @brief Node handle for the metric monitor.
          */
