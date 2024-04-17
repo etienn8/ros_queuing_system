@@ -1279,6 +1279,11 @@ class QueueController
                 }
             }
 
+            if(measure_cost_)
+            {
+                cost_publisher_.publish(action_costs_lists);
+            }
+
             return *best_action;
         }
 
