@@ -74,8 +74,8 @@ LocalizationServices::LocalizationServices(ros::NodeHandle nh, std::string metri
 
 
 // Change services
-bool LocalizationServices::realArrivalMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
-                                                     ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
+bool LocalizationServices::realArrivalMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
+                                                     ros_queue_msgs::FloatRequest::Response& res)
 {
     // TODO add call to get the real renewal time an compute the real change
     return false;
@@ -101,8 +101,8 @@ bool LocalizationServices::expectedArrivalMetricCallback(ros_queue_msgs::MetricT
     return true;
 }
 
- bool LocalizationServices::realDepartureMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
-                                                        ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
+ bool LocalizationServices::realDepartureMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
+                                                        ros_queue_msgs::FloatRequest::Response& res)
 {
     // TODO add call to get the real renewal time an compute the real change
     return false;

@@ -42,21 +42,21 @@ class DualMetricServices
         std::shared_ptr<AUVStateManager> auv_state_manager_;
 
         // Change callbacks
-        virtual bool realArrivalMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
-                                            ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res) = 0;
+        virtual bool realArrivalMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
+                                               ros_queue_msgs::FloatRequest::Response& res) = 0;
         
         virtual bool expectedArrivalMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
                                             ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res) = 0;
 
-        virtual bool realDepartureMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
-                                            ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res) = 0;
+        virtual bool realDepartureMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
+                                               ros_queue_msgs::FloatRequest::Response& res) = 0;
         
         virtual bool expectedDepartureMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
                                             ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res) = 0;
         
         // Rate callbacks
         virtual bool realArrivalRateMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
-                                        ros_queue_msgs::FloatRequest::Response& res) = 0;
+                                                   ros_queue_msgs::FloatRequest::Response& res) = 0;
         
         virtual bool expectedArrivalRateMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
                                             ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res) = 0;
@@ -70,14 +70,14 @@ class DualMetricServices
         ros_queue_experiments::AuvStates getCurrentStates();
     private:
         // Change callbacks
-        bool realArrivalServiceMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
-                                              ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res);
+        bool realArrivalServiceMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
+                                              ros_queue_msgs::FloatRequest::Response& res);
 
         bool expectedArrivalServiceMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
                                                   ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res);
         
-        bool realDepartureServiceMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
-                                                ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res);
+        bool realDepartureServiceMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
+                                                ros_queue_msgs::FloatRequest::Response& res);
 
         bool expectedDepartureServiceMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
                                                     ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res);

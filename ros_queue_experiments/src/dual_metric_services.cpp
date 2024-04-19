@@ -14,8 +14,8 @@ DualMetricServices::DualMetricServices(ros::NodeHandle nh, std::string metric_na
 }
 
 // Change services
-bool DualMetricServices::realArrivalServiceMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
-                                                          ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
+bool DualMetricServices::realArrivalServiceMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
+                                                          ros_queue_msgs::FloatRequest::Response& res)
 {
     return realArrivalMetricCallback(req, res);
 }
@@ -26,8 +26,8 @@ bool DualMetricServices::expectedArrivalServiceMetricCallback(ros_queue_msgs::Me
     return expectedArrivalMetricCallback(req, res);
 }
 
-bool DualMetricServices::realDepartureServiceMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
-                                                            ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
+bool DualMetricServices::realDepartureServiceMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
+                                                            ros_queue_msgs::FloatRequest::Response& res)
 {
     return realDepartureMetricCallback(req, res);
 }

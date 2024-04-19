@@ -92,8 +92,8 @@ float TemperatureServices::getRealDeparture(AUVStates::Zones zone)
 }
 
 // Change service
-bool TemperatureServices::realArrivalMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
-                                                    ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
+bool TemperatureServices::realArrivalMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
+                                                    ros_queue_msgs::FloatRequest::Response& res)
 {
     // TODO add call to get the real renewal time an compute the real change
     return false;
@@ -128,8 +128,8 @@ bool TemperatureServices::expectedArrivalMetricCallback(ros_queue_msgs::MetricTr
     return false;
 }
 
-bool TemperatureServices::realDepartureMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
-                                                      ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
+bool TemperatureServices::realDepartureMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
+                                                      ros_queue_msgs::FloatRequest::Response& res)
 {
     // TODO add call to get the real renewal time an compute the real change
     return false;

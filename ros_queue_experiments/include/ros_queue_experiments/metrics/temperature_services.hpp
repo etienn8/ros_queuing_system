@@ -20,14 +20,14 @@ class TemperatureServices: public DualMetricServices
 
     protected:
         // Change callbacks
-        virtual bool realArrivalMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
-                                            ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res) override;
+        virtual bool realArrivalMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
+                                               ros_queue_msgs::FloatRequest::Response& res) override;
         
         virtual bool expectedArrivalMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
                                             ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res) override;
 
-        virtual bool realDepartureMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
-                                            ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res) override;
+        virtual bool realDepartureMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
+                                                 ros_queue_msgs::FloatRequest::Response& res) override;
         
         virtual bool expectedDepartureMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
                                             ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res) override;

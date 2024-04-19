@@ -135,8 +135,8 @@ void TaskPublisher::publishTask(const ros::TimerEvent& event)
 
 
 // Change services
-bool TaskPublisher::realArrivalMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
-                                              ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
+bool TaskPublisher::realArrivalMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
+                                              ros_queue_msgs::FloatRequest::Response& res)
 {
     //TODO add real arrival
     return false;
@@ -165,8 +165,8 @@ bool TaskPublisher::expectedArrivalMetricCallback(ros_queue_msgs::MetricTransmis
     return true;
 }
 
-bool TaskPublisher::realDepartureMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
-                                                ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
+bool TaskPublisher::realDepartureMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
+                                                ros_queue_msgs::FloatRequest::Response& res)
 {
     //TODO add real departure
     return false;
