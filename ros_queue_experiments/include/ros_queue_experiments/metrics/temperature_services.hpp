@@ -19,23 +19,35 @@ class TemperatureServices: public DualMetricServices
         float getRealDeparture(AUVStates::Zones zone);
 
     protected:
-        virtual bool realArrivalMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
-                                        ros_queue_msgs::FloatRequest::Response& res) override;
+        // Change callbacks
+        virtual bool realArrivalMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                            ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res) override;
         
         virtual bool expectedArrivalMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
                                             ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res) override;
-        
-        virtual bool realDepartureMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
-                                        ros_queue_msgs::FloatRequest::Response& res) override;
+
+        virtual bool realDepartureMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                            ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res) override;
         
         virtual bool expectedDepartureMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                            ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res) override;
+        
+        // Rate callbacks
+        virtual bool realArrivalRateMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
+                                        ros_queue_msgs::FloatRequest::Response& res) override;
+        
+        virtual bool expectedArrivalRateMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                            ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res) override;
+
+        virtual bool realDepartureRateMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
+                                        ros_queue_msgs::FloatRequest::Response& res) override;
+        
+        virtual bool expectedDepartureRateMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
                                             ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res) override;
 
     private:
         std::map<AUVStates::Zones, float> arrival_predictions_;
         std::map<AUVStates::Zones, float> departure_predictions_;
-
-        std::shared_ptr<RenewalTimeServices> renewal_time_services_;
 
         ros::NodeHandle nh_;
 

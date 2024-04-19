@@ -6,7 +6,7 @@
 
 using std::string;
 
-TemperatureServices::TemperatureServices(ros::NodeHandle nh, std::string metric_name, std::shared_ptr<AUVStateManager> auv_state_manager, std::shared_ptr<RenewalTimeServices> renewal_time_services): DualMetricServices(nh, metric_name, auv_state_manager), nh_(nh), renewal_time_services_(renewal_time_services)
+TemperatureServices::TemperatureServices(ros::NodeHandle nh, std::string metric_name, std::shared_ptr<AUVStateManager> auv_state_manager, std::shared_ptr<RenewalTimeServices> renewal_time_services): DualMetricServices(nh, metric_name, auv_state_manager, renewal_time_services), nh_(nh)
 {
     XmlRpc::XmlRpcValue temperature_config;
 
@@ -91,15 +91,75 @@ float TemperatureServices::getRealDeparture(AUVStates::Zones zone)
     return departure_predictions_[zone];
 }
 
-bool TemperatureServices::realArrivalMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
-                                ros_queue_msgs::FloatRequest::Response& res)
+// Change service
+bool TemperatureServices::realArrivalMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                                    ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
+{
+    // TODO add call to get the real renewal time an compute the real change
+    return false;
+}
+
+bool TemperatureServices::expectedArrivalMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                                        ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
+{
+    if(renewal_time_services_)
+    {
+        ros_queue_experiments::AuvStates current_states = getCurrentStates();
+        
+        for(int action_index =0; action_index < req.action_set.action_set.size(); ++action_index)
+        {
+            ros_queue_msgs::TransmissionVector &action = req.action_set.action_set[action_index];
+            AUVStates::Zones zone = AUVStates::getZoneFromTransmissionVector(action);
+
+            float predicted_renewal_time = renewal_time_services_->getPredictedRenewalTimeWithTransitionFromCurrentState(zone);
+            
+            /**
+             * Assume that the temperature of the trajectory is the same as the end zone. Thus we 
+             * integrate the temperature over time. integrated_temperature = temp_init*time + 0.5*(a-b)*time^2
+             */
+            float temperature_diff = arrival_predictions_[zone] - departure_predictions_[zone];
+            float integrated_temperature = current_states.temperature*predicted_renewal_time + 0.5*temperature_diff*predicted_renewal_time*predicted_renewal_time;
+
+            res.predictions.push_back(integrated_temperature);
+        }
+
+        return true;
+    }
+    return false;
+}
+
+bool TemperatureServices::realDepartureMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                                      ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
+{
+    // TODO add call to get the real renewal time an compute the real change
+    return false;
+}
+
+bool TemperatureServices::expectedDepartureMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                                          ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
+{
+    for(int action_index = 0; action_index < req.action_set.action_set.size(); ++action_index)
+    {
+        ros_queue_msgs::TransmissionVector &action = req.action_set.action_set[action_index];
+        AUVStates::Zones zone = AUVStates::getZoneFromTransmissionVector(action);
+
+        float predicted_renewal_time = renewal_time_services_->getPredictedRenewalTimeWithTransitionFromCurrentState(zone);
+        
+        res.predictions.push_back(temp_target_*predicted_renewal_time);
+    }
+    return true;
+}
+
+// Rate services
+bool TemperatureServices::realArrivalRateMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
+                                                        ros_queue_msgs::FloatRequest::Response& res)
 {
     ros_queue_experiments::AuvStates current_states = getCurrentStates();
     res.value = current_states.temperature;
     return true;
 }
 
-bool TemperatureServices::expectedArrivalMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+bool TemperatureServices::expectedArrivalRateMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
                                     ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
 {
     if(renewal_time_services_)
@@ -116,6 +176,7 @@ bool TemperatureServices::expectedArrivalMetricCallback(ros_queue_msgs::MetricTr
             /**
              * Assume that the temperature of the trajectory is the same as the end zone. Thus we 
              * integrate the change over time as if the change was static over the action.
+             * It thus gives the temperature at the end of the action.
              */ 
             
             float temperature_change = predicted_renewal_time*(arrival_predictions_[zone] - departure_predictions_[zone]);
@@ -129,14 +190,14 @@ bool TemperatureServices::expectedArrivalMetricCallback(ros_queue_msgs::MetricTr
     return false;
 }
 
-bool TemperatureServices::realDepartureMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
+bool TemperatureServices::realDepartureRateMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
                                 ros_queue_msgs::FloatRequest::Response& res)
 {
     res.value = temp_target_;
     return true;
 }
 
-bool TemperatureServices::expectedDepartureMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+bool TemperatureServices::expectedDepartureRateMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
                                     ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
 {
     for(int action_index = 0; action_index < req.action_set.action_set.size(); ++action_index)

@@ -14,9 +14,8 @@ using std::string;
 TaskPublisher::TaskPublisher(ros::NodeHandle& nh, std::string metric_name, 
                             std::shared_ptr<AUVStateManager> auv_state_manager, 
                             std::shared_ptr<RenewalTimeServices> renewal_time_services): 
-                                DualMetricServices(nh, metric_name, auv_state_manager), 
-                                nh_(nh), 
-                                renewal_time_services_(renewal_time_services)
+                                DualMetricServices(nh, metric_name, auv_state_manager, renewal_time_services), 
+                                nh_(nh)
     {
     XmlRpc::XmlRpcValue tasks_config;
     if(nh_.getParam("task_metrics", tasks_config))
@@ -134,15 +133,17 @@ void TaskPublisher::publishTask(const ros::TimerEvent& event)
     ++last_task_id_;
 }
 
-bool TaskPublisher::realArrivalMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
-                                ros_queue_msgs::FloatRequest::Response& res)
+
+// Change services
+bool TaskPublisher::realArrivalMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                              ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
 {
-    res.value = arrival_task_per_second_*sizeof(std_msgs::Int32);
-    return true;
+    //TODO add real arrival
+    return false;
 }
 
 bool TaskPublisher::expectedArrivalMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
-                                    ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
+                                                  ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
 {
     if(renewal_time_services_)
     {
@@ -164,18 +165,15 @@ bool TaskPublisher::expectedArrivalMetricCallback(ros_queue_msgs::MetricTransmis
     return true;
 }
 
-bool TaskPublisher::realDepartureMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
-                                ros_queue_msgs::FloatRequest::Response& res)
+bool TaskPublisher::realDepartureMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                                ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
 {
-    ros_queue_experiments::AuvStates current_states = getCurrentStates();
-    AUVStates::Zones current_zone = AUVStates::getZoneFromTransmissionVector(current_states.current_zone);
-    res.value = real_task_departure_rates_[current_zone]*sizeof(std_msgs::Int32);
-
-    return true;
+    //TODO add real departure
+    return false;
 }
 
 bool TaskPublisher::expectedDepartureMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
-                                    ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
+                                                    ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
 {
     if(renewal_time_services_)
     {
@@ -186,13 +184,54 @@ bool TaskPublisher::expectedDepartureMetricCallback(ros_queue_msgs::MetricTransm
             float renewal_time = renewal_time_services_->getPredictedRenewalTimeWithTransitionFromCurrentState(target_zone);
 
             int nb_tasks  = static_cast<int>(predicted_task_departure_rates_[target_zone]*renewal_time);
-            //ROS_WARN_STREAM("Expected arrival float: "<< predicted_task_departure_rates_[target_zone]*renewal_time<< std::endl<<"Expected arrival int: "<< nb_tasks);
             res.predictions.push_back(nb_tasks*sizeof(std_msgs::Int32));
         }
     }
     else
     {
         ROS_ERROR("Renewal time services not set");
+    }
+
+    return true;
+}
+
+// Rate services
+bool TaskPublisher::realArrivalRateMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
+                                                  ros_queue_msgs::FloatRequest::Response& res)
+{
+    res.value = arrival_task_per_second_*sizeof(std_msgs::Int32);
+    return true;
+}
+
+bool TaskPublisher::expectedArrivalRateMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                                      ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
+{
+    for(int action_index =0; action_index < req.action_set.action_set.size(); ++action_index)
+    {
+        res.predictions.push_back(arrival_task_per_second_*sizeof(std_msgs::Int32));
+    }
+
+    return true;
+}
+
+bool TaskPublisher::realDepartureRateMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
+                                                    ros_queue_msgs::FloatRequest::Response& res)
+{
+    ros_queue_experiments::AuvStates current_states = getCurrentStates();
+    AUVStates::Zones current_zone = AUVStates::getZoneFromTransmissionVector(current_states.current_zone);
+    res.value = real_task_departure_rates_[current_zone]*sizeof(std_msgs::Int32);
+
+    return true;
+}
+
+bool TaskPublisher::expectedDepartureRateMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                                        ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
+{
+    for(int action_index = 0; action_index < req.action_set.action_set.size(); ++action_index)
+    {
+        AUVStates::Zones target_zone = AUVStates::getZoneFromTransmissionVector(req.action_set.action_set[action_index]);
+        
+        res.predictions.push_back(predicted_task_departure_rates_[target_zone]*sizeof(std_msgs::Int32));
     }
 
     return true;

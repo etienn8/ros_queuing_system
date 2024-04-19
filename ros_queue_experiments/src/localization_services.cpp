@@ -7,7 +7,7 @@
 
 using std::string;
 
-LocalizationServices::LocalizationServices(ros::NodeHandle nh, std::string metric_name, std::shared_ptr<AUVStateManager> auv_state_manager): DualMetricServices(nh, metric_name, auv_state_manager), nh_(nh)
+LocalizationServices::LocalizationServices(ros::NodeHandle nh, std::string metric_name, std::shared_ptr<AUVStateManager> auv_state_manager, std::shared_ptr<RenewalTimeServices> renewal_time_services): DualMetricServices(nh, metric_name, auv_state_manager, renewal_time_services), nh_(nh)
 {
     XmlRpc::XmlRpcValue localization_config;
     if(!nh_.getParam("localization_target", localization_target_))
@@ -72,7 +72,64 @@ LocalizationServices::LocalizationServices(ros::NodeHandle nh, std::string metri
     }
 }
 
-bool LocalizationServices::realArrivalMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
+
+// Change services
+bool LocalizationServices::realArrivalMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                                     ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
+{
+    // TODO add call to get the real renewal time an compute the real change
+    return false;
+}
+
+bool LocalizationServices::expectedArrivalMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                    ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
+{
+    ros_queue_experiments::AuvStates current_states = getCurrentStates();
+    if(renewal_time_services_)
+    {
+        for(int action_index =0; action_index < req.action_set.action_set.size(); ++action_index)
+        {
+            ros_queue_msgs::TransmissionVector &action = req.action_set.action_set[action_index];
+            AUVStates::Zones zone = AUVStates::getZoneFromTransmissionVector(action);
+
+            float expected_time = renewal_time_services_->getPredictedRenewalTimeWithTransitionFromCurrentState(zone);
+
+            res.predictions.push_back(predicted_localization_uncertainties_[zone]*expected_time);
+        }
+    }
+
+    return true;
+}
+
+ bool LocalizationServices::realDepartureMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                                        ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
+{
+    // TODO add call to get the real renewal time an compute the real change
+    return false;
+}
+
+ bool LocalizationServices::expectedDepartureMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                                            ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
+{
+    ros_queue_experiments::AuvStates current_states = getCurrentStates();
+    if(renewal_time_services_)
+    {
+        for(int action_index =0; action_index < req.action_set.action_set.size(); ++action_index)
+        {
+            ros_queue_msgs::TransmissionVector &action = req.action_set.action_set[action_index];
+            AUVStates::Zones zone = AUVStates::getZoneFromTransmissionVector(action);
+
+            float expected_time = renewal_time_services_->getPredictedRenewalTimeWithTransitionFromCurrentState(zone);
+
+            res.predictions.push_back(localization_target_*expected_time);
+        }
+    }
+    return true;
+}
+
+
+// Rate services
+bool LocalizationServices::realArrivalRateMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
                                 ros_queue_msgs::FloatRequest::Response& res)
 {
     ros_queue_experiments::AuvStates current_states = getCurrentStates();
@@ -80,11 +137,9 @@ bool LocalizationServices::realArrivalMetricCallback(ros_queue_msgs::FloatReques
     return true;
 }
 
-bool LocalizationServices::expectedArrivalMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+bool LocalizationServices::expectedArrivalRateMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
                                     ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
-{
-    ros_queue_experiments::AuvStates current_states = getCurrentStates();
-    
+{  
     for(int action_index =0; action_index < req.action_set.action_set.size(); ++action_index)
     {
         ros_queue_msgs::TransmissionVector &action = req.action_set.action_set[action_index];
@@ -96,14 +151,14 @@ bool LocalizationServices::expectedArrivalMetricCallback(ros_queue_msgs::MetricT
     return true;
 }
 
- bool LocalizationServices::realDepartureMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
+ bool LocalizationServices::realDepartureRateMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
                                 ros_queue_msgs::FloatRequest::Response& res)
 {
     res.value = localization_target_;
     return true;
 }
 
- bool LocalizationServices::expectedDepartureMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+ bool LocalizationServices::expectedDepartureRateMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
                                     ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
 {
     for(int action_index =0; action_index < req.action_set.action_set.size(); ++action_index)
@@ -112,6 +167,7 @@ bool LocalizationServices::expectedArrivalMetricCallback(ros_queue_msgs::MetricT
     }
     return true;
 }
+
 
 float LocalizationServices::getRealLocalizationUncertainty(AUVStates::Zones zone)
 {

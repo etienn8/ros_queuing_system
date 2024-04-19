@@ -10,7 +10,7 @@ LocalizationMonitor::LocalizationMonitor(ros::NodeHandle& nh): MetricMonitor(nh)
     // There could be a race condition since this publisher might not be ready when the first callback of the auv state publisher is called.
     performance_metric_pub_ = nh_.advertise<ros_queue_experiments::MetricPerformance>("localization", 1);
     
-    metric_target_client_ = nh_.serviceClient<ros_queue_msgs::FloatRequest>("/auv_system_node/localization/departure/real_metric");
+    metric_target_client_ = nh_.serviceClient<ros_queue_msgs::FloatRequest>("/auv_system_node/localization/departure/rate/real_metric");
     ROS_INFO_STREAM("Waiting for existence of the "<< metric_target_client_.getService() << " service");
     metric_target_client_.waitForExistence();
     ROS_INFO_STREAM("Service "<< metric_target_client_.getService() << " exists");

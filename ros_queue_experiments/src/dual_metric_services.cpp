@@ -1,16 +1,21 @@
 #include "ros_queue_experiments/metrics/dual_metric_services.hpp"
 
-DualMetricServices::DualMetricServices(ros::NodeHandle nh, std::string metric_name, std::shared_ptr<AUVStateManager> auv_state_manager): nh_(nh), metric_name_(metric_name), auv_state_manager_(auv_state_manager)
+DualMetricServices::DualMetricServices(ros::NodeHandle nh, std::string metric_name, std::shared_ptr<AUVStateManager> auv_state_manager,  std::shared_ptr<RenewalTimeServices> renewal_time_services): nh_(nh), metric_name_(metric_name), auv_state_manager_(auv_state_manager), renewal_time_services_(renewal_time_services)
 {
-    real_arrival_metric_service_ = nh_.advertiseService(metric_name_ + "/arrival/real_metric", &DualMetricServices::realArrivalServiceMetricCallback, this);
-    expected_arrival_metric_service_ = nh_.advertiseService(metric_name_ + "/arrival/expected_metric", &DualMetricServices::expectedArrivalServiceMetricCallback, this);
-    real_departure_metric_service_ = nh_.advertiseService(metric_name_ + "/departure/real_metric", &DualMetricServices::realDepartureServiceMetricCallback, this);
-    expected_departure_metric_service_ = nh_.advertiseService(metric_name_ + "/departure/expected_metric", &DualMetricServices::expectedDepartureServiceMetricCallback, this);
+    real_arrival_metric_service_ = nh_.advertiseService(metric_name_ + "/arrival/change/real_metric", &DualMetricServices::realArrivalServiceMetricCallback, this);
+    expected_arrival_metric_service_ = nh_.advertiseService(metric_name_ + "/arrival/change/expected_metric", &DualMetricServices::expectedArrivalServiceMetricCallback, this);
+    real_departure_metric_service_ = nh_.advertiseService(metric_name_ + "/departure/change/real_metric", &DualMetricServices::realDepartureServiceMetricCallback, this);
+    expected_departure_metric_service_ = nh_.advertiseService(metric_name_ + "/departure/change/expected_metric", &DualMetricServices::expectedDepartureServiceMetricCallback, this);
+
+    real_arrival_rate_metric_service_ = nh_.advertiseService(metric_name_ + "/arrival/rate/real_metric", &DualMetricServices::realArrivalRateServiceMetricCallback, this);
+    expected_arrival_rate_metric_service_ = nh_.advertiseService(metric_name_ + "/arrival/rate/expected_metric", &DualMetricServices::expectedArrivalRateServiceMetricCallback, this);
+    real_departure_rate_metric_service_ = nh_.advertiseService(metric_name_ + "/departure/rate/real_metric", &DualMetricServices::realDepartureRateServiceMetricCallback, this);
+    expected_departure_rate_metric_service_ = nh_.advertiseService(metric_name_ + "/departure/rate/expected_metric", &DualMetricServices::expectedDepartureRateServiceMetricCallback, this);
 }
 
-
-bool DualMetricServices::realArrivalServiceMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
-                                              ros_queue_msgs::FloatRequest::Response& res)
+// Change services
+bool DualMetricServices::realArrivalServiceMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                                          ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
 {
     return realArrivalMetricCallback(req, res);
 }
@@ -21,8 +26,8 @@ bool DualMetricServices::expectedArrivalServiceMetricCallback(ros_queue_msgs::Me
     return expectedArrivalMetricCallback(req, res);
 }
 
-bool DualMetricServices::realDepartureServiceMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
-                                              ros_queue_msgs::FloatRequest::Response& res)
+bool DualMetricServices::realDepartureServiceMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                                            ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
 {
     return realDepartureMetricCallback(req, res);
 }
@@ -31,6 +36,31 @@ bool DualMetricServices::expectedDepartureServiceMetricCallback(ros_queue_msgs::
                                                    ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
 {
     return expectedDepartureMetricCallback(req, res);
+}
+
+// Rate services
+bool DualMetricServices::realArrivalRateServiceMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
+                                                              ros_queue_msgs::FloatRequest::Response& res)
+{
+    return realArrivalRateMetricCallback(req, res);
+}
+
+bool DualMetricServices::expectedArrivalRateServiceMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                                                  ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
+{
+    return expectedArrivalRateMetricCallback(req, res);
+}
+
+bool DualMetricServices::realDepartureRateServiceMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
+                                                                ros_queue_msgs::FloatRequest::Response& res)
+{
+    return realDepartureRateMetricCallback(req, res);
+}
+
+bool DualMetricServices::expectedDepartureRateServiceMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                                                    ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
+{
+    return expectedDepartureRateMetricCallback(req, res);
 }
 
 ros_queue_experiments::AuvStates DualMetricServices::getCurrentStates()
