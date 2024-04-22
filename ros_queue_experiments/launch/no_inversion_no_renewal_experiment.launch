@@ -4,7 +4,7 @@
     
     <arg name="queue_controller_name" default="queue_controller"/>
     <arg name="queue_controller_type" default="transmission_vector_queue_controller_node"/>
-    <arg name="queue_controller_config_path" default="$(find ros_queue_experiments)/config/min_drift-plus-penalty_0.yaml"/>
+    <arg name="queue_controller_config_path" default="$(find ros_queue_experiments)/config/min_drift-plus-penalty.yaml"/>
 
     <!-- Parameter for the controller setup-->
     <arg name="controller_type"             default="min_drift_plus_penalty"/>
