@@ -1,7 +1,11 @@
 #include "ros_queue_experiments/metrics/dual_metric_services.hpp"
 
+#include "ros_queue_msgs/FloatRequest.h"
+
 DualMetricServices::DualMetricServices(ros::NodeHandle nh, std::string metric_name, std::shared_ptr<AUVStateManager> auv_state_manager,  std::shared_ptr<RenewalTimeServices> renewal_time_services): nh_(nh), metric_name_(metric_name), auv_state_manager_(auv_state_manager), renewal_time_services_(renewal_time_services)
 {
+    real_renewal_service_ = nh_.serviceClient<ros_queue_msgs::FloatRequest>("/queue_controller/get_last_renewal_time");
+
     real_arrival_metric_service_ = nh_.advertiseService(metric_name_ + "/arrival/change/real_metric", &DualMetricServices::realArrivalServiceMetricCallback, this);
     expected_arrival_metric_service_ = nh_.advertiseService(metric_name_ + "/arrival/change/expected_metric", &DualMetricServices::expectedArrivalServiceMetricCallback, this);
     real_departure_metric_service_ = nh_.advertiseService(metric_name_ + "/departure/change/real_metric", &DualMetricServices::realDepartureServiceMetricCallback, this);

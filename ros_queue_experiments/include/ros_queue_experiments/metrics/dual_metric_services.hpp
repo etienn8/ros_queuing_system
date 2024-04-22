@@ -25,6 +25,8 @@ class DualMetricServices
 
         std::shared_ptr<RenewalTimeServices> renewal_time_services_;
 
+        ros::ServiceClient real_renewal_service_;
+
         // Change services
         ros::ServiceServer real_arrival_metric_service_;
         ros::ServiceServer expected_arrival_metric_service_;

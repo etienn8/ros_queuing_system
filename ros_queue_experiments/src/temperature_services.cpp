@@ -95,8 +95,31 @@ float TemperatureServices::getRealDeparture(AUVStates::Zones zone)
 bool TemperatureServices::realArrivalMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
                                                     ros_queue_msgs::FloatRequest::Response& res)
 {
-    // TODO add call to get the real renewal time an compute the real change
-    return false;
+    ros_queue_msgs::FloatRequest last_renewal_msg;
+
+    if(real_renewal_service_.call(last_renewal_msg))
+    {
+        ros_queue_experiments::AuvStates current_states = getCurrentStates();
+        /* We truly want the temperature at the end of the last state but the current temperature
+           should be a good approximation since the error will be the temp_rate*(~2*service_call_time) */
+        float current_temperature = current_states.temperature;
+        
+        AUVStates::Zones last_zone = AUVStates::getZoneFromTransmissionVector(current_states.last_zone);
+        float last_zone_temp_rate = this->arrival_predictions_[last_zone]; 
+
+        float last_renewal_time = last_renewal_msg.response.value;
+        
+        /* Return the equivalent queue change which is the integral of the temperature over time. 
+           Since, only the end temperature is avaiblable, the integral is done from that point.*/
+        res.value = current_temperature*last_renewal_time - 0.5*last_zone_temp_rate*last_renewal_time*last_renewal_time;
+    }
+    else
+    {
+        ROS_ERROR_STREAM("Temperature service couldn't call the last renewal service: "<<real_renewal_service_.getService());
+        return false;
+    }
+
+    return true;
 }
 
 bool TemperatureServices::expectedArrivalMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
@@ -131,8 +154,22 @@ bool TemperatureServices::expectedArrivalMetricCallback(ros_queue_msgs::MetricTr
 bool TemperatureServices::realDepartureMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
                                                       ros_queue_msgs::FloatRequest::Response& res)
 {
-    // TODO add call to get the real renewal time an compute the real change
-    return false;
+    ros_queue_msgs::FloatRequest last_renewal_msg;
+
+    if(real_renewal_service_.call(last_renewal_msg))
+    {
+        float last_renewal_time = last_renewal_msg.response.value;
+    
+        // Integral of the target over the last renewal time
+        res.value = this->temp_target_*last_renewal_time;
+    }
+    else
+    {
+        ROS_ERROR_STREAM("Temperature service couldn't call the last renewal service: "<<real_renewal_service_.getService());
+        return false;
+    }
+
+    return true;
 }
 
 bool TemperatureServices::expectedDepartureMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 

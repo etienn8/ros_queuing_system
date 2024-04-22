@@ -77,8 +77,26 @@ LocalizationServices::LocalizationServices(ros::NodeHandle nh, std::string metri
 bool LocalizationServices::realArrivalMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
                                                      ros_queue_msgs::FloatRequest::Response& res)
 {
-    // TODO add call to get the real renewal time an compute the real change
-    return false;
+    ros_queue_msgs::FloatRequest last_renewal_msg;
+
+    if(real_renewal_service_.call(last_renewal_msg))
+    {
+        ros_queue_experiments::AuvStates current_states = getCurrentStates();
+        AUVStates::Zones last_zone = AUVStates::getZoneFromTransmissionVector(current_states.last_zone);
+        float localization_rate_last_state = getRealLocalizationUncertainty(last_zone); 
+
+        float last_renewal_time = last_renewal_msg.response.value;
+        
+        // Return the change as the integral of the rate of the localization 
+        res.value = last_renewal_time*localization_rate_last_state;
+    }
+    else
+    {
+        ROS_ERROR_STREAM("Localization service couldn't call the last renewal service: "<<real_renewal_service_.getService());
+        return false;
+    }
+
+    return true;
 }
 
 bool LocalizationServices::expectedArrivalMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
@@ -104,8 +122,24 @@ bool LocalizationServices::expectedArrivalMetricCallback(ros_queue_msgs::MetricT
  bool LocalizationServices::realDepartureMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
                                                         ros_queue_msgs::FloatRequest::Response& res)
 {
-    // TODO add call to get the real renewal time an compute the real change
-    return false;
+    ros_queue_msgs::FloatRequest last_renewal_msg;
+
+    if(real_renewal_service_.call(last_renewal_msg))
+    {
+        float localization_target_rate_last_state = this->localization_target_; 
+
+        float last_renewal_time = last_renewal_msg.response.value;
+        
+        // Return the change as the integral of the rate of the localization 
+        res.value = last_renewal_time*localization_target_rate_last_state;
+    }
+    else
+    {
+        ROS_ERROR_STREAM("Localization service couldn't call the last renewal service: "<<real_renewal_service_.getService());
+        return false;
+    }
+
+    return true;
 }
 
  bool LocalizationServices::expectedDepartureMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
