@@ -1,6 +1,13 @@
 #include "ros_queue_experiments/auv_system.hpp"
 #include "ros_queue_experiments/auv_state_manager.hpp"
 
+#include "ros_queue_experiments/metrics/metric_services.hpp"
+#include "ros_queue_experiments/metrics/temperature_services.hpp"
+#include "ros_queue_experiments/metrics/renewal_time_services.hpp"
+#include "ros_queue_experiments/metrics/localization_services.hpp"
+#include "ros_queue_experiments/metrics/task_publisher.hpp"
+#include "ros_queue_experiments/metrics/penalty_services.hpp"
+
 #include "ros_queue_experiments/AuvStates.h"
 
 AUVSystem::AUVSystem(ros::NodeHandle& nh): nh_(nh)
