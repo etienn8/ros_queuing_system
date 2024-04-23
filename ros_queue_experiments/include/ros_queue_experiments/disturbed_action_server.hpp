@@ -83,4 +83,9 @@ class DisturbedActionServer
          * @brief Service client to send the disturbed action to the AUV system.
         */
         ros::ServiceClient auv_action_client_;
+
+        /**
+         * @brief ROS publisher to indicated the desired and the real taken actions.
+        */
+        ros::Publisher action_performance_publisher_;
 };

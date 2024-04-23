@@ -1,0 +1,4 @@
+ros_queue_msgs/TransmissionVector target_action
+ros_queue_msgs/TransmissionVector applied_action
+
+int8 action_index_difference 

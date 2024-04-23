@@ -2,8 +2,11 @@
 
 #include "ros_queue_experiments/GetRealAUVStates.h"
 #include "ros_queue_experiments/SendNewAUVCommand.h"
+#include "ros_queue_experiments/ActionPerformance.h"
 
 #include "ros_queue_experiments/auv_states.hpp"
+
+#include "std_msgs/UInt8.h"
 
 #include <string>
 
@@ -61,6 +64,8 @@ DisturbedActionServer::DisturbedActionServer(ros::NodeHandle& nh): nh_(nh), acti
     action_server_.start();
     send_sucess_timer_ = nh_.createTimer(ros::Duration(1.0), &DisturbedActionServer::sendSuccessCallback, this, true);
     send_sucess_timer_.stop();
+
+    action_performance_publisher_ = nh_.advertise<ros_queue_experiments::ActionPerformance>("action_performance", 10);
 }
 
 void DisturbedActionServer::commandReceivedCallback()
@@ -75,6 +80,7 @@ void DisturbedActionServer::commandReceivedCallback()
     }
     
     auto goal = action_server_.acceptNewGoal();
+    ros_queue_msgs::TransmissionVector target_action = goal->action_goal;
     ros_queue_msgs::TransmissionVector disturbed_action = goal->action_goal;
 
     // Add perturbations to the action
@@ -82,7 +88,7 @@ void DisturbedActionServer::commandReceivedCallback()
     if(auv_state_client_.call(states_srv))
     {
         if ((perturbation_at_each_x_control_steps_ != 0) &&
-            (steps_since_last_perturbation_ == perturbation_at_each_x_control_steps_))
+            (steps_since_last_perturbation_ == perturbation_at_each_x_control_steps_-1))
         {
             if (perturbation_type_ == PerturbationType::NotMoving)
             {
@@ -111,7 +117,7 @@ void DisturbedActionServer::commandReceivedCallback()
             }
         }
         ++steps_since_last_perturbation_;
-        if (steps_since_last_perturbation_ > perturbation_at_each_x_control_steps_)
+        if (steps_since_last_perturbation_ == perturbation_at_each_x_control_steps_)
         {
             steps_since_last_perturbation_ = 0;
         }
@@ -139,6 +145,14 @@ void DisturbedActionServer::commandReceivedCallback()
     float elapsed_time = (ros::Time::now() - start_time).toSec();
     send_sucess_timer_.setPeriod(ros::Duration(time_to_execute-elapsed_time), true);
     send_sucess_timer_.start();
+
+    // Send action performance monitoring
+    ros_queue_experiments::ActionPerformance action_performance_msg;
+    action_performance_msg.target_action = target_action;
+    action_performance_msg.applied_action = disturbed_action;
+    action_performance_msg.action_index_difference = AUVStates::getZoneFromTransmissionVector(target_action) - AUVStates::getZoneFromTransmissionVector(disturbed_action); 
+
+    action_performance_publisher_.publish(action_performance_msg);
 }
 
 void DisturbedActionServer::preemptActionCallback()
