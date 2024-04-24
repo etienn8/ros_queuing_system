@@ -87,9 +87,25 @@ class QueueController
                 ROS_ERROR_STREAM("Missing the controller type");
             }
 
+            if (nh_.getParam("is_periodic",is_periodic_))
+            {
+                if(is_periodic_)
+                {
+                    ROS_INFO_STREAM("The controller will run periodically.");
+                }
+                else
+                {
+                    ROS_INFO_STREAM("The controller will be triggered by a service call.");
+                }
+            }
+            else
+            {
+                ROS_WARN_STREAM("Missing the is_periodic parameter. The controller will run periodically.");
+            }
+
             if(controller_type_ == ControllerType::DriftPlusPenalty)
             {
-                if(!nh.getParam("time_step", controller_time_step_))
+                if(is_periodic_ && !nh.getParam("time_step", controller_time_step_))
                 {
                     can_create_controller = false;
                     ROS_ERROR_STREAM("Missing the controller time step");
@@ -258,6 +274,11 @@ class QueueController
                     async_spinner_.start();
                 } 
 
+                if(!is_periodic_)
+                {
+                    start_control_loop_service_server_ = nh_.advertiseService("start_control_loop", &QueueController::startControlLoopServiceCallback, this);
+                }
+
                 is_initialized_ = true;
             }
         }
@@ -294,79 +315,95 @@ class QueueController
                 return;
             }
 
-            if (controller_type_ == ControllerType::DriftPlusPenalty)
+            if(is_periodic_)
             {
-                static ros::Rate loop_rate(1.0f/controller_time_step_);
-                while(ros::ok())
+                if (controller_type_ == ControllerType::DriftPlusPenalty)
                 {
-                    controllerCallback();
-                    ros::spinOnce();
-                    loop_rate.sleep();
-                }
-            }
-            else if (controller_type_ == ControllerType::RenewalDriftPlusPenalty)
-            {
-                while(ros::ok())
-                {
-                    if(!best_action_client_waited_)
+                    static ros::Rate loop_rate(1.0f/controller_time_step_);
+                    while(ros::ok())
                     {
-                        if(!best_action_client_->waitForServer(ros::Duration(5.0)))
-                        {
-                            ROS_WARN_STREAM("The action server named wasn't found. Queue controller will be running with a perdiod of max_renewal_time ("<< max_renewal_time_ << "s) between each control step and will continue to try to connect to server.");
-                        }
-
-                        best_action_client_waited_ = true;
-                    }
-
-                    std_msgs::Float32 renewal_time_msg;
-                    // Access protection to the last_renewal_time_ variable
-                    {
-                        std::lock_guard<std::mutex> lock(last_renewal_time_mutex_);
-                        static bool first_renewal = true;
-                        if(first_renewal)
-                        {
-                            first_renewal = false;
-                            last_renewal_time_point = ros::Time::now();
-                        }
-
-                        // Compute the real elapsed time since the last renewal.
-                        last_renewal_time_ = (ros::Time::now() - last_renewal_time_point).toSec();
-                        
-                        renewal_time_msg.data = last_renewal_time_;
-                        ROS_DEBUG_STREAM("Time since last renewal: " << last_renewal_time_);
-                    }
-                    renewal_time_pub_.publish(renewal_time_msg);
-                    
-                    // Compute the controller
-                    controllerCallback();
-
-                    last_renewal_time_point = ros::Time::now();
-
-                    if(best_action_client_->isServerConnected())
-                    {
-                        // Wait for the best action to be reached or wait for the max_renewal_time
-                        bool finished_before_max_time =  best_action_client_->waitForResult(ros::Duration(max_renewal_time_));
-                        
-                        // We abandon the last goal if its still on going.
-                        if (!finished_before_max_time)
-                        {
-                            best_action_client_->cancelGoal();
-                        }
-
-                        double elapsed_time = (ros::Time::now() - last_renewal_time_point).toSec();
-
-                        // Wait for t_min is reached if the goal was reached before.
-                        if (elapsed_time < min_renewal_time_)
-                        {
-                            ros::Duration(min_renewal_time_ - elapsed_time).sleep();
-                        }
-                    }
-                    else
-                    {
-                        ros::Duration(max_renewal_time_).sleep();      
+                        controllerCallback();
+                        ros::spinOnce();
+                        loop_rate.sleep();
                     }
                 }
+                else if (controller_type_ == ControllerType::RenewalDriftPlusPenalty)
+                {
+                    while(ros::ok())
+                    {
+                        if(!best_action_client_waited_)
+                        {
+                            if(!best_action_client_->waitForServer(ros::Duration(5.0)))
+                            {
+                                ROS_WARN_STREAM("The action server named wasn't found. Queue controller will be running with a perdiod of max_renewal_time ("<< max_renewal_time_ << "s) between each control step and will continue to try to connect to server.");
+                            }
+
+                            best_action_client_waited_ = true;
+                        }
+
+                        std_msgs::Float32 renewal_time_msg;
+                        // Access protection to the last_renewal_time_ variable
+                        {
+                            std::lock_guard<std::mutex> lock(last_renewal_time_mutex_);
+                            if(is_first_renewal_loop_)
+                            {
+                                is_first_renewal_loop_ = false;
+                                last_renewal_time_point = ros::Time::now();
+                            }
+
+                            // Compute the real elapsed time since the last renewal.
+                            last_renewal_time_ = (ros::Time::now() - last_renewal_time_point).toSec();
+                            
+                            renewal_time_msg.data = last_renewal_time_;
+                            ROS_DEBUG_STREAM("Time since last renewal: " << last_renewal_time_);
+                        }
+                        renewal_time_pub_.publish(renewal_time_msg);
+                        
+                        // Compute the controller
+                        controllerCallback();
+
+                        last_renewal_time_point = ros::Time::now();
+
+                        if(best_action_client_->isServerConnected())
+                        {
+                            // Wait for the best action to be reached or wait for the max_renewal_time
+                            bool finished_before_max_time =  best_action_client_->waitForResult(ros::Duration(max_renewal_time_));
+                            
+                            // We abandon the last goal if its still on going.
+                            if (!finished_before_max_time)
+                            {
+                                best_action_client_->cancelGoal();
+                            }
+
+                            double elapsed_time = (ros::Time::now() - last_renewal_time_point).toSec();
+
+                            // Wait for t_min is reached if the goal was reached before.
+                            if (elapsed_time < min_renewal_time_)
+                            {
+                                ros::Duration(min_renewal_time_ - elapsed_time).sleep();
+                            }
+                        }
+                        else
+                        {
+                            ros::Duration(max_renewal_time_).sleep();      
+                        }
+                    }
+                }
             }
+            else
+            {
+                // If non periodic, a service is used to start a control loop.
+                ros::spin();
+            }
+        }
+
+        bool startControlLoopServiceCallback(std_srvs::Empty::Request& req, 
+                                             std_srvs::Empty::Response& res)
+        {
+            ROS_DEBUG_STREAM("Starting control loop from service call for the controller: " << ros::this_node::getName());
+
+            controllerCallback();
+            return true;
         }
 
     private:
@@ -382,6 +419,16 @@ class QueueController
          * to create services from that should be manage in parallel with the main thread.
         */
         ros::NodeHandle async_nh_;
+
+        /**
+         * @brief Flag that indicates if the controller should run periodically or should be triggered by a service call.
+        */
+        bool is_periodic_ = true;
+
+        /**
+         * @brief ROS Service Server that launches a control loop if the flag is_periodic_ is set to false; 
+        */
+        ros::ServiceServer start_control_loop_service_server_;
 
         /**
          * @brief Time at which the last renewal was done. Used by the renewal_min_drift_plus_penalty controller.
@@ -403,6 +450,11 @@ class QueueController
          * @brief ROS topic publisher that periodically sends the last renewal time.
         */
         ros::Publisher renewal_time_pub_;
+
+        /**
+         * @brief Flag used to know if the first control loop of the renewal controller has been done.
+        */
+        bool is_first_renewal_loop_ = true;
 
         /**
          * @brief ROS service client used to get the current states of the queues in the queue server.

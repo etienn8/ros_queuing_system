@@ -2,6 +2,11 @@
 
 # Indicate the type of controller. Supported types: min_drift_plus_penalty, renewal_min_drift_plus_penalty
 controller_type: "$(arg controller_type)"
+
+# If set to true, the controller will start a new control loop once the last control loop is finished. If set to
+# false, the controler will wait to for a service call to start_control_loop. Default set to true
+is_periodic: true
+
 # Period between each controller optimization process. Only used for the min_drift_plus_penalty type of controller. Float value.
 time_step: 0.1
 # If set to false, the controller will find an optimal next action to take and then update the virtual queues based 

@@ -2,7 +2,13 @@
 
 # Indicate the type of controller. Supported types: min_drift_plus_penalty, renewal_min_drift_plus_penalty
 controller_type: "min_drift_plus_penalty"
-# Period between each controller optimization process. Only used for the min_drift_plus_penalty type of controller. Float value.
+
+# If set to true, the controller will start a new control loop once the last control loop is finished. If set to
+# false, the controler will wait to for a service call to start_control_loop. Default set to true
+is_periodic: true
+
+# Period between each controller optimization process. Only used for the min_drift_plus_penalty type of controller. 
+#  Not used if the parameter is_periodic is set to false. Float value.
 time_step: 0.1
 # If set to false, the controller will find an optimal next action to take and then update the virtual queues based 
 # on that optimal solution. If set to true, the controller will update the virtual queues based on the current of 
@@ -19,7 +25,8 @@ measure_cost: false
 # Seconds in float value.
 min_renewal_time: 0.0
 # Maximum time for the renewal process. The controller will start a new control step even if the action isn't reached. 
-# The action reached is triggered by a message to a goal_reached topic. Only used if the controller is of type renewal_min_drift_plus_penalty
+# The action reached is triggered by a message to a goal_reached topic. Only used if the controller is of type renewal_min_drift_plus_penalty and
+# the parameter is_periodic is set to true. 
 # Seconds in float value.
 max_renewal_time: 2.0
 

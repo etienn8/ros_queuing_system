@@ -182,7 +182,8 @@ Since most of the configuration is required (except when it's indicated that it 
 
 **min_drift-plus-penalty_template.yaml**: Its a template of all possible parameters of the queue_controller node. It's meant to be copied and adapted. It's generally included via a path in a launchfile.
 - `controller_type`(string): The type of controller that should be used. The two supported types are: `min_drift_plus_penalty` and `renewal_min_drift_plus_penalty`.
-- `time_step` (float): Period between each controller optimization process. Only used for the min_drift_plus_penalty type of controller.
+- `is_periodic`(bool): If set to true, the controller will ndefinitely start a new control loop  after the current loop based on the timing of the controller type. If set to false, the controller will only execute a control loop whenever it received a service call to it's service `start_control_loop`.
+- `time_step` (float): Period between each controller optimization process. Only used for the min_drift_plus_penalty type of controller and if the parameter `is_periodic` is set to true.
 - `inverse_control_and_steps` (bool, default: false): If set to false, the controller will 1)find an optimal  action to take and then 2) update the virtual queues based on that optimal solution. If set to true, the controller will 1)update the virtual queues based on the current of state of the system and then 2)find an optimal next action. 
 - `measure_cost: false`(bool): When true, a topic will be published name "controller_costs" that will output the cost of each action and each internal metric of the actions at each controller step. Default is set to false.
 - `min_renewal_time`(float): Lower bound time for the renewal process. The controller will not start again before that time even if the action is reached. The action reached is triggered by a message to a goal_reached topic. Only used if the controller is of type `renewal_min_drift_plus_penalty`.
@@ -250,7 +251,15 @@ For each queues:
 	Service that can be called to get the elapsed time between the start of the current controller call and the start of the previous one (last renewal time). For example, you can get the last renewal time from the console with:
 
 		rosservice call /<queue_controller_name>/get_last_renewal_time
+* **`get_last_renewal_time`** ([ros_queue_msgs/FloatRequest](https://github.com/etienn8/ros_queuing_system/blob/main/ros_queue_msgs/srv/FloatRequest.srv))
+	Service that can be called to get the elapsed time between the start of the current controller call and the start of the previous one (last renewal time). For example, you can get the last renewal time from the console with:
 
+		rosservice call /<queue_controller_name>/get_last_renewal_time
+
+* **`start_control_loop`** (std_srvs/Empty)
+	Service that will start a control loop of the controller when called. It's only available if the the parameter `is_periodic` is set to false. Note that for a renewable system, the controller will not wait for the renewal time of the action. For example, you can get start a control loop from the console with:
+
+		rosservice call /<queue_controller_name>/start_control_loop
 
 #### Parameters
 All the queue_server parameters are shown in the Config Files sections.
