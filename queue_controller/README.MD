@@ -34,7 +34,7 @@ This is research code, expect that it changes often and any fitness for a partic
 - std::map (Standard library for C++ dictionnaries),
 - std::utility (Standard library that permits move semantics),
 - std::memory (Standard library for smart pointers),
-- std::chrono (Used for the the timing of the controller' steps),
+- std::chrono (Used for the timing of the controller' steps),
 - std::mutex (Library of mutexes to protect variable access from race condition),
 - std::vector
 
@@ -69,7 +69,7 @@ Or get the last renewal time with:
 	 `rosservice call /<queue_controller_name>/get_last_renewal_time`
 
 ## Optimization formulation
-Let's start with an example to understand why the following optimization process is relevant and why queues are used to formulate the problem. Imagine a long run mission where a robot needs to explore an unknown communication-constrained environment as quick as possible and needs to return information to a base station as frequent as possible. Let's assume that the robot tries to optimize those two metrics at the same time. Thus, a formulation could be that it will penalize leaving the communication radius of the base station and it will penalize being far from new exploration frontiers. Finding the best action that optimize both metrics at each step might prevent the robot from leaving the base station's communication radius even though it has no new information to report. Therefore, optimizing this formulation at each time step might not lead to the quickest exploration overall compared to a method where the robot could leave the base station when it has no information to report. Instead of directly optimize this formulation at each time step, minimizing the the time average of exploration and the frequent return on the overall mission might be more accurately what's desired. For example, the robot might leave the communication range for a few time frames thus optimizing more the exploration, then returns to the base station to report the information and then cycles between those two behaviors like that. Thus, the robot is optimizing on average both metrics but, in the point of view of a time step, it chose one metric over the other. Event if its seems trivial to hardcode this two-metric optimization example by hand, the problem might have more metrics to follow on average. Thus, a general framework could be helpful. If the problem is cast well, that's where queue-stabilizing controllers might become interesting. Those controllers find, at each time step, the optimal action to follow all its time average constraints while optimizing a time average metric.
+Let's start with an example to understand why the following optimization process is relevant and why queues are used to formulate the problem. Imagine a long run mission where a robot needs to explore an unknown communication-constrained environment as quick as possible and needs to return information to a base station as frequent as possible. Let's assume that the robot tries to optimize those two metrics at the same time. Thus, a formulation could be that it will penalize leaving the communication radius of the base station and it will penalize being far from new exploration frontiers. Finding the best action that optimize both metrics at each step might prevent the robot from leaving the base station's communication radius even though it has no new information to report. Therefore, optimizing this formulation at each time step might not lead to the quickest exploration overall compared to a method where the robot could leave the base station when it has no information to report. Instead of directly optimize this formulation at each time step, minimizing the time average of exploration and the frequent return on the overall mission might be more accurately what's desired. For example, the robot might leave the communication range for a few time frames thus optimizing more the exploration, then returns to the base station to report the information and then cycles between those two behaviors like that. Thus, the robot is optimizing on average both metrics but, in the point of view of a time step, it chose one metric over the other. Event if its seems trivial to hardcode this two-metric optimization example by hand, the problem might have more metrics to follow on average. Thus, a general framework could be helpful. If the problem is cast well, that's where queue-stabilizing controllers might become interesting. Those controllers find, at each time step, the optimal action to follow all its time average constraints while optimizing a time average metric.
 
 The goal of queue_controller is to optimize the following formulation[1]:
 ```math
@@ -152,8 +152,8 @@ Once all the new messages created, don't forget to include to the [CMakeList.txt
 1. In the directory `queue_controller/include/queue_controller/action_configs/`, copy and paste the `transmission_vector_controller_config.hpp` file in the same directory.
 2. Renamed it with a relevant name linked to the new added action.
 3. Edit the content of the new file:
-	1. Replace all the five first `#include` of the old messages with the first five new messages created above. The the last include should be replaced by the message created at the step 7.
-	2. Change the type of the `typedef` (not the the name of the `typedef`) in the following manner (be careful to add the "Action" and "Goal" suffix at the end of the two last message definitions respectively):
+	1. Replace all the five first `#include` of the old messages with the first five new messages created above. The last include should be replaced by the message created at the step 7.
+	2. Change the type of the `typedef` (not the name of the `typedef`) in the following manner (be careful to add the "Action" and "Goal" suffix at the end of the two last message definitions respectively):
 	```
 	typedef ros_queue_msgs::<Name of the metric prediction message defined at the step 4. of "Create the messages"> METRIC_CONTROL_PREDICTION_SRV;
 	typedef ros_queue_msgs::<Name of the action message set defined at the step 2. of "Create the messages"> POTENTIAL_ACTION_SET_MSG;
@@ -182,7 +182,7 @@ Since most of the configuration is required (except when it's indicated that it 
 
 **min_drift-plus-penalty_template.yaml**: Its a template of all possible parameters of the queue_controller node. It's meant to be copied and adapted. It's generally included via a path in a launchfile.
 - `controller_type`(string): The type of controller that should be used. The two supported types are: `min_drift_plus_penalty` and `renewal_min_drift_plus_penalty`.
-- `is_periodic`(bool): If set to true, the controller will ndefinitely start a new control loop  after the current loop based on the timing of the controller type. If set to false, the controller will only execute a control loop whenever it received a service call to it's service `start_control_loop`.
+- `is_periodic`(bool): If set to true, the controller will indefinitely start a new control loop  after the current loop based on the timing of the controller type. If set to false, the controller will only execute a control loop whenever it received a service call to it's service `start_control_loop`.
 - `time_step` (float): Period between each controller optimization process. Only used for the min_drift_plus_penalty type of controller and if the parameter `is_periodic` is set to true.
 - `inverse_control_and_steps` (bool, default: false): If set to false, the controller will 1)find an optimal  action to take and then 2) update the virtual queues based on that optimal solution. If set to true, the controller will 1)update the virtual queues based on the current of state of the system and then 2)find an optimal next action. 
 - `measure_cost: false`(bool): When true, a topic will be published name "controller_costs" that will output the cost of each action and each internal metric of the actions at each controller step. Default is set to false.
@@ -251,13 +251,8 @@ For each queues:
 	Service that can be called to get the elapsed time between the start of the current controller call and the start of the previous one (last renewal time). For example, you can get the last renewal time from the console with:
 
 		rosservice call /<queue_controller_name>/get_last_renewal_time
-* **`get_last_renewal_time`** ([ros_queue_msgs/FloatRequest](https://github.com/etienn8/ros_queuing_system/blob/main/ros_queue_msgs/srv/FloatRequest.srv))
-	Service that can be called to get the elapsed time between the start of the current controller call and the start of the previous one (last renewal time). For example, you can get the last renewal time from the console with:
-
-		rosservice call /<queue_controller_name>/get_last_renewal_time
-
 * **`start_control_loop`** (std_srvs/Empty)
-	Service that will start a control loop of the controller when called. It's only available if the the parameter `is_periodic` is set to false. Note that for a renewable system, the controller will not wait for the renewal time of the action. For example, you can get start a control loop from the console with:
+	Service that will start a control loop of the controller when called. It's only available if the parameter `is_periodic` is set to false. Note that for a renewable system, the controller will not wait for the renewal time of the action. For example, you can get start a control loop from the console with:
 
 		rosservice call /<queue_controller_name>/start_control_loop
 
