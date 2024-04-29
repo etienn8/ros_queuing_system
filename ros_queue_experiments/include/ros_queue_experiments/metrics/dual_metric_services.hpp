@@ -29,9 +29,11 @@ class DualMetricServices
 
         // Change services
         ros::ServiceServer real_arrival_metric_service_;
+        ros::ServiceServer real_arrival_prediction_service_;
         ros::ServiceServer expected_arrival_metric_service_;
 
         ros::ServiceServer real_departure_metric_service_;
+        ros::ServiceServer real_departure_prediction_service_;
         ros::ServiceServer expected_departure_metric_service_;
 
         // Rates services
@@ -46,12 +48,18 @@ class DualMetricServices
         // Change callbacks
         virtual bool realArrivalMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
                                                ros_queue_msgs::FloatRequest::Response& res) = 0;
-        
+
+        virtual bool realArrivalPredictionMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                                         ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res) = 0;
+
         virtual bool expectedArrivalMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
                                             ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res) = 0;
 
         virtual bool realDepartureMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
                                                ros_queue_msgs::FloatRequest::Response& res) = 0;
+
+        virtual bool realDeparturePredictionMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                                         ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res) = 0;
         
         virtual bool expectedDepartureMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
                                             ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res) = 0;
@@ -75,11 +83,17 @@ class DualMetricServices
         bool realArrivalServiceMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
                                               ros_queue_msgs::FloatRequest::Response& res);
 
+        bool realArrivalPredictionServiceMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                                        ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res);
+
         bool expectedArrivalServiceMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
                                                   ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res);
         
         bool realDepartureServiceMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
                                                 ros_queue_msgs::FloatRequest::Response& res);
+
+        bool realDeparturePredictionServiceMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                                          ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res);
 
         bool expectedDepartureServiceMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
                                                     ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res);

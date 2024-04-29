@@ -165,6 +165,29 @@ bool TaskPublisher::expectedArrivalMetricCallback(ros_queue_msgs::MetricTransmis
     return true;
 }
 
+bool TaskPublisher::realArrivalPredictionMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                                         ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
+{
+       if(renewal_time_services_)
+    {
+        for(int action_index =0; action_index < req.action_set.action_set.size(); ++action_index)
+        {
+            AUVStates::Zones target_zone = AUVStates::getZoneFromTransmissionVector(req.action_set.action_set[action_index]);
+            
+            float renewal_time = renewal_time_services_->getRealRenewalTimeWithTransitionFromCurrentState(target_zone);
+            int nb_tasks  = static_cast<int>(arrival_task_per_second_*renewal_time);
+            //ROS_WARN_STREAM("Expected arrival float: "<< arrival_task_per_second_*renewal_time<< std::endl<<"Expected arrival int: "<< nb_tasks);
+            res.predictions.push_back(nb_tasks*sizeof(std_msgs::Int32));
+        }
+    }
+    else
+    {
+        ROS_ERROR("Renewal time services not set");
+    }
+
+    return true; 
+}
+
 bool TaskPublisher::realDepartureMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
                                                 ros_queue_msgs::FloatRequest::Response& res)
 {
@@ -193,6 +216,29 @@ bool TaskPublisher::expectedDepartureMetricCallback(ros_queue_msgs::MetricTransm
     }
 
     return true;
+}
+
+bool TaskPublisher::realDeparturePredictionMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                                         ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
+{
+       if(renewal_time_services_)
+    {
+        for(int action_index =0; action_index < req.action_set.action_set.size(); ++action_index)
+        {
+            AUVStates::Zones target_zone = AUVStates::getZoneFromTransmissionVector(req.action_set.action_set[action_index]);
+            
+            float renewal_time = renewal_time_services_->getRealRenewalTimeWithTransitionFromCurrentState(target_zone);
+            int nb_tasks  = static_cast<int>(real_task_departure_rates_[target_zone]*renewal_time);
+            
+            res.predictions.push_back(nb_tasks*sizeof(std_msgs::Int32));
+        }
+    }
+    else
+    {
+        ROS_ERROR("Renewal time services not set");
+    }
+
+    return true; 
 }
 
 // Rate services

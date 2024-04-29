@@ -22,11 +22,17 @@ class TaskPublisher: public DualMetricServices
         virtual bool expectedArrivalMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
                                             ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res) override;
 
+        virtual bool realArrivalPredictionMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                                         ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res) override;
+
         virtual bool realDepartureMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
                                                  ros_queue_msgs::FloatRequest::Response& res) override;
         
         virtual bool expectedDepartureMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
                                             ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res) override;
+
+         virtual bool realDeparturePredictionMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                                         ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res);
         
         // Rate callbacks
         virtual bool realArrivalRateMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 

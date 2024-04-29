@@ -57,22 +57,22 @@ TemperatureServices::TemperatureServices(ros::NodeHandle nh, std::string metric_
                     {
                         if (value_name == "increase")
                         {
-                            arrival_predictions_[zone_from_config] = static_cast<float>(static_cast<double>(value_param->second));
+                            expected_arrivals_[zone_from_config] = static_cast<float>(static_cast<double>(value_param->second));
                         }
                         else if (value_name == "decrease")
                         {
-                            departure_predictions_[zone_from_config] = static_cast<float>(static_cast<double>(value_param->second));
+                            expected_departures_[zone_from_config] = static_cast<float>(static_cast<double>(value_param->second));
                         }
                     }
                     if(model_it->first == "real_model")
                     {
                         if (value_name == "increase")
                         {
-                            arrival_predictions_[zone_from_config] = static_cast<float>(static_cast<double>(value_param->second));
+                            real_expected_arrivals_[zone_from_config] = static_cast<float>(static_cast<double>(value_param->second));
                         }
                         else if (value_name == "decrease")
                         {
-                            departure_predictions_[zone_from_config] = static_cast<float>(static_cast<double>(value_param->second));
+                            real_expected_departures_[zone_from_config] = static_cast<float>(static_cast<double>(value_param->second));
                         }
                     }
                 }
@@ -83,12 +83,12 @@ TemperatureServices::TemperatureServices(ros::NodeHandle nh, std::string metric_
 
 float TemperatureServices::getRealArrival(AUVStates::Zones zone)
 {
-    return arrival_predictions_[zone];
+    return real_expected_arrivals_[zone];
 }
 
 float TemperatureServices::getRealDeparture(AUVStates::Zones zone)
 {
-    return departure_predictions_[zone];
+    return real_expected_departures_[zone];
 }
 
 // Change service
@@ -105,7 +105,7 @@ bool TemperatureServices::realArrivalMetricCallback(ros_queue_msgs::FloatRequest
         float current_temperature = current_states.temperature;
         
         AUVStates::Zones last_zone = AUVStates::getZoneFromTransmissionVector(current_states.last_zone);
-        float last_zone_temp_rate = this->arrival_predictions_[last_zone]; 
+        float last_zone_temp_rate = this->real_expected_arrivals_[last_zone]; 
 
         float last_renewal_time = last_renewal_msg.response.value;
         
@@ -120,6 +120,35 @@ bool TemperatureServices::realArrivalMetricCallback(ros_queue_msgs::FloatRequest
     }
 
     return true;
+}
+
+bool TemperatureServices::realArrivalPredictionMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                                        ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
+{
+    if(renewal_time_services_)
+    {
+        ros_queue_experiments::AuvStates current_states = getCurrentStates();
+        
+        for(int action_index =0; action_index < req.action_set.action_set.size(); ++action_index)
+        {
+            ros_queue_msgs::TransmissionVector &action = req.action_set.action_set[action_index];
+            AUVStates::Zones zone = AUVStates::getZoneFromTransmissionVector(action);
+
+            float predicted_renewal_time = renewal_time_services_->getRealRenewalTimeWithTransitionFromCurrentState(zone);
+            
+            /**
+             * Assume that the temperature of the trajectory is the same as the end zone. Thus we 
+             * integrate the temperature over time. integrated_temperature = temp_init*time + 0.5*(a-b)*time^2
+             */
+            float temperature_diff = real_expected_arrivals_[zone] - real_expected_departures_[zone];
+            float integrated_temperature = current_states.temperature*predicted_renewal_time + 0.5*temperature_diff*predicted_renewal_time*predicted_renewal_time;
+
+            res.predictions.push_back(integrated_temperature);
+        }
+
+        return true;
+    }
+    return false;
 }
 
 bool TemperatureServices::expectedArrivalMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
@@ -140,7 +169,7 @@ bool TemperatureServices::expectedArrivalMetricCallback(ros_queue_msgs::MetricTr
              * Assume that the temperature of the trajectory is the same as the end zone. Thus we 
              * integrate the temperature over time. integrated_temperature = temp_init*time + 0.5*(a-b)*time^2
              */
-            float temperature_diff = arrival_predictions_[zone] - departure_predictions_[zone];
+            float temperature_diff = expected_arrivals_[zone] - expected_departures_[zone];
             float integrated_temperature = current_states.temperature*predicted_renewal_time + 0.5*temperature_diff*predicted_renewal_time*predicted_renewal_time;
 
             res.predictions.push_back(integrated_temperature);
@@ -169,6 +198,21 @@ bool TemperatureServices::realDepartureMetricCallback(ros_queue_msgs::FloatReque
         return false;
     }
 
+    return true;
+}
+
+bool TemperatureServices::realDeparturePredictionMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                                          ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
+{
+    for(int action_index = 0; action_index < req.action_set.action_set.size(); ++action_index)
+    {
+        ros_queue_msgs::TransmissionVector &action = req.action_set.action_set[action_index];
+        AUVStates::Zones zone = AUVStates::getZoneFromTransmissionVector(action);
+
+        float predicted_renewal_time = renewal_time_services_->getRealRenewalTimeWithTransitionFromCurrentState(zone);
+        
+        res.predictions.push_back(temp_target_*predicted_renewal_time);
+    }
     return true;
 }
 
@@ -216,7 +260,7 @@ bool TemperatureServices::expectedArrivalRateMetricCallback(ros_queue_msgs::Metr
              * It thus gives the temperature at the end of the action.
              */ 
             
-            float temperature_change = predicted_renewal_time*(arrival_predictions_[zone] - departure_predictions_[zone]);
+            float temperature_change = predicted_renewal_time*(expected_arrivals_[zone] - expected_departures_[zone]);
             float predicted_temperature = current_states.temperature + temperature_change;
 
             res.predictions.push_back(predicted_temperature);

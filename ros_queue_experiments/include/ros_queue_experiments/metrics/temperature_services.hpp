@@ -22,6 +22,9 @@ class TemperatureServices: public DualMetricServices
         // Change callbacks
         virtual bool realArrivalMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
                                                ros_queue_msgs::FloatRequest::Response& res) override;
+
+        virtual bool realArrivalPredictionMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                                         ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res) override;
         
         virtual bool expectedArrivalMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
                                             ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res) override;
@@ -29,6 +32,9 @@ class TemperatureServices: public DualMetricServices
         virtual bool realDepartureMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
                                                  ros_queue_msgs::FloatRequest::Response& res) override;
         
+        virtual bool realDeparturePredictionMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                                         ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res) override;
+
         virtual bool expectedDepartureMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
                                             ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res) override;
         
@@ -46,8 +52,11 @@ class TemperatureServices: public DualMetricServices
                                             ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res) override;
 
     private:
-        std::map<AUVStates::Zones, float> arrival_predictions_;
-        std::map<AUVStates::Zones, float> departure_predictions_;
+        std::map<AUVStates::Zones, float> expected_arrivals_;
+        std::map<AUVStates::Zones, float> expected_departures_;
+
+        std::map<AUVStates::Zones, float> real_expected_arrivals_;
+        std::map<AUVStates::Zones, float> real_expected_departures_;
 
         ros::NodeHandle nh_;
 
