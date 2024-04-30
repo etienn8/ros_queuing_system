@@ -88,4 +88,10 @@ class DisturbedActionServer
          * @brief ROS publisher to indicated the desired and the real taken actions.
         */
         ros::Publisher action_performance_publisher_;
+
+        /**
+         * @brief Flag that indicates if the action server is dummy. 
+         * If it's dummy, no services will be defined to send over a auv system
+        */
+        bool is_dummy_ = false;
 };

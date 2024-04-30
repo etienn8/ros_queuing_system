@@ -37,6 +37,7 @@
   <depend>message_generation</depend>
   <depend>actionlib</depend>
   <depend>actionlib_msgs</depend>
+  <depend>ros_boosted_utilities</depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->
