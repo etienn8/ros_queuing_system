@@ -4,8 +4,6 @@
 #include "ros_queue_experiments/SendNewAUVCommand.h"
 #include "ros_queue_experiments/ActionPerformance.h"
 
-#include "ros_boosted_utilities/persistent_service_client.hpp"
-
 #include "ros_queue_experiments/auv_states.hpp"
 
 #include "std_msgs/UInt8.h"
