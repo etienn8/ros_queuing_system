@@ -5,6 +5,7 @@
     <arg name="queue_controller_name" default="queue_controller"/>
     <arg name="queue_controller_type" default="transmission_vector_queue_controller_node"/>
     <arg name="queue_controller_config_path" default="$(find ros_queue_experiments)/config/min_drift-plus-penalty.yaml"/>
+    <arg name="optimal_queue_controller_config_path" default="$(find ros_queue_experiments)/config/min_drift-plus-penalty_perfect_model.yaml"/>
 
     <!-- Parameter for the controller setup-->
     <arg name="controller_type"             default="min_drift_plus_penalty"/>
@@ -27,9 +28,20 @@
         <rosparam file="$(arg queue_controller_config_path)" command="load" subst_value="true"/>
     </node>
 
+    <!-- Start the optimal queue controller for performance validation -->
+    <node name="optimal_controller" pkg="queue_controller" type="$(arg queue_controller_type)" output="screen">
+        <rosparam file="$(arg optimal_queue_controller_config_path)" command="load" subst_value="true"/>
+    </node>
+
     <!-- Start the perturbation node action -->
     <node name="perturbation_node" pkg="ros_queue_experiments" type="perturbation_action_node" output="screen">
         <rosparam file="$(find ros_queue_experiments)/config/perturbation_config.yaml" command="load" subst_value="true"/>
+    </node>
+
+    <!-- Start the perturbation node action -->
+    <node name="optimal_action_node" pkg="ros_queue_experiments" type="perturbation_action_node" output="screen">
+        <rosparam file="$(find ros_queue_experiments)/config/perturbation_config.yaml" command="load" subst_value="true"/>
+        <param name="is_dummy"  type="bool" value="true"/>
     </node>
 
     <!-- Start the monitoring node -->
