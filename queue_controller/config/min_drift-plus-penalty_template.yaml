@@ -4,7 +4,8 @@
 controller_type: "min_drift_plus_penalty"
 
 # If set to true, the controller will start a new control loop once the last control loop is finished. If set to
-# false, the controler will wait to for a service call to start_control_loop. Default set to true
+# false, the controler will wait to for a service call to start_control_loop or an empty topic on start_control_loop. 
+# Default set to true.
 is_periodic: true
 
 # Period between each controller optimization process. Only used for the min_drift_plus_penalty type of controller. 
@@ -83,3 +84,17 @@ v_parameter: 1.0
 # If set to false, the controller will optimize the time average penalty.
 # Only used for the renewal_min_drift_plus_penalty type of controller.
 is_penalty_renewal_dependent: false
+
+# ====== Multi controller synchronization.======
+# Flag that indicate if this controller should wait for another controller to finish its optimization before sending
+# action and sending the virtual changes to a queue server. Also publish a topic called controller_started and another called optimization_done
+# Default is set to false.
+part_of_multicontroller_synchronization: true
+# Topic starts a control loop when called. A called to the topic start_control_loop is the same as calling this topic.
+# Mainly used to be connected on a control_loop_started topic of another controller in a multicontroller scenario.
+# It's not used if the parameter is_periodic is set to true. 
+start_control_loop_sync_topic: ""
+# Topic of the controller that this controller depends on. It can connect to a optimization_done topic of another controoler.
+# It will not be called if part_of_multicontroller_synchronization is false. Leaving it empty means the
+# controller is not dependent on another controller.
+dependent_on_controller_topic: ""

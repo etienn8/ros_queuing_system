@@ -1,6 +1,7 @@
 #pragma once
 
 #include <chrono>
+#include <condition_variable>
 #include <future>
 #include <map>
 #include <memory>
@@ -26,6 +27,7 @@
 #include <actionlib/client/simple_action_client.h>
 
 #include "std_msgs/Float32.h"
+#include "std_msgs/Empty.h"
 #include "std_srvs/Empty.h"
 
 #include "rosparam_utils/xmlrpc_utils.hpp"
@@ -112,6 +114,9 @@ class QueueController
                 }
             }
 
+            // Configure the async spinner for the asynchronous fetch of the renewal time and synchronization callbacks
+            async_nh_.setCallbackQueue(&async_spinner_queue_);
+
             if(controller_type_ == ControllerType::RenewalDriftPlusPenalty)
             {
                 if(!nh.getParam("max_renewal_time", max_renewal_time_))
@@ -149,9 +154,7 @@ class QueueController
 
                 // Start an asynchronous spinner to handle the last renewal time service in parallel to the controller.
                 ROS_INFO_STREAM("Creating the last renewal time service server.");
-                async_nh_.setCallbackQueue(&async_spinner_queue_);
                 last_renewal_time_service_server_ = async_nh_.advertiseService("get_last_renewal_time", &QueueController::lastRenewalTimeServiceCallback, this);
-                async_spinner_.start();
             }
 
             if(!nh.getParam("inverse_control_and_steps", inversed_control_and_update_steps_))
@@ -212,7 +215,7 @@ class QueueController
                 ROS_WARN_STREAM("Missing the measure_cost parameter. Will be set to false.");
             }
 
-            if(!nh.getParam("queue_server_name", queue_server_name_))
+            if(!nh_.getParam("queue_server_name", queue_server_name_))
             {
                 can_create_controller = false;
                 ROS_ERROR_STREAM("Missing the queue_server_name.");
@@ -238,10 +241,54 @@ class QueueController
             }
 
             string action_server_name;
-            if(!nh.getParam("action_server_name", action_server_name))
+            if(!nh_.getParam("action_server_name", action_server_name))
             {
                 can_create_controller = false;
                 ROS_ERROR_STREAM("Missing the action_server_name.");
+            }
+
+            string dependent_on_controller_topic;
+            string start_control_loop_sync_topic;
+            if(nh_.getParam("part_of_multicontroller_synchronization", part_of_multicontroller_synchronization_))
+            {
+                if (part_of_multicontroller_synchronization_)
+                {
+                    if(nh_.getParam("dependent_on_controller_topic",dependent_on_controller_topic))
+                    {
+                        if (dependent_on_controller_topic.empty())
+                        {
+                            ROS_INFO_STREAM("Queue controller is not dependant on any topic to send its command. Since its dependent_on_controller_topic parameter is empty.");
+                        }
+                        else
+                        {
+                            ROS_INFO_STREAM("Queue controller is dependant on topic "<< dependent_on_controller_topic << " to send its command.");
+                            is_dependent_on_a_another_controller_ = true;
+                        }
+                    }
+                    else
+                    {
+                         ROS_INFO_STREAM("Queue controller is not dependant on any topic to send its command. Since the dependent_on_controller_topic parameter is not set.");
+                    }
+                    if(nh_.getParam("start_control_loop_sync_topic", start_control_loop_sync_topic))
+                    {
+                        if (start_control_loop_sync_topic.empty())
+                        {
+                            ROS_INFO_STREAM("Queue controller doesn't have a user-defined topic to start its control loop.");
+                        }
+                        else
+                        {
+                            ROS_INFO_STREAM("Queue controller uses"<< start_control_loop_sync_topic << " to start its control loop.");
+                        }
+                    }
+                    else
+                    {
+                         ROS_INFO_STREAM("Queue controller doesn't have a user-defined topic to start its control loop. Since the start_control_loop_sync_topic parameter is not set.");
+                    }
+                }
+            }
+            else
+            {
+                ROS_WARN("The flag part_of_multicontroller_synchronization is not set. It will be set to false.");
             }
 
             // Intialize controller
@@ -268,16 +315,32 @@ class QueueController
                 // Create ouptut topic
                 best_action_client_ =  std::make_unique<actionlib::SimpleActionClient<TActionLibOutputType>>(action_server_name, true);   
 
-
-                if(controller_type_ == ControllerType::RenewalDriftPlusPenalty)
-                {
-                    async_spinner_.start();
-                } 
-
                 if(!is_periodic_)
                 {
                     start_control_loop_service_server_ = nh_.advertiseService("start_control_loop", &QueueController::startControlLoopServiceCallback, this);
+                    start_control_loop_sub_ = nh_.subscribe("start_control_loop", 1, &QueueController::startControlLoopCallback, this);
                 }
+
+                if(part_of_multicontroller_synchronization_)
+                {
+                    if(is_dependent_on_a_another_controller_)
+                    {
+                        dependent_controller_finished_sub_ = async_nh_.subscribe(dependent_on_controller_topic, 1, &QueueController::dependentControllerFinishedCallback, this);
+                    }
+                    optimization_done_pub_ = nh_.advertise<std_msgs::Empty>("optimization_done", 10);
+                    control_loop_started_pub_ = nh_.advertise<std_msgs::Empty>("control_loop_started", 10, true);
+
+                    if(!is_periodic_ && !start_control_loop_sync_topic.empty())
+                    {
+                        start_control_loop_sync_sub_ = nh_.subscribe(start_control_loop_sync_topic, 1, &QueueController::startControlLoopCallback, this);
+                    }
+                }
+
+                if(controller_type_ == ControllerType::RenewalDriftPlusPenalty || 
+                  (part_of_multicontroller_synchronization_ && is_dependent_on_a_another_controller_))
+                {
+                    async_spinner_.start();
+                } 
 
                 is_initialized_ = true;
             }
@@ -420,15 +483,148 @@ class QueueController
         */
         ros::NodeHandle async_nh_;
 
+        // ===== Synchronization parameters ======
+
         /**
          * @brief Flag that indicates if the controller should run periodically or should be triggered by a service call.
         */
         bool is_periodic_ = true;
 
+        /** */
         /**
          * @brief ROS Service Server that launches a control loop if the flag is_periodic_ is set to false; 
         */
         ros::ServiceServer start_control_loop_service_server_;
+
+        /**
+         * @brief Flag that indicates if the queue controller is part of a multi-controller system
+         * that are synchronized between them.
+        */
+        bool part_of_multicontroller_synchronization_ = false;
+
+        /**
+         * @brief Flag that indicates if the controller should wait for another controller before continuing.
+        */
+        bool is_dependent_on_a_another_controller_ = false;
+
+        /**
+         * @brief ROS publisher that indicates the begining of the control loop. Mainly used by the director controller
+         * to send a control signal to all dependent controllers to start their control loops.
+        */
+        ros::Publisher control_loop_started_pub_;
+
+        /**
+         * @brief ROS Subscriber that when called, the controller will start a control loop. Similar to start_control_loop_service_server_.
+         * It will be used only if is_periodic_ is set to false.
+        */
+        ros::Subscriber start_control_loop_sub_;
+
+        /**
+         * @brief ROS Subscriber that when called, the controller will start a control loop. Its a duplication of the start_control_loop_sub_
+         * bu explicitely used for the synchronization and can be defined by the user.
+         * It will be used only if is_periodic_ is set to false.
+        */
+        ros::Subscriber start_control_loop_sync_sub_;
+
+        /**
+         * @brief Callback for the start_control_loop_sub_ that will start a control loop based on the reception of a empty topic.
+         * @param msg Empty message that indicates the start of the control loop.
+        */
+        void startControlLoopCallback(const std_msgs::Empty::ConstPtr& msg)
+        {
+            if (is_dependent_on_a_another_controller_)
+            {
+                std::lock_guard<std::mutex> lock(is_waiting_for_other_controller_mutex_access);
+                is_waiting_for_other_controller_ = true;
+            }
+
+            ROS_DEBUG_STREAM("Starting control loop from topic for the controller: " << ros::this_node::getName());
+            controllerCallback();
+        }
+
+        /**
+         * @brief Flag that indicates if the responder controller is waiting for another controller to finish before sending its action.
+        */
+        bool is_waiting_for_other_controller_ = false;
+
+        /**
+         * @brief ROS Subscriber that listens for dependent queue to finish and signal this controller when it happens.
+        */
+        ros::Subscriber dependent_controller_finished_sub_;
+
+        /**
+         * @brief ROS Publisher that sends a empty message to signal that this controller has finished and it's 
+         * dependent controller has signal it to continue. 
+        */
+        ros::Publisher optimization_done_pub_;
+
+        /**
+         * @brief Mutex that protects access to the is_waiting_for_other_controller_ variable.
+        */
+        std::mutex is_waiting_for_other_controller_mutex_access;
+
+        /**
+         * @brief Mutex used to signal and notify when a dependent controller finished.
+        */
+        std::mutex controller_synchronization_mutex_;
+
+        /**
+         * @brief Condition variable that verifies if a dependent controller finished its optimization.
+        */
+        std::condition_variable controller_synchronization_cv_;
+
+        /**
+         * @brief Starting method of the synchronization mechanimim called at the begening of the controller to 
+         * ppublish and emptry start message and set the is_waiting_for_other_controller_ flag to true if 
+         * the is_dependent_on_a_another_controller_ flag is true.
+        */
+        void startSynchronization()
+        {
+            std_msgs::Empty empty_msg;
+            control_loop_started_pub_.publish(empty_msg);
+
+            if(is_dependent_on_a_another_controller_)
+            {
+                std::lock_guard<std::mutex> lock(is_waiting_for_other_controller_mutex_access);
+                is_waiting_for_other_controller_ = true;
+            }
+        }
+
+        /**
+         * @brief Wait for the dependent controller to finish its optimization by waiting 
+         * for the is_waiting_for_other_controller_ flag to be set to false by the callback of the dependent_controller_finished_sub_.
+        */
+        void waitForSynchronization()
+        {
+            if(is_waiting_for_other_controller_)
+            {
+                ROS_DEBUG_STREAM("Waiting for dependent controller to finish its optimization. On topic "<< dependent_controller_finished_sub_.getTopic());
+                std::unique_lock<std::mutex> lock(controller_synchronization_mutex_);
+                while(is_waiting_for_other_controller_ && ros::ok())
+                {
+                    // This perdiodic wait_for() is used instead of wait() to allow the thread to detect if 
+                    // ROS has received a signal to shutdown. Otherwise, the thread would be blocked until a SIGTERM is called. 
+                    controller_synchronization_cv_.wait_for(lock, std::chrono::seconds(1), [this]{return (!this->is_waiting_for_other_controller_ || !ros::ok());});
+                }
+                ROS_DEBUG_STREAM("Finished waiting for dependent controller");
+            }
+        }
+
+        /**
+         * @brief Callback for the dependent_controller_finished_sub_ that will signal the controller that the controller
+         * it's depending from finish its optimation. Thus allowing this controller to continue to send its best action.
+         * @param msg Empty message that indicates the dependent controller finished its optimization.
+        */
+        void dependentControllerFinishedCallback(const std_msgs::Empty::ConstPtr& msg)
+        {
+            {
+                std::lock_guard<std::mutex> lock(controller_synchronization_mutex_);
+                is_waiting_for_other_controller_ = false;
+            }
+            controller_synchronization_cv_.notify_one();
+        }
+
+        // ===== Renewwal parameters ======
 
         /**
          * @brief Time at which the last renewal was done. Used by the renewal_min_drift_plus_penalty controller.
@@ -722,6 +918,11 @@ class QueueController
             }
             time_cursor = queue_controller_utils::updateTimePointAndGetTimeDifferenceMS(time_cursor, virtual_queues_current_state_update_time_spent);
 
+            if(part_of_multicontroller_synchronization_)
+            {
+                startSynchronization();
+            }
+
             TPotentialActionSetMsg action_set =  getActionSet();
             time_cursor = queue_controller_utils::updateTimePointAndGetTimeDifferenceMS(time_cursor, action_set_time_spent);
 
@@ -745,6 +946,15 @@ class QueueController
 
                     time_cursor = queue_controller_utils::updateTimePointAndGetTimeDifferenceMS(time_cursor, compute_optimization_time_spent);
                 
+                    if(part_of_multicontroller_synchronization_)
+                    {
+                        optimization_done_pub_.publish(std_msgs::Empty());
+                        if(is_dependent_on_a_another_controller_)
+                        {
+                            waitForSynchronization();
+                        }
+                    }
+
                     sendBestCommand(best_action_parameters.action);
                     time_cursor = queue_controller_utils::updateTimePointAndGetTimeDifferenceMS(time_cursor, send_best_action_time_spent);
 
