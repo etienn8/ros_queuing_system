@@ -20,6 +20,9 @@ class PenaltyServices: public MetricServices
         virtual bool realMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
                                         ros_queue_msgs::FloatRequest::Response& res) override;
         
+        virtual bool realExpectedMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                                ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res) override;
+
         virtual bool expectedMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
                                             ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res) override;
 

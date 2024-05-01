@@ -4,6 +4,7 @@ MetricServices::MetricServices(ros::NodeHandle nh, std::string metric_name, std:
 {
     real_metric_service_ = nh_.advertiseService(metric_name_ + "/real_metric", &MetricServices::realServiceMetricCallback, this);
     expected_metric_service_ = nh_.advertiseService(metric_name_ + "/expected_metric", &MetricServices::expectedServiceMetricCallback, this);
+    real_expected_metric_service_ = nh_.advertiseService(metric_name_ + "/real_expected_metric", &MetricServices::realExpectedServiceMetricCallback, this);
 }
 
 
@@ -17,6 +18,13 @@ bool MetricServices::expectedServiceMetricCallback(ros_queue_msgs::MetricTransmi
                                                    ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
 {
     return expectedMetricCallback(req, res);
+}
+
+
+bool MetricServices::realExpectedServiceMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                        ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
+{
+    return realExpectedMetricCallback(req, res);
 }
 
 ros_queue_experiments::AuvStates MetricServices::getCurrentStates()

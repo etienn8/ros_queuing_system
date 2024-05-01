@@ -131,6 +131,26 @@ bool RenewalTimeServices::realMetricCallback(ros_queue_msgs::FloatRequest::Reque
     return true;
 }
 
+bool RenewalTimeServices::realExpectedMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                                    ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
+{
+    if(auv_state_manager_)
+    {
+        const ros_queue_experiments::AuvStates current_states = auv_state_manager_->getCurrentStates();
+        const AUVStates::Zones current_zone = AUVStates::getZoneFromTransmissionVector(current_states.current_zone);
+
+        for (int action_index = 0; action_index < req.action_set.action_set.size(); ++action_index)
+        {
+            ros_queue_msgs::TransmissionVector& action = req.action_set.action_set[action_index];
+            AUVStates::Zones action_zone = AUVStates::getZoneFromTransmissionVector(action);
+            res.predictions.push_back(getRealRenewalTimeWithStateTransition(current_zone, action_zone));
+        }
+
+        return true;
+    }
+    return false; 
+}
+
 bool RenewalTimeServices::expectedMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
                             ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
 {

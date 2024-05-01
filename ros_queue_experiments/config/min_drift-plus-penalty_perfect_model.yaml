@@ -1,7 +1,7 @@
 # Configuration of a  min drift-plus-penalty controller
 
 # Indicate the type of controller. Supported types: min_drift_plus_penalty, renewal_min_drift_plus_penalty
-controller_type: "$(arg controller_type)"
+controller_type: "renewal_min_drift_plus_penalty"
 
 # If set to true, the controller will start a new control loop once the last control loop is finished. If set to
 # false, the controler will wait to for a service call to start_control_loop. Default set to true
@@ -34,7 +34,7 @@ action_server_name: "/optimal_action_node/disturbed_action_server"
 solution_space_service_name: "/auv_system_node/potential_action_set"
 
 # Name of the service to evaluate the expected renewal time for all actions.
-expected_renewal_time_service_name: "/auv_system_node/renewal_time/real_metric"
+expected_renewal_time_service_name: "/auv_system_node/renewal_time/real_expected_metric"
 
 # ====== Queue configurations. Indicate all the queues used in the controllers equation. ======
 # Most of the queues' information will be fetch automatically through the parameters of the indicated queue_server.
@@ -123,7 +123,7 @@ queue_list:
 
 # ====== Variable (penalty) to minimize configurations.======
 # Name of the service to evaluate the penalty based on the current state and the potential action. 
-penalty_service_name:  "/auv_system_node/penalty/expected_metric"
+penalty_service_name:  "/auv_system_node/penalty/real_expected_metric"
 # The V parameter that is multplied with the penalty (like a weight). When a high penalty metric also increases the queue size,
 # this parameter balances the tradeoff between a lower penalty or lower queue delays. A high V will prioritize the minimization
 # of the penalty while a low V will prioritize low queue sizes and delays.

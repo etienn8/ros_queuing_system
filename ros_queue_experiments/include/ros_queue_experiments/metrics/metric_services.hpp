@@ -23,6 +23,7 @@ class MetricServices
         ros::NodeHandle nh_;
 
         ros::ServiceServer real_metric_service_;
+        ros::ServiceServer real_expected_metric_service_;
         ros::ServiceServer expected_metric_service_;
 
         std::shared_ptr<AUVStateManager> auv_state_manager_;
@@ -30,13 +31,19 @@ class MetricServices
         virtual bool realMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
                                         ros_queue_msgs::FloatRequest::Response& res) = 0;
         
+        virtual bool realExpectedMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                                ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res) = 0;
+        
         virtual bool expectedMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
-                                            ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res) =0;
+                                            ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res) = 0;
 
         ros_queue_experiments::AuvStates getCurrentStates();
     private:
         bool realServiceMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
                                        ros_queue_msgs::FloatRequest::Response& res);
+
+        bool realExpectedServiceMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                               ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res);
 
         bool expectedServiceMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
                                            ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res);

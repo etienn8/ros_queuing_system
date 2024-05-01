@@ -102,6 +102,22 @@ bool PenaltyServices::realMetricCallback(ros_queue_msgs::FloatRequest::Request& 
     return true; 
 }
 
+bool PenaltyServices::realExpectedMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                                 ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
+{
+    const ros_queue_experiments::AuvStates current_states = getCurrentStates();
+    const AUVStates::Zones current_zone = AUVStates::getZoneFromTransmissionVector(current_states.current_zone);
+
+    for (int action_index = 0; action_index < req.action_set.action_set.size(); ++action_index)
+    {
+        ros_queue_msgs::TransmissionVector& action = req.action_set.action_set[action_index];
+        AUVStates::Zones action_zone = AUVStates::getZoneFromTransmissionVector(action);
+        res.predictions.push_back(real_penalty_transitions_[current_zone][action_zone]);
+    }
+
+    return true;  
+}
+
 bool PenaltyServices::expectedMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
                             ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
 {
