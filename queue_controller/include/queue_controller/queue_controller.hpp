@@ -326,9 +326,15 @@ class QueueController
                     if(is_dependent_on_a_another_controller_)
                     {
                         dependent_controller_finished_sub_ = async_nh_.subscribe(dependent_on_controller_topic, 1, &QueueController::dependentControllerFinishedCallback, this);
+                        
+                        while(dependent_controller_finished_sub_.getNumPublishers() == 0)
+                        {
+                            ROS_WARN_STREAM_THROTTLE(2, "Waiting for the dependent controller to be online. On topic "<< dependent_controller_finished_sub_.getTopic());
+                            ros::Duration(0.1).sleep();
+                        }
                     }
                     optimization_done_pub_ = nh_.advertise<std_msgs::Empty>("optimization_done", 10);
-                    control_loop_started_pub_ = nh_.advertise<std_msgs::Empty>("control_loop_started", 10, true);
+                    control_loop_started_pub_ = nh_.advertise<std_msgs::Empty>("control_loop_started", 1, true);
 
                     if(!is_periodic_ && !start_control_loop_sync_topic.empty())
                     {
