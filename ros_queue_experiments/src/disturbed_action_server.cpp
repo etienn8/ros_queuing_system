@@ -4,8 +4,6 @@
 #include "ros_queue_experiments/SendNewAUVCommand.h"
 #include "ros_queue_experiments/ActionPerformance.h"
 
-#include "ros_queue_experiments/auv_states.hpp"
-
 #include "std_msgs/UInt8.h"
 
 #include <string>
@@ -160,9 +158,10 @@ void DisturbedActionServer::commandReceivedCallback()
 
     // Send action performance monitoring
     ros_queue_experiments::ActionPerformance action_performance_msg;
+    action_performance_msg.header.stamp = ros::Time::now();
+
     action_performance_msg.target_action = target_action;
     action_performance_msg.applied_action = disturbed_action;
-    action_performance_msg.action_index_difference = AUVStates::getZoneFromTransmissionVector(target_action) - AUVStates::getZoneFromTransmissionVector(disturbed_action); 
 
     action_performance_publisher_.publish(action_performance_msg);
 }

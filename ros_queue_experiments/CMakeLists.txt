@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   actionlib
   actionlib_msgs
+  message_filters
 )
 
 ## System dependencies are found with CMake's conventions
@@ -143,9 +144,11 @@ include_directories(
 add_executable(performance_monitor_node
   src/performance_monitor_node.cpp
   src/metric_monitor.cpp
+  src/action_monitor.cpp
   src/localization_monitor.cpp
   src/real_queue_monitor.cpp
   src/temperature_monitor.cpp
+  src/auv_states.cpp
 )
 
 add_executable(AUV_system_node
@@ -166,7 +169,6 @@ add_executable(AUV_system_node
 add_executable(perturbation_action_node
   src/disturbed_action_server_node.cpp
   src/disturbed_action_server.cpp
-  src/auv_states.cpp
 )
 
 add_executable(service_tester_node
