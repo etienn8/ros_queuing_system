@@ -64,7 +64,6 @@ LocalizationServices::LocalizationServices(ros::NodeHandle nh, std::string metri
                         {
                             real_localization_uncertainties_[zone_from_config] = static_cast<float>(static_cast<double>(value_param->second));
                         }
-
                     }
                 }
             }
@@ -162,8 +161,8 @@ bool LocalizationServices::expectedArrivalMetricCallback(ros_queue_msgs::MetricT
     return true;
 }
 
- bool LocalizationServices::realDeparturePredictionMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
-                                                                  ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
+bool LocalizationServices::realDeparturePredictionMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                                                 ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
 {
     ros_queue_experiments::AuvStates current_states = getCurrentStates();
     if(renewal_time_services_)
