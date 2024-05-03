@@ -162,6 +162,11 @@ class QueueController
                 ROS_WARN_STREAM("Missing the flag inverse_control_and_steps that indicates if the control and update steps are inverted. Will be set to false.");
             }
 
+            if(!nh.getParam("responsible_for_virtual_queue_changes", responsible_for_virtual_queue_changes_))
+            {
+                ROS_WARN_STREAM("Missing the flag responsible_for_virtual_queue_changes that indicates if the controller should trigger the changes of the virtual queues of the queue server. Will be set to true.");
+            }
+
             string solution_space_service_name;
             if(nh.getParam("solution_space_service_name", solution_space_service_name))
             {
@@ -300,16 +305,19 @@ class QueueController
                 ROS_INFO_STREAM("Waiting for the server service named :" << server_state_client_.getService());
                 server_state_client_.waitForExistence();
 
-                // Connect to queue_server for queue server udpates (depends on steps order)
-                if (!inversed_control_and_update_steps_)
-                {   
-                    manual_virtual_queue_changes_ = nh_.advertise<ros_queue_msgs::VirtualQueueChangesList>("/" + queue_server_name_ + "/virtual_queue_manual_changes", 1000);
-                }
-                else
+                if(responsible_for_virtual_queue_changes_)
                 {
-                    virtual_queues_trigger_ = nh_.serviceClient<std_srvs::Empty>("/" + queue_server_name_ + "/trigger_service", true);
-                    ROS_INFO_STREAM("Waiting for the server service named :" << virtual_queues_trigger_.getService());
-                    virtual_queues_trigger_.waitForExistence();
+                    // Connect to queue_server for queue server udpates (depends on steps order)
+                    if (!inversed_control_and_update_steps_)
+                    {   
+                        manual_virtual_queue_changes_ = nh_.advertise<ros_queue_msgs::VirtualQueueChangesList>("/" + queue_server_name_ + "/virtual_queue_manual_changes", 1000);
+                    }
+                    else
+                    {
+                        virtual_queues_trigger_ = nh_.serviceClient<std_srvs::Empty>("/" + queue_server_name_ + "/trigger_service", true);
+                        ROS_INFO_STREAM("Waiting for the server service named :" << virtual_queues_trigger_.getService());
+                        virtual_queues_trigger_.waitForExistence();
+                    }
                 }
 
                 // Create ouptut topic
@@ -918,7 +926,7 @@ class QueueController
             
             ROS_DEBUG_STREAM("Queue controller: Starting control loop of "<< ros::this_node::getName());
             
-            if (inversed_control_and_update_steps_)
+            if (inversed_control_and_update_steps_ && responsible_for_virtual_queue_changes_)
             {
                 updateVirtualQueuesBasedOnCurrentState();
             }
@@ -964,7 +972,7 @@ class QueueController
                     sendBestCommand(best_action_parameters.action);
                     time_cursor = queue_controller_utils::updateTimePointAndGetTimeDifferenceMS(time_cursor, send_best_action_time_spent);
 
-                    if (!inversed_control_and_update_steps_)
+                    if (!inversed_control_and_update_steps_ && responsible_for_virtual_queue_changes_)
                     {
                         updateVirtualQueuesBasedOnBestAction(best_action_parameters);
                     }
@@ -1621,6 +1629,16 @@ class QueueController
         */
         bool inversed_control_and_update_steps_ = false;
         
+
+        /**
+         * @brief If set to true, the controller will trigger or send changes to the queue server base on the flag 
+         * inverse_control_and_steps. If set to false, the controller will not send any changes to the specified 
+         * queue_server_name. Its used if the user wants to implement another mecanism to change the virtual queues 
+         * in queue server or to run multiple controller in parallel  for the same queue server where only one of 
+         * them is sending changes and not the others. Default: set to true.
+        */
+        bool responsible_for_virtual_queue_changes_ = true;
+
         /**
          * @brief Indicate the controller types. It defines the type of optimization and the used metrics.
         */
