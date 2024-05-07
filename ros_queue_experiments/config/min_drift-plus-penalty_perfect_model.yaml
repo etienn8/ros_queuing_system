@@ -13,6 +13,13 @@ time_step: 0.1
 # on that optimal solution. If set to true, the controller will update the virtual queues based on the current of 
 # state of the system then find an optimal next action. Default: set to false
 inverse_control_and_steps: $(arg inverse_control_and_steps)
+
+# If set to true, the controller will trigger or send changes to the queue server base on the flag inverse_control_and_steps.
+# If set to false, the controller will not send any changes to the specified queue_server_name. Its used if the user wants 
+# to implement another mecanism to change the virtual queues in queue server or to run multiple controller in parallel 
+# for the same queue server where only one of them is sending changes and not the others. Default: set to true.
+responsible_for_virtual_queue_changes: false
+
 # When true, a topic will be published name "controller_costs" that will output the cost of each action
 # and each internal metric of the actions. Default is set to false.
 measure_cost: true
@@ -127,7 +134,7 @@ penalty_service_name:  "/auv_system_node/penalty/real_expected_metric"
 # The V parameter that is multplied with the penalty (like a weight). When a high penalty metric also increases the queue size,
 # this parameter balances the tradeoff between a lower penalty or lower queue delays. A high V will prioritize the minimization
 # of the penalty while a low V will prioritize low queue sizes and delays.
-v_parameter: 1.0
+v_parameter: 100.0
 # If set to true, the controller will optimize the ratio of the time average penalty over the expected renewal frame duration.
 # If set to false, the controller will optimize the time average penalty.
 # Only used for the renewal_min_drift_plus_penalty type of controller.
