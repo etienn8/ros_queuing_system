@@ -6,6 +6,10 @@
     <arg name="queue_controller_type" default="transmission_vector_queue_controller_node"/>
     <arg name="queue_controller_config_path" default="$(find ros_queue_experiments)/config/min_drift-plus-penalty.yaml"/>
     <arg name="optimal_queue_controller_config_path" default="$(find ros_queue_experiments)/config/min_drift-plus-penalty_perfect_model.yaml"/>
+    <!-- Potential setup: all_faults_with_penalty, all_faults_without_penalty, 
+         bad_prediction_model, perfect_model_and_setup, perturbation_on_action, 
+         time_uncertainties, variable_time_action_setup  -->
+    <arg name="experiment_setup" default="perturbation_on_action"/>
 
     <!-- Parameter for the controller setup-->
     <arg name="controller_type"             default="min_drift_plus_penalty"/>
@@ -15,7 +19,7 @@
 
     <!-- Start the AUV system. Propagates states and host metric services -->
     <node name="auv_system_node" type="AUV_system_node" pkg="ros_queue_experiments" output="screen">
-         <rosparam file="$(find ros_queue_experiments)/config/metric_config.yaml" command="load" subst_value="true"/>
+         <rosparam file="$(find ros_queue_experiments)/config/experiment_setups/$(arg experiment_setup)/metric_config.yaml" command="load" subst_value="true"/>
     </node>
 
     <!-- Start the queue server  -->
@@ -35,12 +39,12 @@
 
     <!-- Start the perturbation node action -->
     <node name="perturbation_node" pkg="ros_queue_experiments" type="perturbation_action_node" output="screen">
-        <rosparam file="$(find ros_queue_experiments)/config/perturbation_config.yaml" command="load" subst_value="true"/>
+        <rosparam file="$(find ros_queue_experiments)/config/experiment_setups/$(arg experiment_setup)/perturbation_config.yaml" command="load" subst_value="true"/>
     </node>
 
     <!-- Start the perturbation node action -->
     <node name="optimal_action_node" pkg="ros_queue_experiments" type="perturbation_action_node" output="screen">
-        <rosparam file="$(find ros_queue_experiments)/config/perturbation_config.yaml" command="load" subst_value="true"/>
+        <rosparam file="$(find ros_queue_experiments)/config/experiment_setups/$(arg experiment_setup)/perturbation_config.yaml" command="load" subst_value="true"/>
         <param name="is_dummy"  type="bool" value="true"/>
     </node>
 
