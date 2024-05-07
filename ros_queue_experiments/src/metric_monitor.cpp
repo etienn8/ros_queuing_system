@@ -36,8 +36,9 @@ void MetricMonitor::realStateMetricCallback(const ros_queue_experiments::AuvStat
 
         double target  = getMetricTarget();
         metric_performance_msgs.target_value = target;
-        metric_performance_msgs.real_current_diff_with_target = target - real_state_metric_value;
+        metric_performance_msgs.real_current_diff_with_target = real_state_metric_value - target;
         metric_performance_msgs.real_mean_diff_with_target = metric_performance_msgs.real_average_value - target;
+        metric_performance_msgs.real_time_average_diff_with_server_time_average = metric_performance_msgs.real_time_average_value - metric_performance_msgs.queue_server_time_average_value;
 
         performance_metric_pub_.publish(metric_performance_msgs);
     }
