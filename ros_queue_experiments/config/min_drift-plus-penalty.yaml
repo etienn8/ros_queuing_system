@@ -35,13 +35,13 @@ min_renewal_time: 0.0
 max_renewal_time: 2.5
 
 # Name of the actionlib server to send the action to.
-action_server_name: "/perturbation_node/disturbed_action_server"
+action_server_name: "perturbation_node/disturbed_action_server"
 
 # Solution space service that provides a list of all available actions.
-solution_space_service_name: "/auv_system_node/potential_action_set"
+solution_space_service_name: "auv_system_node/potential_action_set"
 
 # Name of the service to evaluate the expected renewal time for all actions.
-expected_renewal_time_service_name: "/auv_system_node/renewal_time/expected_metric"
+expected_renewal_time_service_name: "auv_system_node/renewal_time/expected_metric"
 
 # ====== Queue configurations. Indicate all the queues used in the controllers equation. ======
 # Most of the queues' information will be fetch automatically through the parameters of the indicated queue_server.
@@ -57,7 +57,7 @@ queue_list:
         - weight: 1000.0
 
         # Name of the service to evaluate the expected arrivals of the queue based. 
-        - expected_arrival_service_name: "/auv_system_node/temperature/arrival/$(arg rate_or_change)/expected_metric"
+        - expected_arrival_service_name: "auv_system_node/temperature/arrival/$(arg rate_or_change)/expected_metric"
         # If set to false, the arrival service request will be empty and use the srv ros_queue_msgs/FloatRequest. Default value.
         # If set to true, the arrival service request will use the services specified by the template of the controller in its cpp file. 
         - arrival_action_dependent: true
@@ -67,7 +67,7 @@ queue_list:
         - arrival_renewal_dependent: false
 
         # Name of the service to evaluate the expected departures of the queue based on the evaluated action.
-        - expected_departure_service_name: "/auv_system_node/temperature/departure/$(arg rate_or_change)/expected_metric"
+        - expected_departure_service_name: "auv_system_node/temperature/departure/$(arg rate_or_change)/expected_metric"
         # If set to false, the arrival service request will be empty and use the srv ros_queue_msgs/FloatRequest. Default value.
         # If set to true, the arrival service request will use the services specified by the template of the controller in its cpp file. 
         - departure_action_dependent: true
@@ -83,7 +83,7 @@ queue_list:
         - weight: 1000.0
 
         # Name of the service to evaluate the expected arrivals of the queue based. 
-        - expected_arrival_service_name: "/auv_system_node/localization/arrival/$(arg rate_or_change)/expected_metric"
+        - expected_arrival_service_name: "auv_system_node/localization/arrival/$(arg rate_or_change)/expected_metric"
         # If set to false, the arrival service request will be empty and use the srv ros_queue_msgs/FloatRequest. Default value.
         # If set to true, the arrival service request will use the services specified by the template of the controller in its cpp file. 
         - arrival_action_dependent: true
@@ -93,7 +93,7 @@ queue_list:
         - arrival_renewal_dependent: false
 
         # Name of the service to evaluate the expected departures of the queue based on the evaluated action.
-        - expected_departure_service_name: "/auv_system_node/localization/departure/$(arg rate_or_change)/expected_metric"
+        - expected_departure_service_name: "auv_system_node/localization/departure/$(arg rate_or_change)/expected_metric"
         # If set to false, the arrival service request will be empty and use the srv ros_queue_msgs/FloatRequest. Default value.
         # If set to true, the arrival service request will use the services specified by the template of the controller in its cpp file. 
         - departure_action_dependent: true
@@ -109,7 +109,7 @@ queue_list:
         - weight: 1.0
 
         # Name of the service to evaluate the expected arrivals of the queue based. 
-        - expected_arrival_service_name: "/auv_system_node/task/arrival/$(arg rate_or_change)/expected_metric"
+        - expected_arrival_service_name: "auv_system_node/task/arrival/$(arg rate_or_change)/expected_metric"
         # If set to false, the arrival service request will be empty and use the srv ros_queue_msgs/FloatRequest. Default value.
         # If set to true, the arrival service request will use the services specified by the template of the controller in its cpp file. 
         - arrival_action_dependent: true
@@ -119,7 +119,7 @@ queue_list:
         - arrival_renewal_dependent: false
 
         # Name of the service to evaluate the expected departures of the queue based on the evaluated action.
-        - expected_departure_service_name: "/auv_system_node/task/departure/$(arg rate_or_change)/expected_metric"
+        - expected_departure_service_name: "auv_system_node/task/departure/$(arg rate_or_change)/expected_metric"
         # If set to false, the arrival service request will be empty and use the srv ros_queue_msgs/FloatRequest. Default value.
         # If set to true, the arrival service request will use the services specified by the template of the controller in its cpp file. 
         - departure_action_dependent: true
@@ -130,7 +130,7 @@ queue_list:
 
 # ====== Variable (penalty) to minimize configurations.======
 # Name of the service to evaluate the penalty based on the current state and the potential action. 
-penalty_service_name:  "/auv_system_node/penalty/expected_metric"
+penalty_service_name:  "auv_system_node/penalty/expected_metric"
 # The V parameter that is multplied with the penalty (like a weight). When a high penalty metric also increases the queue size,
 # this parameter balances the tradeoff between a lower penalty or lower queue delays. A high V will prioritize the minimization
 # of the penalty while a low V will prioritize low queue sizes and delays.
@@ -149,9 +149,9 @@ part_of_multicontroller_synchronization: true
 # Topic starts a control loop when called. A called to the topic start_control_loop is the same as calling this topic.
 # Mainly used to be connected on a control_loop_started topic of another controller in a multicontroller scenario.
 # It's not used if the parameter is_periodic is set to true. 
-start_control_loop_sync_topic: "/queue_controller/control_loop_started"
+# start_control_loop_sync_topic: ""
 
 # Topic of the controller that this controller depends on. It can connect to a optimization_done topic of another controoler.
 # It will not be called if part_of_multicontroller_synchronization is false. Leaving it empty or commenting it means the
 # controller is not dependent on another controller.
-dependent_on_controller_topic: "/optimal_controller/optimization_done"
+dependent_on_controller_topic: "optimal_controller/optimization_done"

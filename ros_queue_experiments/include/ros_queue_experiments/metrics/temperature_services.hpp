@@ -13,7 +13,7 @@ using std::string;
 class TemperatureServices: public DualMetricServices
 {
     public:
-        TemperatureServices(ros::NodeHandle nh, std::string metric_name, std::shared_ptr<AUVStateManager> auv_state_manager, std::shared_ptr<RenewalTimeServices> renewal_time_services);
+        TemperatureServices(ros::NodeHandle& nh, std::string metric_name, std::shared_ptr<AUVStateManager> auv_state_manager, std::shared_ptr<RenewalTimeServices> renewal_time_services);
 
         float getRealArrival(AUVStates::Zones zone);
         float getRealDeparture(AUVStates::Zones zone);
@@ -57,8 +57,6 @@ class TemperatureServices: public DualMetricServices
 
         std::map<AUVStates::Zones, float> real_expected_arrivals_;
         std::map<AUVStates::Zones, float> real_expected_departures_;
-
-        ros::NodeHandle nh_;
 
         float temp_target_ = 0.0f;
 };

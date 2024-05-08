@@ -34,7 +34,7 @@ class QueueServer
          * @param spin_rate Rate (event per second) at which the real queues will be checked for transmission 
          * and the size of all queues will be published.
         */
-        QueueServer(ros::NodeHandle& nh, float spin_rate);
+        QueueServer(ros::NodeHandle& nhp, float spin_rate);
         
         /**
          * @brief Add a virtual queue in the inequality constraint queue map.
@@ -110,9 +110,9 @@ class QueueServer
         std::map<string, std::unique_ptr<ROSByteConvertedQueue>> real_queues_;
 
         /**
-         * @brief ROS nodle handle to to get the params and to create the services, publisher and subscribers.
+         * @brief Private ROS nodle handle to get the params and to create the services, publisher and subscribers to that are static.
         */
-        ros::NodeHandle nh_;
+        ros::NodeHandle nhp_;
 
         /**
          * @brief Name of the queue server to use a meta data.

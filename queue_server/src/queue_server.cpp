@@ -26,9 +26,9 @@
 using std::string;
 
 
-QueueServer::QueueServer(ros::NodeHandle& nh, float spin_rate): nh_(nh)
+QueueServer::QueueServer(ros::NodeHandle& nhp, float spin_rate): nhp_(nhp)
 {
-    if (nh_.getParam("queue_server_name", queue_server_name_))
+    if (nhp_.getParam("queue_server_name", queue_server_name_))
     {
         ROS_INFO_STREAM("Initializing queue server named "<< queue_server_name_);
     }
@@ -37,12 +37,12 @@ QueueServer::QueueServer(ros::NodeHandle& nh, float spin_rate): nh_(nh)
         ROS_INFO_STREAM("Queue server doesn't a name from the param queue_server_name. Queue serve will be initialized with an empty name.");
     }
 
-    if (nh_.getParam("compute_statistics", should_queues_compute_stats_))
+    if (nhp_.getParam("compute_statistics", should_queues_compute_stats_))
     {
         if(should_queues_compute_stats_)
         {
-            queue_server_stats_pub_ = nh_.advertise<ros_queue_msgs::QueueServerStats>("server_stats", 10);
-            queue_server_stats_service_ = nh_.advertiseService("get_server_stats", 
+            queue_server_stats_pub_ = nhp_.advertise<ros_queue_msgs::QueueServerStats>("server_stats", 10);
+            queue_server_stats_service_ = nhp_.advertiseService("get_server_stats", 
                                                                 &QueueServer::serverStatsCallback, this);
         }
     }
@@ -52,21 +52,21 @@ QueueServer::QueueServer(ros::NodeHandle& nh, float spin_rate): nh_(nh)
 
     loadQueueParametersAndCreateQueues();
 
-    queue_server_update_virtual_queues_service_ = nh_.advertiseService("trigger_service",
+    queue_server_update_virtual_queues_service_ = nhp_.advertiseService("trigger_service",
                                                                          &QueueServer::queueUpdateCallback, this);
-    queue_server_states_pub_ = nh_.advertise<ros_queue_msgs::QueueServerState>("server_state",10);
+    queue_server_states_pub_ = nhp_.advertise<ros_queue_msgs::QueueServerState>("server_state",10);
 
 
-    queue_server_states_service_ = nh_.advertiseService("get_server_state", 
+    queue_server_states_service_ = nhp_.advertiseService("get_server_state", 
                                                          &QueueServer::serverStateCallback, this);
 
-    virtual_queue_manual_changes_ = nh_.subscribe<ros_queue_msgs::VirtualQueueChangesList>("virtual_queue_manual_changes",
+    virtual_queue_manual_changes_ = nhp_.subscribe<ros_queue_msgs::VirtualQueueChangesList>("virtual_queue_manual_changes",
                                                                                             1000,
                                                                                             &QueueServer::virtualQueuesManualChangesCallback,
                                                                                             this);
     
     // Create the periodic caller of the serverSpin
-    spin_timer_ = nh_.createTimer(ros::Duration(1.0/spin_rate), &QueueServer::serverSpin, this);
+    spin_timer_ = nhp_.createTimer(ros::Duration(1.0/spin_rate), &QueueServer::serverSpin, this);
 }
 
 void QueueServer::loadQueueParametersAndCreateQueues()
@@ -74,7 +74,7 @@ void QueueServer::loadQueueParametersAndCreateQueues()
     // Initialization of queues based on a config file
     XmlRpc::XmlRpcValue queue_list;
 
-    if(nh_.getParam("queue_list", queue_list))
+    if(nhp_.getParam("queue_list", queue_list))
     {
         if(queue_list.getType() == XmlRpc::XmlRpcValue::TypeArray)
         {
@@ -223,7 +223,7 @@ void QueueServer::checkAndCreateQueue(QueueParamStruct& queue_param_struct)
                 std::unique_ptr<ROSByteConvertedQueue> new_queue = 
                     std::make_unique<ROSByteConvertedQueue>((int)queue_param_struct.max_queue_size_, 
                                                             std::move(info),
-                                                            nh_,
+                                                            nhp_,
                                                             (struct ROSByteConvertedQueue::InterfacesArgs)
                                                             {
                                                                 .arrival_topic_name = queue_param_struct.arrival_topic_name_,
@@ -265,7 +265,7 @@ void QueueServer::checkAndCreateQueue(QueueParamStruct& queue_param_struct)
                 std::unique_ptr<ROSInConVirtualQueue> new_queue = 
                     std::make_unique<ROSInConVirtualQueue>((int)queue_param_struct.max_queue_size_, 
                                                             std::move(info),
-                                                            nh_,
+                                                            nhp_,
                                                             (struct ROSInConVirtualQueue::InterfacesArgs)
                                                             {
                                                                 .arrival_evaluation_service_name = queue_param_struct.arrival_evaluation_service_name_,
@@ -304,7 +304,7 @@ void QueueServer::checkAndCreateQueue(QueueParamStruct& queue_param_struct)
                 std::unique_ptr<ROSEqConVirtualQueue> new_queue = 
                     std::make_unique<ROSEqConVirtualQueue>((int)queue_param_struct.max_queue_size_, 
                                                             std::move(info),
-                                                            nh_,
+                                                            nhp_,
                                                             (struct ROSEqConVirtualQueue::InterfacesArgs)
                                                             {
                                                                 .arrival_evaluation_service_name = queue_param_struct.arrival_evaluation_service_name_,

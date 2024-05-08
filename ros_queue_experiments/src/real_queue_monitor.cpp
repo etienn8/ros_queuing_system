@@ -2,10 +2,10 @@
 
 #include "ros_queue_experiments/MetricPerformance.h"
 
-RealQueueMonitor::RealQueueMonitor(ros::NodeHandle& nh): nh_(nh)
+RealQueueMonitor::RealQueueMonitor(ros::NodeHandle& nh): nh_(nh), ns_nh_(ros::NodeHandle())
 {
     queue_name_ = "TaskQueue";
-    queue_stats_sub_ = nh_.subscribe("/queue_server/server_stats", 1, &RealQueueMonitor::queueStatsCallback, this);
+    queue_stats_sub_ = ns_nh_.subscribe("queue_server/server_stats", 1, &RealQueueMonitor::queueStatsCallback, this);
     performance_metric_pub_ = nh_.advertise<ros_queue_experiments::MetricPerformance>("real_queue", 1);
 }
 

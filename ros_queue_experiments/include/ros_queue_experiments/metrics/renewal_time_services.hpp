@@ -12,7 +12,7 @@ class RenewalTimeServices: public MetricServices
 {
     public:
 
-        RenewalTimeServices(ros::NodeHandle nh, std::string metric_name, std::shared_ptr<AUVStateManager> auv_state_manager);
+        RenewalTimeServices(ros::NodeHandle& nh, std::string metric_name, std::shared_ptr<AUVStateManager> auv_state_manager);
         
         float getRealRenewalTimeWithStateTransition(AUVStates::Zones from_zone, AUVStates::Zones to_zone);
         float getPredictedRenewalTimeWithStateTransition(AUVStates::Zones from_zone, AUVStates::Zones to_zone);
@@ -33,6 +33,4 @@ class RenewalTimeServices: public MetricServices
     private:
         float real_renewal_time_transitions_[AUVStates::Zones::count][AUVStates::Zones::count];
         float predicted_renewal_time_transitions_[AUVStates::Zones::count][AUVStates::Zones::count];
-
-        ros::NodeHandle nh_;
 };

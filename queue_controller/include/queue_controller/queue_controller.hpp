@@ -62,12 +62,12 @@ class QueueController
             RenewalDriftPlusPenalty
         };
 
-        QueueController(ros::NodeHandle& nh): nh_(nh), async_spinner_(1, &async_spinner_queue_), async_nh_("~")
+        QueueController(ros::NodeHandle& nh): nhp_(nh), nh_(ros::NodeHandle()), async_spinner_(1, &async_spinner_queue_), async_nhp_("~"), async_nh_(nh_)
         {
             bool can_create_controller = true;
 
             string controller_type_name;
-            if(nh.getParam("controller_type", controller_type_name))
+            if(nhp_.getParam("controller_type", controller_type_name))
             {
                 if(controller_type_name == "min_drift_plus_penalty")
                 {
@@ -89,7 +89,7 @@ class QueueController
                 ROS_ERROR_STREAM("Missing the controller type");
             }
 
-            if (nh_.getParam("is_periodic",is_periodic_))
+            if (nhp_.getParam("is_periodic",is_periodic_))
             {
                 if(is_periodic_)
                 {
@@ -107,7 +107,7 @@ class QueueController
 
             if(controller_type_ == ControllerType::DriftPlusPenalty)
             {
-                if(is_periodic_ && !nh.getParam("time_step", controller_time_step_))
+                if(is_periodic_ && !nhp_.getParam("time_step", controller_time_step_))
                 {
                     can_create_controller = false;
                     ROS_ERROR_STREAM("Missing the controller time step");
@@ -115,31 +115,32 @@ class QueueController
             }
 
             // Configure the async spinner for the asynchronous fetch of the renewal time and synchronization callbacks
+            async_nhp_.setCallbackQueue(&async_spinner_queue_);
             async_nh_.setCallbackQueue(&async_spinner_queue_);
 
             if(controller_type_ == ControllerType::RenewalDriftPlusPenalty)
             {
-                if(!nh.getParam("max_renewal_time", max_renewal_time_))
+                if(!nhp_.getParam("max_renewal_time", max_renewal_time_))
                 {
                     can_create_controller = false;
                     ROS_ERROR_STREAM("Missing the max_renewal_time");
                 }
 
-                if(!nh.getParam("min_renewal_time", min_renewal_time_))
+                if(!nhp_.getParam("min_renewal_time", min_renewal_time_))
                 {
                     can_create_controller = false;
                     ROS_ERROR_STREAM("Missing the min_renewal_time");
                 }
 
-                if(!nh.getParam("is_penalty_renewal_dependent", is_penalty_renewal_dependent_))
+                if(!nhp_.getParam("is_penalty_renewal_dependent", is_penalty_renewal_dependent_))
                 {
                     ROS_WARN_STREAM("Missing the flag is_penalty_renewal_dependent that indicates if the penalty is dependent on the renewal time. Will be set to false.");
                 }
 
-                renewal_time_pub_ = nh_.advertise<std_msgs::Float32>("renewal_time", 10);
+                renewal_time_pub_ = nhp_.advertise<std_msgs::Float32>("renewal_time", 10);
 
                 string expected_renewal_time_service_name;
-                if(!nh.getParam("expected_renewal_time_service_name", expected_renewal_time_service_name) || expected_renewal_time_service_name.empty())
+                if(!nhp_.getParam("expected_renewal_time_service_name", expected_renewal_time_service_name) || expected_renewal_time_service_name.empty())
                 {
                     can_create_controller = false;
                     ROS_ERROR_STREAM("Missing the expected_renewal_time_service_name.");
@@ -154,21 +155,21 @@ class QueueController
 
                 // Start an asynchronous spinner to handle the last renewal time service in parallel to the controller.
                 ROS_INFO_STREAM("Creating the last renewal time service server.");
-                last_renewal_time_service_server_ = async_nh_.advertiseService("get_last_renewal_time", &QueueController::lastRenewalTimeServiceCallback, this);
+                last_renewal_time_service_server_ = async_nhp_.advertiseService("get_last_renewal_time", &QueueController::lastRenewalTimeServiceCallback, this);
             }
 
-            if(!nh.getParam("inverse_control_and_steps", inversed_control_and_update_steps_))
+            if(!nhp_.getParam("inverse_control_and_steps", inversed_control_and_update_steps_))
             {
                 ROS_WARN_STREAM("Missing the flag inverse_control_and_steps that indicates if the control and update steps are inverted. Will be set to false.");
             }
 
-            if(!nh.getParam("responsible_for_virtual_queue_changes", responsible_for_virtual_queue_changes_))
+            if(!nhp_.getParam("responsible_for_virtual_queue_changes", responsible_for_virtual_queue_changes_))
             {
                 ROS_WARN_STREAM("Missing the flag responsible_for_virtual_queue_changes that indicates if the controller should trigger the changes of the virtual queues of the queue server. Will be set to true.");
             }
 
             string solution_space_service_name;
-            if(nh.getParam("solution_space_service_name", solution_space_service_name))
+            if(nhp_.getParam("solution_space_service_name", solution_space_service_name))
             {
                 solution_space_client_ = nh_.serviceClient<TPotentialActionSetSrv>(solution_space_service_name, true);
                 
@@ -182,7 +183,7 @@ class QueueController
             }
 
             string penalty_service_name;
-            if(nh.getParam("penalty_service_name", penalty_service_name))
+            if(nhp_.getParam("penalty_service_name", penalty_service_name))
             {
                 penalty_service_client_ = nh_.serviceClient<TMetricControlPredictionSrv>(penalty_service_name, true);
                 
@@ -195,7 +196,7 @@ class QueueController
                 ROS_ERROR_STREAM("Missing the penalty_service_name.");
             }
 
-            if(nh.getParam("v_parameter", v_parameter_))
+            if(nhp_.getParam("v_parameter", v_parameter_))
             {
                 if(v_parameter_< 0.0f)
                 {
@@ -208,11 +209,11 @@ class QueueController
                 ROS_ERROR_STREAM("Missing the v_parameter.");
             }
 
-            if(nh_.getParam("measure_cost", measure_cost_))
+            if(nhp_.getParam("measure_cost", measure_cost_))
             {
                 if(measure_cost_)
                 {
-                    cost_publisher_ = nh_.advertise<TControllerCostListType>("controller_costs", 10);
+                    cost_publisher_ = nhp_.advertise<TControllerCostListType>("controller_costs", 10);
                 }
             }
             else
@@ -220,7 +221,7 @@ class QueueController
                 ROS_WARN_STREAM("Missing the measure_cost parameter. Will be set to false.");
             }
 
-            if(!nh_.getParam("queue_server_name", queue_server_name_))
+            if(!nhp_.getParam("queue_server_name", queue_server_name_))
             {
                 can_create_controller = false;
                 ROS_ERROR_STREAM("Missing the queue_server_name.");
@@ -236,7 +237,7 @@ class QueueController
             const xmlrpc_utils::ParameterPackageFetchStruct fetch_struct(options);
             
             vector<xmlrpc_utils::ParameterPackageFetchStruct> parsed_queue_configs= 
-                            xmlrpc_utils::fetchMatchingParametersFromList(nh_, ros::this_node::getName(),
+                            xmlrpc_utils::fetchMatchingParametersFromList(nhp_, ros::this_node::getName(),
                                                                         "queue_list", fetch_struct);
 
             // Does the queue server exist and transfer queue_configs in internal queue structs
@@ -246,7 +247,7 @@ class QueueController
             }
 
             string action_server_name;
-            if(!nh_.getParam("action_server_name", action_server_name))
+            if(!nhp_.getParam("action_server_name", action_server_name))
             {
                 can_create_controller = false;
                 ROS_ERROR_STREAM("Missing the action_server_name.");
@@ -254,11 +255,11 @@ class QueueController
 
             string dependent_on_controller_topic;
             string start_control_loop_sync_topic;
-            if(nh_.getParam("part_of_multicontroller_synchronization", part_of_multicontroller_synchronization_))
+            if(nhp_.getParam("part_of_multicontroller_synchronization", part_of_multicontroller_synchronization_))
             {
                 if (part_of_multicontroller_synchronization_)
                 {
-                    if(nh_.getParam("dependent_on_controller_topic",dependent_on_controller_topic))
+                    if(nhp_.getParam("dependent_on_controller_topic",dependent_on_controller_topic))
                     {
                         if (dependent_on_controller_topic.empty())
                         {
@@ -274,7 +275,7 @@ class QueueController
                     {
                          ROS_INFO_STREAM("Queue controller is not dependant on any topic to send its command. Since the dependent_on_controller_topic parameter is not set.");
                     }
-                    if(nh_.getParam("start_control_loop_sync_topic", start_control_loop_sync_topic))
+                    if(nhp_.getParam("start_control_loop_sync_topic", start_control_loop_sync_topic))
                     {
                         if (start_control_loop_sync_topic.empty())
                         {
@@ -300,7 +301,7 @@ class QueueController
             if (can_create_controller)
             {   
                 // Connect to queue_server for queue sizes
-                server_state_client_ = nh_.serviceClient<ros_queue_msgs::QueueServerStateFetch>("/" + queue_server_name_ + "/get_server_state", true);
+                server_state_client_ = nh_.serviceClient<ros_queue_msgs::QueueServerStateFetch>(queue_server_name_ + "/get_server_state", true);
 
                 ROS_INFO_STREAM("Waiting for the server service named :" << server_state_client_.getService());
                 server_state_client_.waitForExistence();
@@ -310,11 +311,11 @@ class QueueController
                     // Connect to queue_server for queue server udpates (depends on steps order)
                     if (!inversed_control_and_update_steps_)
                     {   
-                        manual_virtual_queue_changes_ = nh_.advertise<ros_queue_msgs::VirtualQueueChangesList>("/" + queue_server_name_ + "/virtual_queue_manual_changes", 1000);
+                        manual_virtual_queue_changes_ = nh_.advertise<ros_queue_msgs::VirtualQueueChangesList>(queue_server_name_ + "/virtual_queue_manual_changes", 1000);
                     }
                     else
                     {
-                        virtual_queues_trigger_ = nh_.serviceClient<std_srvs::Empty>("/" + queue_server_name_ + "/trigger_service", true);
+                        virtual_queues_trigger_ = nh_.serviceClient<std_srvs::Empty>(queue_server_name_ + "/trigger_service", true);
                         ROS_INFO_STREAM("Waiting for the server service named :" << virtual_queues_trigger_.getService());
                         virtual_queues_trigger_.waitForExistence();
                     }
@@ -325,8 +326,8 @@ class QueueController
 
                 if(!is_periodic_)
                 {
-                    start_control_loop_service_server_ = nh_.advertiseService("start_control_loop", &QueueController::startControlLoopServiceCallback, this);
-                    start_control_loop_sub_ = nh_.subscribe("start_control_loop", 1, &QueueController::startControlLoopCallback, this);
+                    start_control_loop_service_server_ = nhp_.advertiseService("start_control_loop", &QueueController::startControlLoopServiceCallback, this);
+                    start_control_loop_sub_ = nhp_.subscribe("start_control_loop", 1, &QueueController::startControlLoopCallback, this);
                 }
 
                 if(part_of_multicontroller_synchronization_)
@@ -341,8 +342,8 @@ class QueueController
                             ros::Duration(0.1).sleep();
                         }
                     }
-                    optimization_done_pub_ = nh_.advertise<std_msgs::Empty>("optimization_done", 10);
-                    control_loop_started_pub_ = nh_.advertise<std_msgs::Empty>("control_loop_started", 1, true);
+                    optimization_done_pub_ = nhp_.advertise<std_msgs::Empty>("optimization_done", 10);
+                    control_loop_started_pub_ = nhp_.advertise<std_msgs::Empty>("control_loop_started", 1, true);
 
                     if(!is_periodic_ && !start_control_loop_sync_topic.empty())
                     {
@@ -354,8 +355,9 @@ class QueueController
                   (part_of_multicontroller_synchronization_ && is_dependent_on_a_another_controller_))
                 {
                     async_spinner_.start();
-                } 
+                }
 
+                ROS_INFO("Queue Controller started");
                 is_initialized_ = true;
             }
         }
@@ -489,10 +491,26 @@ class QueueController
         */
         bool is_initialized_ = false;
 
+        /**
+         * @brief Node handle with the namespace prefix of the namespace of the node. Mainly used for the declaration of services
+         * for user-defined services.
+        */
         ros::NodeHandle nh_;
+
+        /**
+         * @brief Private node handle with namespace prefixed with the namespace of the node and it's name. Mainly used for declaration 
+         * of topics and services provided for the node.
+        */
+        ros::NodeHandle nhp_;
         
         /**
-         * @brief Nodehandle that uses the async_spinner_queue_ as its callback queue. It's use as an interface
+         * @brief Pivate Nodehandle that uses the async_spinner_queue_ as its callback queue. It's use as an interface
+         * to create services from that should be manage in parallel with the main thread.
+        */
+        ros::NodeHandle async_nhp_;
+
+        /**
+         * @brief Pivate Nodehandle that uses the async_spinner_queue_ as its callback queue. It's use as an interface
          * to create services from that should be manage in parallel with the main thread.
         */
         ros::NodeHandle async_nh_;
@@ -723,7 +741,7 @@ class QueueController
             // Create structure to parse the queue params from the queue server
             ROS_INFO_STREAM("Waiting for queue serve named " << queue_server_name_ << " to be online. Waiting at most 10 seconds.");
             
-            if (ros::service::waitForService("/"+queue_server_name_+"/get_server_state", ros::Duration(10)))
+            if (ros::service::waitForService(queue_server_name_+"/get_server_state", ros::Duration(10)))
             {
                 ROS_INFO_STREAM("Queue server found. Resuming queue controller initialization.");
 
@@ -1584,7 +1602,7 @@ class QueueController
         */
         void updateVirtualQueuesBasedOnCurrentState()
         {
-            queue_controller_utils::check_persistent_service_connection<std_srvs::Empty>(nh_, virtual_queues_trigger_);
+            queue_controller_utils::check_persistent_service_connection<std_srvs::Empty>(nhp_, virtual_queues_trigger_);
 
             std_srvs::Empty trigger;
             if(!virtual_queues_trigger_.call(trigger))

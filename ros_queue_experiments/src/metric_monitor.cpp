@@ -2,14 +2,14 @@
 #include "ros_queue_msgs/QueueServerStatsFetch.h"
 #include "ros_queue_experiments/MetricPerformance.h"
 
-MetricMonitor::MetricMonitor(ros::NodeHandle& nh): nh_(nh)
+MetricMonitor::MetricMonitor(ros::NodeHandle& nh): nh_(nh), ns_nh_(ros::NodeHandle())
 {
-    queue_stats_metric_client_ = nh_.serviceClient<ros_queue_msgs::QueueServerStatsFetch>("/queue_server/get_server_stats");
+    queue_stats_metric_client_ = ns_nh_.serviceClient<ros_queue_msgs::QueueServerStatsFetch>("queue_server/get_server_stats");
     ROS_INFO_STREAM("Waiting for existence of the "<< queue_stats_metric_client_.getService() << " service");
     queue_stats_metric_client_.waitForExistence();
     ROS_INFO_STREAM("Service "<< queue_stats_metric_client_.getService() << " exists");
 
-    real_state_metric_sub_ = nh_.subscribe("/auv_system_node/auv_state", 1, &MetricMonitor::realStateMetricCallback, this);
+    real_state_metric_sub_ = ns_nh_.subscribe("auv_system_node/auv_state", 1, &MetricMonitor::realStateMetricCallback, this);
     real_state_metric_sum_ = 0;
     nb_real_state_samples_ = 0;
     init_time_ = ros::Time::now();

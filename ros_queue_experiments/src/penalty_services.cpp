@@ -4,7 +4,7 @@
 
 using std::string;
 
-PenaltyServices::PenaltyServices(ros::NodeHandle nh, std::string metric_name, std::shared_ptr<AUVStateManager> auv_state_manager): MetricServices(nh, metric_name, auv_state_manager), nh_(nh)
+PenaltyServices::PenaltyServices(ros::NodeHandle& nh, std::string metric_name, std::shared_ptr<AUVStateManager> auv_state_manager): MetricServices(nh, metric_name, auv_state_manager)
 {
     XmlRpc::XmlRpcValue penalty_time_config;
 

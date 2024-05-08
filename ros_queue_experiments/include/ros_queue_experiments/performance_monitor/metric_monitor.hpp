@@ -23,9 +23,14 @@ class MetricMonitor
         std::string metric_name_;
 
         /**
-         * @brief Node handle for the metric monitor.
+         * @brief Private node handle for the metric monitor.
          */
         ros::NodeHandle nh_;
+
+        /**
+         * @brief Node handle for namespace resolution at the namespace of the node (non-private node handle).  
+        */
+        ros::NodeHandle ns_nh_;
 
         /**
          * @brief Metric publisher. Should be defined by child class.

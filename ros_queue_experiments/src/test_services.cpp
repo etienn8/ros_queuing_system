@@ -11,19 +11,19 @@ int main(int argc, char *argv[])
 
     ros::NodeHandle nh;
 
-    ros::ServiceClient predicted_temperature_service = nh.serviceClient<ros_queue_msgs::MetricTransmissionVectorPredictions>("/auv_system_node/temperature/arrival/expected_metric");
+    ros::ServiceClient predicted_temperature_service = nh.serviceClient<ros_queue_msgs::MetricTransmissionVectorPredictions>("auv_system_node/temperature/arrival/expected_metric");
     predicted_temperature_service.waitForExistence();
 
-    ros::ServiceClient predicted_renewal_service = nh.serviceClient<ros_queue_msgs::MetricTransmissionVectorPredictions>("/auv_system_node/renewal_time/expected_metric");
+    ros::ServiceClient predicted_renewal_service = nh.serviceClient<ros_queue_msgs::MetricTransmissionVectorPredictions>("auv_system_node/renewal_time/expected_metric");
     predicted_renewal_service.waitForExistence();
 
-    ros::ServiceClient predicted_penalty_service = nh.serviceClient<ros_queue_msgs::MetricTransmissionVectorPredictions>("/auv_system_node/penalty/expected_metric");
+    ros::ServiceClient predicted_penalty_service = nh.serviceClient<ros_queue_msgs::MetricTransmissionVectorPredictions>("auv_system_node/penalty/expected_metric");
     predicted_penalty_service.waitForExistence();
 
-    ros::ServiceClient localization_temperature_service = nh.serviceClient<ros_queue_msgs::MetricTransmissionVectorPredictions>("/auv_system_node/localization/arrival/expected_metric");
+    ros::ServiceClient localization_temperature_service = nh.serviceClient<ros_queue_msgs::MetricTransmissionVectorPredictions>("auv_system_node/localization/arrival/expected_metric");
     localization_temperature_service.waitForExistence();
 
-    ros::ServiceClient task_departure_service = nh.serviceClient<ros_queue_msgs::MetricTransmissionVectorPredictions>("/auv_system_node/task/departure/expected_metric");
+    ros::ServiceClient task_departure_service = nh.serviceClient<ros_queue_msgs::MetricTransmissionVectorPredictions>("auv_system_node/task/departure/expected_metric");
     task_departure_service.waitForExistence();
 
     ros_queue_msgs::PotentialTransmissionVectorSet action_set;

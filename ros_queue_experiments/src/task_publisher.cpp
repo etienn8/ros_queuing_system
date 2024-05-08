@@ -14,8 +14,7 @@ using std::string;
 TaskPublisher::TaskPublisher(ros::NodeHandle& nh, std::string metric_name, 
                             std::shared_ptr<AUVStateManager> auv_state_manager, 
                             std::shared_ptr<RenewalTimeServices> renewal_time_services): 
-                                DualMetricServices(nh, metric_name, auv_state_manager, renewal_time_services), 
-                                nh_(nh)
+                                DualMetricServices(nh, metric_name, auv_state_manager, renewal_time_services)
     {
     XmlRpc::XmlRpcValue tasks_config;
     if(nh_.getParam("task_metrics", tasks_config))

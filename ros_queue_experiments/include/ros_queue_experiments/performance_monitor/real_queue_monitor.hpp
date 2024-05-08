@@ -12,9 +12,14 @@ class RealQueueMonitor
 
     protected:
         /**
-         * @brief Node handle for the metric monitor.
+         * @brief Private node handle for the metric monitor.
         */
         ros::NodeHandle nh_;
+
+        /**
+         * @brief Node handle for the metric monitor with name resolution at the namespace of the node.
+        */
+        ros::NodeHandle ns_nh_;
 
         /**
          * @brief Name of the queue real queue. Used for logging and to fetch the queue in the queue server

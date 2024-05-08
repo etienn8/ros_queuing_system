@@ -12,7 +12,7 @@ using std::string;
 class LocalizationServices: public DualMetricServices
 {
     public:
-        LocalizationServices(ros::NodeHandle nh, std::string metric_name, std::shared_ptr<AUVStateManager> auv_state_manager, std::shared_ptr<RenewalTimeServices> renewal_time_services);
+        LocalizationServices(ros::NodeHandle& nh, std::string metric_name, std::shared_ptr<AUVStateManager> auv_state_manager, std::shared_ptr<RenewalTimeServices> renewal_time_services);
         
         float getRealLocalizationUncertainty(AUVStates::Zones zone);
 
@@ -55,6 +55,4 @@ class LocalizationServices: public DualMetricServices
         std::map<AUVStates::Zones, float> real_localization_uncertainties_;
 
         float localization_target_ = 0.0f;
-
-        ros::NodeHandle nh_;
 };

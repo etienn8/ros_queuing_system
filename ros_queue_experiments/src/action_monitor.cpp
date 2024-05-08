@@ -3,8 +3,9 @@
 
 ActionMonitor::ActionMonitor(ros::NodeHandle& nh, const std::string& perturbated_action_topic, const std::string& optimal_action_topic):
     nh_(nh),
-    perturbated_action_peformance_sub(nh_, perturbated_action_topic, 1),
-    optimal_action_performance_sub(nh_, optimal_action_topic, 1),
+    ns_nh_(ros::NodeHandle()),
+    perturbated_action_peformance_sub(ns_nh_, perturbated_action_topic, 1),
+    optimal_action_performance_sub(ns_nh_, optimal_action_topic, 1),
     sync(MySyncPolicy(10), perturbated_action_peformance_sub, optimal_action_performance_sub)
 {
     synchronized_action_performance_publisher = nh_.advertise<ros_queue_experiments::ActionPerformance>("synced_action_performances", 10);

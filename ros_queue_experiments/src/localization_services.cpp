@@ -7,7 +7,7 @@
 
 using std::string;
 
-LocalizationServices::LocalizationServices(ros::NodeHandle nh, std::string metric_name, std::shared_ptr<AUVStateManager> auv_state_manager, std::shared_ptr<RenewalTimeServices> renewal_time_services): DualMetricServices(nh, metric_name, auv_state_manager, renewal_time_services), nh_(nh)
+LocalizationServices::LocalizationServices(ros::NodeHandle& nh, std::string metric_name, std::shared_ptr<AUVStateManager> auv_state_manager, std::shared_ptr<RenewalTimeServices> renewal_time_services): DualMetricServices(nh, metric_name, auv_state_manager, renewal_time_services)
 {
     XmlRpc::XmlRpcValue localization_config;
     if(!nh_.getParam("localization_target", localization_target_))

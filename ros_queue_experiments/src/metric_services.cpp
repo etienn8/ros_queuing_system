@@ -1,6 +1,6 @@
 #include "ros_queue_experiments/metrics/metric_services.hpp"
 
-MetricServices::MetricServices(ros::NodeHandle nh, std::string metric_name, std::shared_ptr<AUVStateManager> auv_state_manager): nh_(nh), metric_name_(metric_name), auv_state_manager_(auv_state_manager)
+MetricServices::MetricServices(ros::NodeHandle& nh, std::string metric_name, std::shared_ptr<AUVStateManager> auv_state_manager): nh_(nh), ns_nh_(ros::NodeHandle()), metric_name_(metric_name), auv_state_manager_(auv_state_manager)
 {
     real_metric_service_ = nh_.advertiseService(metric_name_ + "/real_metric", &MetricServices::realServiceMetricCallback, this);
     expected_metric_service_ = nh_.advertiseService(metric_name_ + "/expected_metric", &MetricServices::expectedServiceMetricCallback, this);

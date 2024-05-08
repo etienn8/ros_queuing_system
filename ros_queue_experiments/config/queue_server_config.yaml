@@ -20,8 +20,8 @@ queue_list:
     - max_queue_size: 100000.0
       
       # === Services calls for virtual queues to evaluate the change in their size. Only used for virtual queues. ===
-    - arrival_evaluation_service_name: "/auv_system_node/temperature/arrival/$(arg rate_or_change)/real_metric"
-    - departure_evaluation_service_name: "/auv_system_node/temperature/departure/$(arg rate_or_change)/real_metric"
+    - arrival_evaluation_service_name: "auv_system_node/temperature/arrival/$(arg rate_or_change)/real_metric"
+    - departure_evaluation_service_name: "auv_system_node/temperature/departure/$(arg rate_or_change)/real_metric"
 
   - LocalizationQueue: # Queue name
       # Existing types of queues: 
@@ -34,8 +34,8 @@ queue_list:
     - max_queue_size: 100000.0
       
       # === Services calls for virtual queues to evaluate the change in their size. Only used for virtual queues. ===
-    - arrival_evaluation_service_name: "/auv_system_node/localization/arrival/$(arg rate_or_change)/real_metric"
-    - departure_evaluation_service_name: "/auv_system_node/localization/departure/$(arg rate_or_change)/real_metric"
+    - arrival_evaluation_service_name: "auv_system_node/localization/arrival/$(arg rate_or_change)/real_metric"
+    - departure_evaluation_service_name: "auv_system_node/localization/departure/$(arg rate_or_change)/real_metric"
   
   - TaskQueue: # Queue name
       # Existing types of queues: 
@@ -48,9 +48,9 @@ queue_list:
     - max_queue_size: 6250000.0  # 50 mb
       
       # === Topic name from which data will be stored and on which to publish data. Only used for real queues. ===
-    - arrival_topic_name: "/auv_system_node/incoming_tasks"
+    - arrival_topic_name: "auv_system_node/incoming_tasks"
     - tranmission_topic_name: "departing_tasks"
 
     # === Service name that allows a real queue how much data in bytes it could transmit. Only used for real queues. ===
-    - transmission_evaluation_service_name: "/auv_system_node/qos_transmission"
+    - transmission_evaluation_service_name: "auv_system_node/qos_transmission"
 

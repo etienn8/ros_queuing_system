@@ -15,12 +15,14 @@
 class MetricServices
 {
     public:
-        MetricServices(ros::NodeHandle nh, std::string metric_name, std::shared_ptr<AUVStateManager> auv_state_manager);
+        MetricServices(ros::NodeHandle& nh, std::string metric_name, std::shared_ptr<AUVStateManager> auv_state_manager);
 
     protected:
         std::string metric_name_;
         
         ros::NodeHandle nh_;
+
+        ros::NodeHandle ns_nh_;
 
         ros::ServiceServer real_metric_service_;
         ros::ServiceServer real_expected_metric_service_;

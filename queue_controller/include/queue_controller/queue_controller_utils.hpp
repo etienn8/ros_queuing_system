@@ -10,7 +10,7 @@ using std::string;
 namespace queue_controller_utils
 {
     template <typename TServiceType>
-    void check_persistent_service_connection(ros::NodeHandle nh, ros::ServiceClient& client)
+    void check_persistent_service_connection(ros::NodeHandle& nh, ros::ServiceClient& client)
     {
         if (!client.isValid())
         {

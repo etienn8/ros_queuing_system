@@ -22,6 +22,8 @@ class ActionMonitor
     private:
         ros::NodeHandle nh_;
 
+        ros::NodeHandle ns_nh_;
+
         ros::Publisher synchronized_action_performance_publisher;
 
         message_filters::Subscriber<ros_queue_experiments::ActionPerformance> perturbated_action_peformance_sub;

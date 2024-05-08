@@ -8,9 +8,9 @@
 
 #include <string>
 
-DisturbedActionServer::DisturbedActionServer(ros::NodeHandle& nh): nh_(nh), action_server_(nh_, "disturbed_action_server", false)
+DisturbedActionServer::DisturbedActionServer(ros::NodeHandle& nh): nhp_(nh), nh_(ros::NodeHandle()), action_server_(nhp_, "disturbed_action_server", false)
 {
-    if(nh_.getParam("pertubation_at_each_x_control_steps", perturbation_at_each_x_control_steps_))
+    if(nhp_.getParam("pertubation_at_each_x_control_steps", perturbation_at_each_x_control_steps_))
     {
         if (perturbation_at_each_x_control_steps_ > 0)
         {
@@ -31,7 +31,7 @@ DisturbedActionServer::DisturbedActionServer(ros::NodeHandle& nh): nh_(nh), acti
     }
 
     std::string perturbation_type_param;
-    if(nh_.getParam("pertubation_type", perturbation_type_param))
+    if(nhp_.getParam("pertubation_type", perturbation_type_param))
     {
         if (perturbation_type_param == "not_moving")
         {
@@ -47,7 +47,7 @@ DisturbedActionServer::DisturbedActionServer(ros::NodeHandle& nh): nh_(nh), acti
         }
     }
 
-    nh_.getParam("is_dummy", is_dummy_);
+    nhp_.getParam("is_dummy", is_dummy_);
     
     if(is_dummy_)
     {
@@ -55,17 +55,17 @@ DisturbedActionServer::DisturbedActionServer(ros::NodeHandle& nh): nh_(nh), acti
     }
     else 
     {
-        auv_state_client_ = nh_.serviceClient<ros_queue_experiments::GetRealAUVStates>("/auv_system_node/get_auv_state");
+        auv_state_client_ = nh_.serviceClient<ros_queue_experiments::GetRealAUVStates>("auv_system_node/get_auv_state");
         ROS_INFO("Waiting for the AUV state service to be ready...");
         auv_state_client_.waitForExistence();
         ROS_INFO("AUV state service is ready.");
 
-        auv_action_client_ = nh_.serviceClient<ros_queue_experiments::SendNewAUVCommand>("/auv_system_node/new_command");
+        auv_action_client_ = nh_.serviceClient<ros_queue_experiments::SendNewAUVCommand>("auv_system_node/new_command");
         ROS_INFO("Waiting for the AUV action service to be ready...");
         auv_action_client_.waitForExistence();
         ROS_INFO("AUV action service is ready.");
         
-        send_sucess_timer_ = nh_.createTimer(ros::Duration(1.0), &DisturbedActionServer::sendSuccessCallback, this, true);
+        send_sucess_timer_ = nhp_.createTimer(ros::Duration(1.0), &DisturbedActionServer::sendSuccessCallback, this, true);
         send_sucess_timer_.stop();
     }
 
@@ -73,7 +73,7 @@ DisturbedActionServer::DisturbedActionServer(ros::NodeHandle& nh): nh_(nh), acti
     action_server_.registerPreemptCallback(boost::bind(&DisturbedActionServer::preemptActionCallback, this));
     action_server_.start();
 
-    action_performance_publisher_ = nh_.advertise<ros_queue_experiments::ActionPerformance>("action_performance", 10);
+    action_performance_publisher_ = nhp_.advertise<ros_queue_experiments::ActionPerformance>("action_performance", 10);
 }
 
 void DisturbedActionServer::commandReceivedCallback()

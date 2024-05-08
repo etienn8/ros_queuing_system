@@ -16,12 +16,14 @@
 class DualMetricServices
 {
     public:
-        DualMetricServices(ros::NodeHandle nh, std::string metric_name, std::shared_ptr<AUVStateManager> auv_state_manager, std::shared_ptr<RenewalTimeServices> renewal_time_services);
+        DualMetricServices(ros::NodeHandle& nh, std::string metric_name, std::shared_ptr<AUVStateManager> auv_state_manager, std::shared_ptr<RenewalTimeServices> renewal_time_services);
 
     protected:
         std::string metric_name_;
         
         ros::NodeHandle nh_;
+
+        ros::NodeHandle ns_nh_;
 
         std::shared_ptr<RenewalTimeServices> renewal_time_services_;
 

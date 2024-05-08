@@ -85,7 +85,7 @@ class ROSConvertedQueue: public DynamicConvertedQueue<typename QueueElementTrait
             }
             else if (!interfaces.arrival_prediction_service_name.empty())
             {
-                arrival_service_client_ = nh.serviceClient<TPredictionServiceClass>(interfaces.arrival_prediction_service_name);
+                arrival_service_client_ = nh_.serviceClient<TPredictionServiceClass>(interfaces.arrival_prediction_service_name);
             }
             else
             {
@@ -104,7 +104,7 @@ class ROSConvertedQueue: public DynamicConvertedQueue<typename QueueElementTrait
             }
             else if (!interfaces.transmission_prediction_service_name.empty())
             {
-                transmission_service_client_ = nh.serviceClient<TPredictionServiceClass>(interfaces.transmission_prediction_service_name);
+                transmission_service_client_ = nh_.serviceClient<TPredictionServiceClass>(interfaces.transmission_prediction_service_name);
             }
             else
             {
@@ -135,7 +135,7 @@ class ROSConvertedQueue: public DynamicConvertedQueue<typename QueueElementTrait
             }
             else if (!interfaces.conversion_service_name.empty())
             {
-                conversion_service_client_ = nh.serviceClient<TConversionServiceClass>(interfaces.conversion_service_name);
+                conversion_service_client_ = nh_.serviceClient<TConversionServiceClass>(interfaces.conversion_service_name);
             }
             else
             {

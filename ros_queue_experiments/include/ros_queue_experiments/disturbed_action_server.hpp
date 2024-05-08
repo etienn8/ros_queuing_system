@@ -26,6 +26,11 @@ class DisturbedActionServer
         ros::NodeHandle nh_;
 
         /**
+         * @brief Private ROS node handle to manage the servers.
+         */
+        ros::NodeHandle nhp_;
+
+        /**
          * @brief Action server to receive the action from the queue controller.
         */
         actionlib::SimpleActionServer<ros_queue_msgs::TransmissionVectorAction> action_server_;

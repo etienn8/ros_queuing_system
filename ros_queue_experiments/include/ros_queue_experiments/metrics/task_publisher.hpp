@@ -47,8 +47,6 @@ class TaskPublisher: public DualMetricServices
         virtual bool expectedDepartureRateMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
                                             ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res) override;
     private:
-        ros::NodeHandle nh_;
-
         ros::Publisher publisher_;
         ros::Timer timer_;
 
