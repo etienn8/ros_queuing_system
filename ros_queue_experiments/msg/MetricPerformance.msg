@@ -2,9 +2,11 @@ string metric_name
 
 float32 current_real_value
 float32 real_average_value
+float32 real_continous_average_value
 float32 real_time_average_value
 float32 queue_server_time_average_value
 float32 target_value
 float32 real_current_diff_with_target
 float32 real_mean_diff_with_target
 float32 real_time_average_diff_with_server_time_average
+float32 seconds_since_start

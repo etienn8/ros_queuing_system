@@ -50,6 +50,13 @@ class MetricMonitor
         virtual double getMetricFromAuvState(const ros_queue_experiments::AuvStates::ConstPtr& msg) = 0;
 
         /**
+         * @brief Get the theoritical integral of the continuous function of a given metric from the auv state message.
+         * @param msg Message containing the auv state.
+         * @return Integral of the metric.
+        */
+        virtual double getContinuousIntegralOfMetricFromAuvState(const ros_queue_experiments::AuvStates::ConstPtr& msg)=0;
+
+        /**
          * @brief Get the time average the estimated metric from the queue server message
          * @param msg Message containing the queue server stats.
          * @return Time average of the metric estimated by the queue server.
@@ -89,6 +96,14 @@ class MetricMonitor
          * @return Time average of the real state metric.
          */
         double computeRealStateMetricTimeAverage();
+
+        /**
+         * @brief Compute the mean from the integral of the theoritical continuous 
+         * function of the metric by dividing it by the elapsed time since the start.
+         * @param time_integral_of_metric Integral of the metric.
+         * @return Mean of the real state metric based on its integral.
+        */
+        double computeRealStateMetricContinuousMean(double time_integral_of_metric);
 
         /**
          * @brief Add new sample of the real metric.

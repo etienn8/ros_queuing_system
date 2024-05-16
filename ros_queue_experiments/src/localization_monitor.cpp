@@ -47,3 +47,8 @@ double LocalizationMonitor::getMetricTarget()
         return 0.0;
     }
 }
+
+double LocalizationMonitor::getContinuousIntegralOfMetricFromAuvState(const ros_queue_experiments::AuvStates::ConstPtr& msg)
+{
+    return msg->localization_integral;
+}

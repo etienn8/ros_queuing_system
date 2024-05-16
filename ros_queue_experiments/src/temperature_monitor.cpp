@@ -47,3 +47,8 @@ double TemperatureMonitor::getMetricTarget()
         return 0.0;
     }
 }
+
+double TemperatureMonitor::getContinuousIntegralOfMetricFromAuvState(const ros_queue_experiments::AuvStates::ConstPtr& msg)
+{
+    return msg->temperature_integral;
+}

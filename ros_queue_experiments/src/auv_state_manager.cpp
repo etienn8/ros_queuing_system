@@ -30,12 +30,17 @@ ros_queue_experiments::AuvStates AUVStateManager::getCurrentStates()
 
     if (auv_system_)
     {
+        current_states.header.stamp = ros::Time::now();
+        
         const AUVStates::Zones current_zone = AUVStates::getZoneFromTransmissionVector(current_states.current_zone);
         const AUVStates::Zones last_zone = AUVStates::getZoneFromTransmissionVector(current_states.last_zone);
         
         const double elapsed_time_since_last_transition = (ros::Time::now() - last_transition_time_).toSec();
 
         float temperature_rate = auv_system_->temperature_services_->getRealArrival(current_zone) - auv_system_->temperature_services_->getRealDeparture(current_zone);
+        current_states.temperature_integral += current_states.temperature*elapsed_time_since_last_transition +
+                                               0.5*temperature_rate*elapsed_time_since_last_transition*elapsed_time_since_last_transition;
+
         current_states.temperature += temperature_rate * elapsed_time_since_last_transition;
 
         double renewal_time =  auv_system_->expected_time_services_->getRealRenewalTimeWithStateTransition(last_zone, current_zone);
@@ -48,7 +53,9 @@ ros_queue_experiments::AuvStates AUVStateManager::getCurrentStates()
         // The penalty is the total accumulated energy spent during transitions since the beginning.
         current_states.penalty += auv_system_->penalty_metric_services_->getRealPenaltyTransition(last_zone, current_zone);
 
-        current_states.localization = auv_system_->localization_services_->getRealLocalizationUncertainty(current_zone);
+        float current_localization = auv_system_->localization_services_->getRealLocalizationUncertainty(current_zone);
+        current_states.localization_integral += current_localization*elapsed_time_since_last_transition;
+        current_states.localization = current_localization;
         
         // Get the proportion of time spent in each zone
         current_states.proportion_time_spent_in_zones = time_spent_in_zones_.getProportionTimeSpent();

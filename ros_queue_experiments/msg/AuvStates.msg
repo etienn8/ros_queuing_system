@@ -2,7 +2,11 @@ ros_queue_msgs/TransmissionVector current_zone
 ros_queue_msgs/TransmissionVector last_zone
 
 float32 temperature
+float32 temperature_integral
+
 float32 localization
+float32 localization_integral
+
 float32 penalty
 
 float32 transition_completion
