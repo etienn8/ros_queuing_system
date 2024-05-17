@@ -110,7 +110,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
    INCLUDE_DIRS include
-#  LIBRARIES queue_controller
+   LIBRARIES queue_controller_utils_lib
    CATKIN_DEPENDS queue_server ros_queue_msgs roscpp message_runtime std_srvs std_msgs actionlib_msgs actionlib
 #  DEPENDS system_lib
 )
