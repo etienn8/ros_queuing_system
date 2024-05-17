@@ -69,12 +69,14 @@ bool AUVSystem::commandCallback(ros_queue_experiments::SendNewAUVCommand::Reques
 {
     if(auv_state_manager_)
     {
+        // Send current state before changing the zone to the new one so the monitoring can see changes 
+        // that the queue server should have been updated with.
+        state_pub_.publish(auv_state_manager_->getCurrentStates());
+
         AUVStates::Zones new_zone = AUVStates::getZoneFromTransmissionVector(req.command);
         res.time_to_execute = expected_time_services_->getRealRenewalTimeWithTransitionFromCurrentState(new_zone);
         auv_state_manager_->commandToNextZone(new_zone);
         ROS_INFO("New command received. Going to zone %d", new_zone);
-
-        state_pub_.publish(auv_state_manager_->getCurrentStates());
     }
     else
     {
