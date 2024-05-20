@@ -154,4 +154,4 @@ start_control_loop_sync_topic: "queue_controller/control_loop_started"
 # Topic of the controller that this controller depends on. It can connect to a optimization_done topic of another controoler.
 # It will not be called if part_of_multicontroller_synchronization is false. Leaving it empty means the
 # controller is not dependent on another controller.
-#dependent_on_controller_topic: ""
+dependent_on_controller_topic: "monitoring_node/monitoring_done"

@@ -10,7 +10,7 @@
 
 #include "ros_queue_experiments/AuvStates.h"
 
-AUVSystem::AUVSystem(ros::NodeHandle& nh): nh_(nh)
+AUVSystem::AUVSystem(ros::NodeHandle& nh): nh_(nh), ns_nh_(ros::NodeHandle())
 {
     // Initialize the state manager
     auv_state_manager_ = std::make_shared<AUVStateManager>(this);
@@ -30,6 +30,8 @@ AUVSystem::AUVSystem(ros::NodeHandle& nh): nh_(nh)
 
     // Initialize the publishers
     state_pub_ = nh_.advertise<ros_queue_experiments::AuvStates>("auv_state", 1);
+
+    control_started_sub_ = ns_nh_.subscribe("optimal_controller/control_loop_started", 1, &AUVSystem::stateMonitoringCallback, this);
 }
 
 bool AUVSystem::potentialActionSetCallback(ros_queue_msgs::PotentialTransmissionVectorSpaceFetch::Request& req,
@@ -64,6 +66,7 @@ bool AUVSystem::auvStateCallback(ros_queue_experiments::GetRealAUVStates::Reques
     return true;
 }
 
+
 bool AUVSystem::commandCallback(ros_queue_experiments::SendNewAUVCommand::Request& req,
                                 ros_queue_experiments::SendNewAUVCommand::Response& res)
 {
@@ -71,7 +74,7 @@ bool AUVSystem::commandCallback(ros_queue_experiments::SendNewAUVCommand::Reques
     {
         // Send current state before changing the zone to the new one so the monitoring can see changes 
         // that the queue server should have been updated with.
-        state_pub_.publish(auv_state_manager_->getCurrentStates());
+        //state_pub_.publish(auv_state_manager_->getCurrentStates());
 
         AUVStates::Zones new_zone = AUVStates::getZoneFromTransmissionVector(req.command);
         res.time_to_execute = expected_time_services_->getRealRenewalTimeWithTransitionFromCurrentState(new_zone);
@@ -84,4 +87,16 @@ bool AUVSystem::commandCallback(ros_queue_experiments::SendNewAUVCommand::Reques
         return false;
     }
     return true;
+}
+
+void AUVSystem::stateMonitoringCallback(const std_msgs::Empty::ConstPtr& msg)
+{
+    if(auv_state_manager_)
+    {
+        state_pub_.publish(auv_state_manager_->getCurrentStates());
+    }
+    else
+    {
+        ROS_ERROR("AUV state manager not initialized");
+    }
 }

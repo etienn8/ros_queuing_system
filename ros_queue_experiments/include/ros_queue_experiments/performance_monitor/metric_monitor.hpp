@@ -16,6 +16,15 @@ class MetricMonitor
     public:
         MetricMonitor(ros::NodeHandle& nh);
 
+        /**
+         * @brief Method called to compute the monitored values of a metric and published the results on a 
+         * ROS topic.
+         * @param msg Message containing the real state metric.
+         * @param queue_stats_metric_srv Message containing the estimated metrics from the queue server.
+         */
+        void realStateMetricCallback(const ros_queue_experiments::AuvStates::ConstPtr& msg,
+                                    const ros_queue_msgs::QueueServerStatsFetch& queue_stats_metric_srv);   
+
     protected:
         /**
          * @brief Name of the metric. Used for logging.
@@ -68,23 +77,7 @@ class MetricMonitor
          */
         virtual double getMetricTarget() = 0;        
     
-    private:
-        /**
-         * @brief Service client that gets the statitstics of the queue server.
-         */
-        ros::ServiceClient queue_stats_metric_client_;
-
-        /**
-         * @brief Callback for the real state metric.
-         * @param msg Message containing the real state metric.
-         */
-        void realStateMetricCallback(const ros_queue_experiments::AuvStates::ConstPtr& msg);
-
-        /**
-         * @brief Real state metric subscriber.
-         */
-        ros::Subscriber real_state_metric_sub_;
-        
+    private:        
         /**
          * @brief Compute the mean of the real state metric
          * @return Mean of the real state metric.

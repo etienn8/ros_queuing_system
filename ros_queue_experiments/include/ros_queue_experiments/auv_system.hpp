@@ -19,6 +19,8 @@
 
 #include "ros_queue_msgs/PotentialTransmissionVectorSpaceFetch.h"
 
+#include "std_msgs/Empty.h"
+
 class AUVSystem
 {
     public:
@@ -38,9 +40,15 @@ class AUVSystem
         std::shared_ptr<AUVStateManager> auv_state_manager_;
 
         /**
-         * @brief ROS node handle to manage the servers.
+         * @brief ROS private node handle to manage the servers.
         */
         ros::NodeHandle nh_;
+
+
+        /**
+         * @brief ROS node handle with namesapce name resolution.
+        */
+        ros::NodeHandle ns_nh_;
 
         /**
          * @brief ROS publisher for the AUV state.
@@ -72,12 +80,27 @@ class AUVSystem
                               ros_queue_experiments::GetRealAUVStates::Response& res);
 
         /**
+         * @brief Subscriber that listens to the starting step of the controller to publish the auv states for the 
+         * monitoring system.
+        */
+        ros::Subscriber control_started_sub_;
+
+        /**
+         * @brief Callback called when the controller has started (right after sending its updates to the queue server
+         * of step inverted controller) and that publishes auv state msg for the monitoring. This moment is the best for 
+         * sampling the auv state for monitoring.
+         * @param msg Empyt message which is the signal used by queue controller to signal the beginning of its loop.
+         * @return True if the callback was successful. Which is always true in this case.
+        */
+         void stateMonitoringCallback(const std_msgs::Empty::ConstPtr& msg);
+
+        /**
          * @brief Service to set the new command to the system.
         */
         ros::ServiceServer command_service_;
 
         /**
-         * @brief Callback the service to set the new command to the system.
+         * @brief Callback the service to set the new command to the system and publish the auv states.
          * @param req Request to set the new command to the system.
          * @param res Return the time to complete the command.
         */
