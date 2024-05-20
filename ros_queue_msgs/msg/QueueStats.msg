@@ -6,3 +6,4 @@ float32 departure_mean
 float32 real_departure_mean
 float32 converted_remaining_mean
 float32 change_mean
+float32 seconds_since_start

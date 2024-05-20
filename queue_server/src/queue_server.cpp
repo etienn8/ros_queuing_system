@@ -429,6 +429,7 @@ ros_queue_msgs::QueueServerStats QueueServer::getCurrentServerStats()
             queue_stats.current_size = queue_it->second->getSize();
             queue_stats.size_mean = queue_it->second->mean_stats_.getSizeMean();
             queue_stats.converted_remaining_mean = queue_it->second->mean_stats_.getConvertedRemainingMean();
+            queue_stats.seconds_since_start =queue_it->second->mean_stats_.getSecondsSinceStart();
             
             server_stats_msg.queue_stats.push_back(std::move(queue_stats));
         }
@@ -446,6 +447,7 @@ ros_queue_msgs::QueueServerStats QueueServer::getCurrentServerStats()
             queue_stats.current_size = queue_it->second->getSize();
             queue_stats.size_mean = queue_it->second->mean_stats_.getSizeMean();
             queue_stats.change_mean = queue_it->second->mean_stats_.getChangeMean();
+            queue_stats.seconds_since_start =queue_it->second->mean_stats_.getSecondsSinceStart();
 
             server_stats_msg.queue_stats.push_back(std::move(queue_stats));
         }
@@ -463,6 +465,7 @@ ros_queue_msgs::QueueServerStats QueueServer::getCurrentServerStats()
             queue_stats.current_size = queue_it->second->getSize();
             queue_stats.size_mean = queue_it->second->mean_stats_.getSizeMean();
             queue_stats.change_mean = queue_it->second->mean_stats_.getChangeMean();
+            queue_stats.seconds_since_start =queue_it->second->mean_stats_.getSecondsSinceStart();
             
             server_stats_msg.queue_stats.push_back(std::move(queue_stats));
         }

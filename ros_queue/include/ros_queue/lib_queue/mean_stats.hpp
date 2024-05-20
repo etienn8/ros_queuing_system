@@ -102,4 +102,9 @@ struct MeanStats
         }
         return converted_remaining_sum/remaining_sample_sum;
     }
+
+    double getSecondsSinceStart()
+    {
+        return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - time_0_).count()/1000.0;
+    }
 };
