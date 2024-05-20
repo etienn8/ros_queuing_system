@@ -19,7 +19,7 @@ void MetricMonitor::realStateMetricCallback(const ros_queue_experiments::AuvStat
 {
     ros_queue_experiments::MetricPerformance metric_performance_msgs;
 
-    ros_queue_msgs::QueueServerStatsFetch queue_stats_metric_srv_;
+    metric_performance_msgs.header.stamp = ros::Time::now();
     
     if(queue_stats_metric_client_.call(queue_stats_metric_srv_))
     {
@@ -33,7 +33,7 @@ void MetricMonitor::realStateMetricCallback(const ros_queue_experiments::AuvStat
         addNewRealStateMetricSample(real_state_metric_value);
         metric_performance_msgs.real_average_value = computeRealStateMetricMean();
         metric_performance_msgs.real_time_average_value = computeRealStateMetricTimeAverage();
-        metric_performance_msgs.real_continous_average_value = computeRealStateMetricContinuousMean(getContinuousIntegralOfMetricFromAuvState(msg));
+    metric_performance_msgs.real_continous_average_value = computeRealStateMetricContinuousMean(getContinuousIntegralOfMetricFromAuvState(msg));
 
         metric_performance_msgs.queue_server_time_average_value = getQueueServerTimeAverageMetric(queue_stats_metric_srv_.response);
 
@@ -42,9 +42,10 @@ void MetricMonitor::realStateMetricCallback(const ros_queue_experiments::AuvStat
         metric_performance_msgs.real_current_diff_with_target = real_state_metric_value - target;
         metric_performance_msgs.real_mean_diff_with_target = metric_performance_msgs.real_average_value - target;
         metric_performance_msgs.real_time_average_diff_with_server_time_average = metric_performance_msgs.real_time_average_value - metric_performance_msgs.queue_server_time_average_value;
+    metric_performance_msgs.real_continuous_average_diff_with_server_time_average = metric_performance_msgs.real_continous_average_value - metric_performance_msgs.queue_server_time_average_value;
 
-        metric_performance_msgs.seconds_since_start = (ros::Time::now() - init_time_).toSec();
-        performance_metric_pub_.publish(metric_performance_msgs);
+    metric_performance_msgs.seconds_since_start = (ros::Time::now() - init_time_).toSec();
+    performance_metric_pub_.publish(metric_performance_msgs);
     }
     else
     {
