@@ -398,7 +398,7 @@ class QueueController
             {
                 if (controller_type_ == ControllerType::DriftPlusPenalty)
                 {
-                    static ros::Rate loop_rate(1.0f/controller_time_step_);
+                   ros::Rate loop_rate(1.0f/controller_time_step_);
                     while(ros::ok())
                     {
                         controllerCallback();
