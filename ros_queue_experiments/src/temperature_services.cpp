@@ -113,6 +113,14 @@ bool TemperatureServices::realArrivalMetricCallback(ros_queue_msgs::FloatRequest
            Since, only the end temperature is avaiblable, the integral is done from that point.*/
         float temperature_at_start_of_frame = current_temperature - current_zone_temp_rate*last_renewal_time;
         res.value = temperature_at_start_of_frame*last_renewal_time + 0.5*current_zone_temp_rate*last_renewal_time*last_renewal_time;
+
+        /* To capture all the changes that happened since the last change to the virtual queues, it is necessary to 
+           add the change that happened during the last controller execution. */
+        AUVStates::Zones last_zone = AUVStates::getZoneFromTransmissionVector(current_states.last_zone);
+        float last_zone_temp_rate = this->real_expected_arrivals_[last_zone] - this->real_expected_departures_[last_zone]; 
+        
+        float controller_execution_time = last_renewal_msg.response.timing.execution_time;
+        res.value += temperature_at_start_of_frame*controller_execution_time - 0.5*last_zone_temp_rate*controller_execution_time*controller_execution_time;
     }
     else
     {
@@ -189,9 +197,10 @@ bool TemperatureServices::realDepartureMetricCallback(ros_queue_msgs::FloatReque
     if(real_renewal_service_.call(last_renewal_msg))
     {
         float last_renewal_time = last_renewal_msg.response.timing.renewal_time;
+        float last_controller_execution_time = last_renewal_msg.response.timing.execution_time;
     
-        // Integral of the target over the last renewal time
-        res.value = this->temp_target_*last_renewal_time;
+        // Integral of the target over the last renewal time and controller execution time
+        res.value = this->temp_target_*(last_renewal_time + last_controller_execution_time);
     }
     else
     {

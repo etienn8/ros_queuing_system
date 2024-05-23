@@ -88,6 +88,13 @@ bool LocalizationServices::realArrivalMetricCallback(ros_queue_msgs::FloatReques
         
         // Return the change as the integral of the rate of the localization 
         res.value = last_renewal_time*localization_rate;
+
+        // Add the change that happened during the controller execution 
+        AUVStates::Zones last_zone = AUVStates::getZoneFromTransmissionVector(current_states.last_zone);
+        float last_zone_localization_rate = getRealLocalizationUncertainty(last_zone);
+        
+        float last_controller_execution_time = last_renewal_msg.response.timing.execution_time;
+        res.value += last_zone_localization_rate*last_controller_execution_time;
     }
     else
     {
@@ -148,9 +155,10 @@ bool LocalizationServices::expectedArrivalMetricCallback(ros_queue_msgs::MetricT
         float localization_target_rate_last_state = this->localization_target_; 
 
         float last_renewal_time = last_renewal_msg.response.timing.renewal_time;
+        float last_controller_execution_time = last_renewal_msg.response.timing.execution_time;
         
         // Return the change as the integral of the rate of the localization 
-        res.value = last_renewal_time*localization_target_rate_last_state;
+        res.value = localization_target_rate_last_state*(last_renewal_time + last_controller_execution_time);
     }
     else
     {

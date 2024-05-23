@@ -10,6 +10,7 @@
 
 #include <ros_queue_msgs/FloatRequest.h>
 #include <ros_queue_msgs/MetricTransmissionVectorPredictions.h>
+#include <ros_queue_msgs/GetQueueControllerTiming.h>
 #include <ros_queue_experiments/AuvStates.h>
 
 
