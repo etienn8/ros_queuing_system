@@ -184,6 +184,7 @@ Since most of the configuration is required (except when it's indicated that it 
 - `controller_type`(string): The type of controller that should be used. The two supported types are: `min_drift_plus_penalty` and `renewal_min_drift_plus_penalty`.
 - `is_periodic`(bool): If set to true, the controller will indefinitely start a new control loop  after the current loop based on the timing of the controller type. If set to false, the controller will only execute a control loop whenever it received a service call to it's service `start_control_loop` or a empty msg on its `start_control_loop` topic.
 - `time_step` (float): Period between each controller optimization process. Only used for the min_drift_plus_penalty type of controller and if the parameter `is_periodic` is set to true.
+- `include_execution_time_in_period` (bool, default: false): If set to true, the controller will include it's executation time in the period specified by `time_step`. It will give a fixed frequency of 1/`time_step`. If set to false, the controller will wait for the time specified by `time_step` after it's done which represent the time given to perform the action. The frequency of the controller will not be 1/`time_step` since the controller execution time will add delay before the next execution.
 - `inverse_control_and_steps` (bool, default: false): If set to false, the controller will 1)find an optimal  action to take and then 2) update the virtual queues based on that optimal solution. If set to true, the controller will 1)update the virtual queues based on the current of state of the system and then 2)find an optimal next action. 
 - `responsible_for_virtual_queue_changes` (bool, default: true):  If set to true, the controller will trigger or send changes to the queue server base on the flag inverse_control_and_steps. If set to false, the controller will not send any changes to the specified queue_server_name. Its used if the user wants to implement another mecanism to change the virtual queues in queue server or to run multiple controller in parallel for the same queue server where only one of them is sending changes and not the others.
 - `measure_cost: false`(bool): When true, a topic will be published name "controller_costs" that will output the cost of each action and each internal metric of the actions at each controller step. Default is set to false.
@@ -246,8 +247,8 @@ For each queues:
 * **`/<queue_server_name>/<queue_name>/getQueueInfo`** ([ros_queue_msgs/QueueInfoFetch](https://github.com/etienn8/ros_queuing_system/blob/main/ros_queue_msgs/srv/QueueInfoFetch.srv))
 	 Service that gets the meta information of the queue from the [queue_server](https://github.com/etienn8/ros_queuing_system/tree/main/queue_server) . Mainly it gets if the queue is virtual.
 #### Services
-* **`get_last_renewal_time`** ([ros_queue_msgs/FloatRequest](https://github.com/etienn8/ros_queuing_system/blob/main/ros_queue_msgs/srv/FloatRequest.srv))
-	Service that can be called to get the elapsed time between the start of the current controller call and the start of the previous one (last renewal time). For example, you can get the last renewal time from the console with:
+* **`get_last_renewal_time`** ([ros_queue_msgs/GetQueueControllerTiming](https://github.com/etienn8/ros_queuing_system/blob/main/ros_queue_msgs/srv/GetQueueControllerTiming.srv))
+	Service that can be called to get the elapsed time between the start of the current controller call and the start of the previous one (last renewal time) in seconds. It also gives the time it took to execute the control loop in seconds. For example, you can get the last renewal time from the console with:
 
 		rosservice call /<queue_controller_name>/get_last_renewal_time
 * **`start_control_loop`** (std_srvs/Empty)
@@ -262,8 +263,8 @@ For each queues:
 	 Empty message that is published after the optimization found the best command and before the sending command and virtual changes to the queue server. It's only published if the paramter `part_of_multicontroller_synchronization` is true. Mainly used for synchronizing muliple controllers together.
 * **`measure_cost`** [ros_queue_msgs/TransmissionVectorControllerCostsList](https://github.com/etienn8/ros_queuing_system/blob/main/ros_queue_msgs/msg/TransmissionVectorControllerCostsList.msg)
 	 Message that contains all the costs for each action and its metrics (penalty and queue). This message is sent at each end of the controller's loop. This topic isn't advertised if the `measure_cost` parameter is set to false.
-* **`renewal_time`** (std_msgs/Float32)
-	 Message that indicates the elapsed time between the start of the current controller call and the start of the previous controller call.
+* **`renewal_time`** ([ros_queue_msgs/QueueControllerTiming](https://github.com/etienn8/ros_queuing_system/blob/main/ros_queue_msgs/msg/QueueControllerTiming.msg))
+	 Message that indicates the elapsed time between the start of the current controller call and the start of the previous controller loop and the time it took to execute the previous control loop in seconds.
 * **`/<queue_server_name>/virtual_queue_manual_changes`** ([ros_queue_msgs/VirtualQueueChangesList](https://github.com/etienn8/ros_queuing_system/blob/main/ros_queue_msgs/msg/VirtualQueueChangesList.msg))
 	 Message containing an array of changes that need to be applied to the specified virtual queues. Those changes are based on the arrival and departure expected from the optimal action that was found. Only used if `inverse_control_and_steps` is set to false.
 #### Subscribed Topics

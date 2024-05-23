@@ -18,7 +18,9 @@
 
 #include "ros_queue_msgs/ControllerActionCosts.h"
 #include "ros_queue_msgs/FloatRequest.h"
+#include "ros_queue_msgs/GetQueueControllerTiming.h"
 #include "ros_queue_msgs/MetricCosts.h"
+#include "ros_queue_msgs/QueueControllerTiming.h"
 #include "ros_queue_msgs/QueueInfoFetch.h"
 #include "ros_queue_msgs/QueueServerStateFetch.h"
 #include "ros_queue_msgs/VirtualQueueChangesList.h"
@@ -137,7 +139,7 @@ class QueueController
                     ROS_WARN_STREAM("Missing the flag is_penalty_renewal_dependent that indicates if the penalty is dependent on the renewal time. Will be set to false.");
                 }
 
-                renewal_time_pub_ = nhp_.advertise<std_msgs::Float32>("renewal_time", 10);
+                renewal_time_pub_ = nhp_.advertise<ros_queue_msgs::QueueControllerTiming>("renewal_time", 10);
 
                 string expected_renewal_time_service_name;
                 if(!nhp_.getParam("expected_renewal_time_service_name", expected_renewal_time_service_name) || expected_renewal_time_service_name.empty())
@@ -420,7 +422,10 @@ class QueueController
                             best_action_client_waited_ = true;
                         }
 
-                        std_msgs::Float32 renewal_time_msg;
+                        // Start to measure how much time the controlle takes time to exectue
+                        ros::Time controller_start_time_point = ros::Time::now();
+
+                        ros_queue_msgs::QueueControllerTiming renewal_time_msg;
                         // Access protection to the last_renewal_time_ variable
                         {
                             std::lock_guard<std::mutex> lock(last_renewal_time_mutex_);
@@ -428,18 +433,26 @@ class QueueController
                             {
                                 is_first_renewal_loop_ = false;
                                 last_renewal_time_point = ros::Time::now();
+                                last_controller_execution_time_ = 0;
                             }
 
                             // Compute the real elapsed time since the last renewal.
                             last_renewal_time_ = (ros::Time::now() - last_renewal_time_point).toSec();
                             
-                            renewal_time_msg.data = last_renewal_time_;
+                            renewal_time_msg.renewal_time = last_renewal_time_;
+                            renewal_time_msg.execution_time = last_controller_execution_time_;
                             ROS_DEBUG_STREAM("Time since last renewal: " << last_renewal_time_);
                         }
                         renewal_time_pub_.publish(renewal_time_msg);
                         
                         // Compute the controller
                         controllerCallback();
+                        
+                        {
+                            // Measure how much time the controlle took to execute.
+                            std::lock_guard<std::mutex> lock(last_renewal_time_mutex_);
+                            last_controller_execution_time_ = (ros::Time::now() - controller_start_time_point).toSec();
+                        }
 
                         last_renewal_time_point = ros::Time::now();
 
@@ -662,6 +675,11 @@ class QueueController
          * @brief Time at which the last renewal was done. Used by the renewal_min_drift_plus_penalty controller.
         */
         ros::Time last_renewal_time_point;
+
+        /**
+         * @brief Duration of the last execution of the controller
+        */
+        float last_controller_execution_time_;
 
         /**
          * @brief Last elapsed time between the last renewal and the current time in seconds. Used by the renewal_min_drift_plus_penalty controller
@@ -912,11 +930,12 @@ class QueueController
         /**
          * @brief Service callback that returns the last renewal time. Used with renewal system.
         */
-        bool lastRenewalTimeServiceCallback(ros_queue_msgs::FloatRequest::Request& req, 
-                                            ros_queue_msgs::FloatRequest::Response& res)
+        bool lastRenewalTimeServiceCallback(ros_queue_msgs::GetQueueControllerTiming::Request& req, 
+                                            ros_queue_msgs::GetQueueControllerTiming::Response& res)
         {
             std::lock_guard<std::mutex> lock(last_renewal_time_mutex_);
-            res.value = last_renewal_time_;
+            res.timing.renewal_time = last_renewal_time_;
+            res.timing.execution_time = last_controller_execution_time_;
             return true;
         }
 

@@ -56,6 +56,7 @@ add_message_files(
   ManualByteTransmitSize.msg
   MetricCosts.msg
   PotentialTransmissionVectorSet.msg
+  QueueControllerTiming.msg
   QueueIntElement.msg
   QueueState.msg
   QueueTransmitTemplate.msg
@@ -77,6 +78,7 @@ add_service_files(
   ConversionTemplateService.srv
   ByteSizeRequest.srv
   FloatRequest.srv
+  GetQueueControllerTiming.srv
   QueueInfoFetch.srv
   MetricPredictions.srv
   MetricTransmissionVectorPredictions.srv
