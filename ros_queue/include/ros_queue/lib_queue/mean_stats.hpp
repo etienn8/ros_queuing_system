@@ -26,7 +26,7 @@ struct MeanStats
         arrival_sum_ += new_arrival;
     };
 
-    double getArrivalMean()
+    double getArrivalTimeAverage()
     {
         double current_time_point_diff = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - time_0_).count();
 
@@ -42,7 +42,7 @@ struct MeanStats
         departure_sum_ += new_departure;
     };
 
-    double getDepartureMean()
+    double getDepartureTimeAverage()
     {
         double current_time_point_diff = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - time_0_).count();
 
@@ -57,7 +57,7 @@ struct MeanStats
         real_departure_sum_ += new_departure;
     };
 
-    double getRealDepartureMean()
+    double getRealDepartureTimeAverage()
     {
         double current_time_point_diff = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - time_0_).count();
 
@@ -68,9 +68,9 @@ struct MeanStats
         return real_departure_sum_/current_time_point_diff*1000.0;
     }
 
-    double getChangeMean()
+    double getChangeTimeAverage()
     {
-        return getArrivalMean() - getDepartureMean();
+        return getArrivalTimeAverage() - getDepartureTimeAverage();
     }
 
     void increaseSizeMean(float new_queue_size)

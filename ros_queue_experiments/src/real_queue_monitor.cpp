@@ -19,10 +19,10 @@ void RealQueueMonitor::queueStatsCallback(const ros_queue_msgs::QueueServerStats
         {
             metric_performance_msg.header.stamp = ros::Time::now();
             metric_performance_msg.metric_name = queue_name_;
-            metric_performance_msg.real_average_value = queue_stats.arrival_mean;
-            metric_performance_msg.queue_server_time_average_value = queue_stats.arrival_mean;
-            metric_performance_msg.target_value = queue_stats.departure_mean;
-            metric_performance_msg.real_mean_diff_with_target = queue_stats.arrival_mean - queue_stats.departure_mean;
+            // metric_performance_msg.real_average_value = queue_stats.arrival_mean; TODO: create the real arrival mean
+            metric_performance_msg.queue_server_time_average_value = queue_stats.arrival_time_average;
+            metric_performance_msg.target_value = queue_stats.departure_time_average;
+            //metric_performance_msg.real_mean_diff_with_target = queue_stats.arrival_mean - queue_stats.departure_mean; TODO: create the real arrival mean
             performance_metric_pub_.publish(metric_performance_msg);
             return;
         }

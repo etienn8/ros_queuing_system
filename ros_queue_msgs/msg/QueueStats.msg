@@ -1,9 +1,9 @@
 string queue_name
 float32 current_size
 float32 size_mean
-float32 arrival_mean
-float32 departure_mean
-float32 real_departure_mean
+float32 arrival_time_average
+float32 departure_time_average
+float32 real_departure_time_average
 float32 converted_remaining_mean
 float32 change_mean
 float32 seconds_since_start

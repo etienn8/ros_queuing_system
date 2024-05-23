@@ -27,7 +27,7 @@ double LocalizationMonitor::getQueueServerTimeAverageMetric(const ros_queue_msgs
     {
         if(queue_stats.queue_name == "LocalizationQueue")
         {
-            return queue_stats.arrival_mean;
+            return queue_stats.arrival_time_average;
         }
     }
     ROS_WARN_THROTTLE(1, "Queue server does not have a queue named %s", "LocalizationQueue");

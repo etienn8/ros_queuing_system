@@ -423,9 +423,9 @@ ros_queue_msgs::QueueServerStats QueueServer::getCurrentServerStats()
         {
             ros_queue_msgs::QueueStats queue_stats;
             queue_stats.queue_name = queue_it->first;
-            queue_stats.arrival_mean = queue_it->second->mean_stats_.getArrivalMean();
-            queue_stats.departure_mean = queue_it->second->mean_stats_.getDepartureMean();
-            queue_stats.real_departure_mean = queue_it->second->mean_stats_.getRealDepartureMean();
+            queue_stats.arrival_time_average = queue_it->second->mean_stats_.getArrivalTimeAverage();
+            queue_stats.departure_time_average = queue_it->second->mean_stats_.getDepartureTimeAverage();
+            queue_stats.real_departure_time_average = queue_it->second->mean_stats_.getRealDepartureTimeAverage();
             queue_stats.current_size = queue_it->second->getSize();
             queue_stats.size_mean = queue_it->second->mean_stats_.getSizeMean();
             queue_stats.converted_remaining_mean = queue_it->second->mean_stats_.getConvertedRemainingMean();
@@ -441,12 +441,12 @@ ros_queue_msgs::QueueServerStats QueueServer::getCurrentServerStats()
         {
             ros_queue_msgs::QueueStats queue_stats;
             queue_stats.queue_name = queue_it->first;
-            queue_stats.arrival_mean = queue_it->second->mean_stats_.getArrivalMean();
-            queue_stats.departure_mean = queue_it->second->mean_stats_.getDepartureMean();
-            queue_stats.real_departure_mean = queue_it->second->mean_stats_.getRealDepartureMean();
+            queue_stats.arrival_time_average = queue_it->second->mean_stats_.getArrivalTimeAverage();
+            queue_stats.departure_time_average = queue_it->second->mean_stats_.getDepartureTimeAverage();
+            queue_stats.real_departure_time_average = queue_it->second->mean_stats_.getRealDepartureTimeAverage();
             queue_stats.current_size = queue_it->second->getSize();
             queue_stats.size_mean = queue_it->second->mean_stats_.getSizeMean();
-            queue_stats.change_mean = queue_it->second->mean_stats_.getChangeMean();
+            queue_stats.change_mean = queue_it->second->mean_stats_.getChangeTimeAverage();
             queue_stats.seconds_since_start =queue_it->second->mean_stats_.getSecondsSinceStart();
 
             server_stats_msg.queue_stats.push_back(std::move(queue_stats));
@@ -459,12 +459,12 @@ ros_queue_msgs::QueueServerStats QueueServer::getCurrentServerStats()
         {
             ros_queue_msgs::QueueStats queue_stats;
             queue_stats.queue_name = queue_it->first;
-            queue_stats.arrival_mean = queue_it->second->mean_stats_.getArrivalMean();
-            queue_stats.departure_mean = queue_it->second->mean_stats_.getDepartureMean();
-            queue_stats.real_departure_mean = queue_it->second->mean_stats_.getRealDepartureMean();
+            queue_stats.arrival_time_average = queue_it->second->mean_stats_.getArrivalTimeAverage();
+            queue_stats.departure_time_average = queue_it->second->mean_stats_.getDepartureTimeAverage();
+            queue_stats.real_departure_time_average = queue_it->second->mean_stats_.getRealDepartureTimeAverage();
             queue_stats.current_size = queue_it->second->getSize();
             queue_stats.size_mean = queue_it->second->mean_stats_.getSizeMean();
-            queue_stats.change_mean = queue_it->second->mean_stats_.getChangeMean();
+            queue_stats.change_mean = queue_it->second->mean_stats_.getChangeTimeAverage();
             queue_stats.seconds_since_start =queue_it->second->mean_stats_.getSecondsSinceStart();
             
             server_stats_msg.queue_stats.push_back(std::move(queue_stats));
