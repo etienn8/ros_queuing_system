@@ -16,95 +16,29 @@ struct MeanStats
 
     std::chrono::time_point<std::chrono::system_clock> time_0_;
 
-    MeanStats()
-    {
-        time_0_ =std::chrono::high_resolution_clock::now();
-    }
+    MeanStats();
 
-    void increaseArrivalMean(float new_arrival)
-    {
-        arrival_sum_ += new_arrival;
-    };
+    void increaseArrivalMean(float new_arrival);
 
-    double getArrivalTimeAverage()
-    {
-        double current_time_point_diff = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - time_0_).count();
+    double getArrivalTimeAverage();
 
-        if (current_time_point_diff == 0)
-        {
-            return 0.0;
-        }
-        return arrival_sum_/current_time_point_diff*1000.0;
-    }
+    void increaseDepartureMean(float new_departure);
 
-    void increaseDepartureMean(float new_departure)
-    {
-        departure_sum_ += new_departure;
-    };
+    double getDepartureTimeAverage();
 
-    double getDepartureTimeAverage()
-    {
-        double current_time_point_diff = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - time_0_).count();
+    void increaseRealDepartureMean(float new_departure);
 
-        if (current_time_point_diff == 0)
-        {
-            return 0.0;
-        }
-        return departure_sum_/current_time_point_diff*1000.0;
-    }
-   void increaseRealDepartureMean(float new_departure)
-    {
-        real_departure_sum_ += new_departure;
-    };
+    double getRealDepartureTimeAverage();
 
-    double getRealDepartureTimeAverage()
-    {
-        double current_time_point_diff = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - time_0_).count();
+    double getChangeTimeAverage();
 
-        if (current_time_point_diff == 0)
-        {
-            return 0.0;
-        }
-        return real_departure_sum_/current_time_point_diff*1000.0;
-    }
+    void increaseSizeMean(float new_queue_size);
 
-    double getChangeTimeAverage()
-    {
-        return getArrivalTimeAverage() - getDepartureTimeAverage();
-    }
+    double getSizeMean();
 
-    void increaseSizeMean(float new_queue_size)
-    {
-        size_sum_ += new_queue_size;
-        mean_sample_size += 1;
-    };
+    void increaseConvertedRemainingMean(float current_remaining);
 
-    double getSizeMean()
-    {
-        if(mean_sample_size == 0)
-        {
-            return 0.0;
-        }
-        return size_sum_/mean_sample_size;
-    }
+    double getConvertedRemainingMean();
 
-    void increaseConvertedRemainingMean(float current_remaining)
-    {
-        converted_remaining_sum += current_remaining;
-        remaining_sample_sum += 1;
-    };
-
-    double getConvertedRemainingMean()
-    {
-        if(remaining_sample_sum == 0)
-        {
-            return 0.0;
-        }
-        return converted_remaining_sum/remaining_sample_sum;
-    }
-
-    double getSecondsSinceStart()
-    {
-        return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - time_0_).count()/1000.0;
-    }
+    double getSecondsSinceStart();
 };

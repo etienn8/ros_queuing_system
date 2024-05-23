@@ -127,6 +127,7 @@ include_directories(
    src/${QUEUE_LIB_NAME}/dynamic_queue.cpp
    src/${QUEUE_LIB_NAME}/dynamic_virtual_queue.cpp
    src/${QUEUE_LIB_NAME}/virtual_queue.cpp
+   src/${QUEUE_LIB_NAME}/mean_stats.cpp
   )
 
 add_library(${ROSQUEUE_LIB_NAME}
