@@ -81,13 +81,13 @@ bool LocalizationServices::realArrivalMetricCallback(ros_queue_msgs::FloatReques
     if(real_renewal_service_.call(last_renewal_msg))
     {
         ros_queue_experiments::AuvStates current_states = getCurrentStates();
-        AUVStates::Zones last_zone = AUVStates::getZoneFromTransmissionVector(current_states.last_zone);
-        float localization_rate_last_state = getRealLocalizationUncertainty(last_zone); 
+        AUVStates::Zones current_zone = AUVStates::getZoneFromTransmissionVector(current_states.current_zone);
+        float localization_rate = getRealLocalizationUncertainty(current_zone); 
 
         float last_renewal_time = last_renewal_msg.response.timing.renewal_time;
         
         // Return the change as the integral of the rate of the localization 
-        res.value = last_renewal_time*localization_rate_last_state;
+        res.value = last_renewal_time*localization_rate;
     }
     else
     {

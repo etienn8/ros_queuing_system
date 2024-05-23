@@ -104,14 +104,15 @@ bool TemperatureServices::realArrivalMetricCallback(ros_queue_msgs::FloatRequest
            should be a good approximation since the error will be the temp_rate*(~2*service_call_time) */
         float current_temperature = current_states.temperature;
         
-        AUVStates::Zones last_zone = AUVStates::getZoneFromTransmissionVector(current_states.last_zone);
-        float last_zone_temp_rate = this->real_expected_arrivals_[last_zone]; 
+        AUVStates::Zones current_zone = AUVStates::getZoneFromTransmissionVector(current_states.current_zone);
+        float current_zone_temp_rate = this->real_expected_arrivals_[current_zone] - this->real_expected_departures_[current_zone]; 
 
         float last_renewal_time = last_renewal_msg.response.timing.renewal_time;
         
         /* Return the equivalent queue change which is the integral of the temperature over time. 
            Since, only the end temperature is avaiblable, the integral is done from that point.*/
-        res.value = current_temperature*last_renewal_time - 0.5*last_zone_temp_rate*last_renewal_time*last_renewal_time;
+        float temperature_at_start_of_frame = current_temperature - current_zone_temp_rate*last_renewal_time;
+        res.value = temperature_at_start_of_frame*last_renewal_time + 0.5*current_zone_temp_rate*last_renewal_time*last_renewal_time;
     }
     else
     {
