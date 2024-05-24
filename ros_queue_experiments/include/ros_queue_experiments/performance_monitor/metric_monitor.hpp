@@ -73,6 +73,13 @@ class MetricMonitor
         virtual double getQueueServerTimeAverageMetric(const ros_queue_msgs::QueueServerStatsFetch::Response& msg) = 0;
 
         /**
+         * @brief Get the arrival mean of the estimated metric from the queue server message.
+         * @param msg Message containing the queue server stats.
+         * @return Arrival mean of the metric estimated by the queue server.
+        */
+        virtual double getQueueServerArrivalMeanMetric(const ros_queue_msgs::QueueServerStatsFetch::Response& msg) = 0;
+
+        /**
          * @brief Get the metric target from the auv system.
          */
         virtual double getMetricTarget() = 0;        

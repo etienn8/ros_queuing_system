@@ -8,6 +8,7 @@ MeanStats::MeanStats()
 void MeanStats::increaseArrivalMean(float new_arrival)
 {
     arrival_sum_ += new_arrival;
+    ++arrival_sample_size_;
 };
 
 double MeanStats::getArrivalTimeAverage()
@@ -21,9 +22,15 @@ double MeanStats::getArrivalTimeAverage()
     return arrival_sum_/current_time_point_diff*1000.0;
 }
 
+double MeanStats::getArrivalMean()
+{
+    return arrival_sum_/arrival_sample_size_;
+}
+
 void MeanStats::increaseDepartureMean(float new_departure)
 {
     departure_sum_ += new_departure;
+    ++departure_sample_size_;
 };
 
 double MeanStats::getDepartureTimeAverage()
@@ -36,9 +43,16 @@ double MeanStats::getDepartureTimeAverage()
     }
     return departure_sum_/current_time_point_diff*1000.0;
 }
+
+double MeanStats::getDepartureMean()
+{
+    return departure_sum_/departure_sample_size_;
+}
+
 void MeanStats::increaseRealDepartureMean(float new_departure)
 {
     real_departure_sum_ += new_departure;
+    ++real_departure_sample_size_;
 };
 
 double MeanStats::getRealDepartureTimeAverage()
@@ -50,6 +64,11 @@ double MeanStats::getRealDepartureTimeAverage()
         return 0.0;
     }
     return real_departure_sum_/current_time_point_diff*1000.0;
+}
+
+double MeanStats::getRealDepartureMean()
+{
+    return real_departure_sum_/real_departure_sample_size_;
 }
 
 double MeanStats::getChangeTimeAverage()

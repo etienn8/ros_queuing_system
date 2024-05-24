@@ -52,3 +52,16 @@ double LocalizationMonitor::getContinuousIntegralOfMetricFromAuvState(const ros_
 {
     return msg->localization_integral;
 }
+
+double LocalizationMonitor::getQueueServerArrivalMeanMetric(const ros_queue_msgs::QueueServerStatsFetch::Response& msg)
+{
+    for (auto queue_stats : msg.queue_stats.queue_stats)
+    {
+        if(queue_stats.queue_name == "LocalizationQueue")
+        {
+            return queue_stats.arrival_mean;
+        }
+    }
+    ROS_WARN_THROTTLE(1, "Queue server does not have a queue named %s", "LocalizationQueue");
+    return 0.0;
+}

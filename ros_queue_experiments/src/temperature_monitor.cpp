@@ -52,3 +52,16 @@ double TemperatureMonitor::getContinuousIntegralOfMetricFromAuvState(const ros_q
 {
     return msg->temperature_integral;
 }
+
+double TemperatureMonitor::getQueueServerArrivalMeanMetric(const ros_queue_msgs::QueueServerStatsFetch::Response& msg)
+{
+    for (auto queue_stats : msg.queue_stats.queue_stats)
+    {
+        if(queue_stats.queue_name == "TemperatureQueue")
+        {
+            return queue_stats.arrival_mean;
+        }
+    }
+    ROS_WARN_THROTTLE(1, "Queue server does not have a queue named %s", "TemperatureQueue");
+    return 0.0;
+}

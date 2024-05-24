@@ -27,12 +27,13 @@ void MetricMonitor::realStateMetricCallback(const ros_queue_experiments::AuvStat
     metric_performance_msgs.real_continous_average_value = computeRealStateMetricContinuousMean(getContinuousIntegralOfMetricFromAuvState(msg));
 
     metric_performance_msgs.queue_server_time_average_value = getQueueServerTimeAverageMetric(queue_stats_metric_srv.response);
+    metric_performance_msgs.queue_server_arrival_mean = getQueueServerArrivalMeanMetric(queue_stats_metric_srv.response);
 
     double target  = getMetricTarget();
     metric_performance_msgs.target_value = target;
     metric_performance_msgs.real_current_diff_with_target = real_state_metric_value - target;
-    metric_performance_msgs.real_mean_diff_with_target = metric_performance_msgs.real_average_value - target;
-    metric_performance_msgs.real_time_average_diff_with_server_time_average = metric_performance_msgs.real_time_average_value - metric_performance_msgs.queue_server_time_average_value;
+    metric_performance_msgs.real_continuous_average_diff_with_target = metric_performance_msgs.real_continous_average_value - target;
+    metric_performance_msgs.real_continuous_average_diff_with_server_mean = metric_performance_msgs.real_continous_average_value - metric_performance_msgs.queue_server_arrival_mean;
     metric_performance_msgs.real_continuous_average_diff_with_server_time_average = metric_performance_msgs.real_continous_average_value - metric_performance_msgs.queue_server_time_average_value;
 
     metric_performance_msgs.seconds_since_start = (ros::Time::now() - init_time_).toSec();

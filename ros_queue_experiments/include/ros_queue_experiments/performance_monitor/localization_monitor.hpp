@@ -13,5 +13,7 @@ class LocalizationMonitor: public MetricMonitor
         
         virtual double getMetricTarget() override;
 
-        virtual double getContinuousIntegralOfMetricFromAuvState(const ros_queue_experiments::AuvStates::ConstPtr& msg) override; 
+        virtual double getContinuousIntegralOfMetricFromAuvState(const ros_queue_experiments::AuvStates::ConstPtr& msg) override;
+
+        virtual double getQueueServerArrivalMeanMetric(const ros_queue_msgs::QueueServerStatsFetch::Response& msg) override; 
 };
