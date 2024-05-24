@@ -218,10 +218,8 @@ bool TemperatureServices::realDeparturePredictionMetricCallback(ros_queue_msgs::
     {
         ros_queue_msgs::TransmissionVector &action = req.action_set.action_set[action_index];
         AUVStates::Zones zone = AUVStates::getZoneFromTransmissionVector(action);
-
-        float predicted_renewal_time = renewal_time_services_->getRealRenewalTimeWithTransitionFromCurrentState(zone);
         
-        res.predictions.push_back(temp_target_*predicted_renewal_time);
+        res.predictions.push_back(temp_target_);
     }
     return true;
 }
@@ -233,10 +231,8 @@ bool TemperatureServices::expectedDepartureMetricCallback(ros_queue_msgs::Metric
     {
         ros_queue_msgs::TransmissionVector &action = req.action_set.action_set[action_index];
         AUVStates::Zones zone = AUVStates::getZoneFromTransmissionVector(action);
-
-        float predicted_renewal_time = renewal_time_services_->getPredictedRenewalTimeWithTransitionFromCurrentState(zone);
         
-        res.predictions.push_back(temp_target_*predicted_renewal_time);
+        res.predictions.push_back(temp_target_);
     }
     return true;
 }
