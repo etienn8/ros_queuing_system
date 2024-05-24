@@ -11,8 +11,9 @@
             <arg name="experiment_setup"            value="$(arg experiment_setup)"/>
             <arg name="controller_type"             value="min_drift_plus_penalty"/>
             <arg name="is_target_renewal_dependent" value="false"/>
-            <arg name="inverse_control_and_steps"   value="false"/>
             <arg name="rate_or_change"              value="rate"/>
+
+            <arg name="inverse_control_and_steps"   value="false"/>
         </include>
     </group>
 
@@ -23,8 +24,9 @@
             <arg name="experiment_setup"            value="$(arg experiment_setup)"/>
             <arg name="controller_type"             value="renewal_min_drift_plus_penalty"/>
             <arg name="is_target_renewal_dependent" value="true"/>
-            <arg name="inverse_control_and_steps"   value="false"/>
             <arg name="rate_or_change"              value="change"/>
+
+            <arg name="inverse_control_and_steps"   value="false"/>
         </include>
     </group>
 
@@ -35,8 +37,9 @@
             <arg name="experiment_setup"            value="$(arg experiment_setup)"/>
             <arg name="controller_type"             value="min_drift_plus_penalty"/>
             <arg name="is_target_renewal_dependent" value="false"/>
-            <arg name="inverse_control_and_steps"   value="true"/>
             <arg name="rate_or_change"              value="rate"/>
+
+            <arg name="inverse_control_and_steps"   value="true"/>
         </include>
     </group>
 
@@ -47,8 +50,9 @@
             <arg name="experiment_setup"            value="$(arg experiment_setup)"/>
             <arg name="controller_type"             value="renewal_min_drift_plus_penalty"/>
             <arg name="is_target_renewal_dependent" value="true"/>
-            <arg name="inverse_control_and_steps"   value="true"/>
             <arg name="rate_or_change"              value="change"/>
+            
+            <arg name="inverse_control_and_steps"   value="true"/>
         </include>
     </group>
 
