@@ -12,14 +12,14 @@ temp:
       - decrease: 15.0     # Celcius Degree per second
   - prediction_model:
     - TaskZone:
-      - increase: 4.0      # Celcius Degree per second
+      - increase: 5.0      # Celcius Degree per second
       - decrease: 0.0      # Celcius Degree per second
     - HighLocZone:
-      - increase: 6.0      # Celcius Degree per second
-      - decrease: 3.0      # Celcius Degree per second
+      - increase: 5.0      # Celcius Degree per second
+      - decrease: 4.0      # Celcius Degree per second
     - ColdZone:
-      - increase: 2.0      # Celcius Degree per second
-      - decrease: 10.0     # Celcius Degree per second
+      - increase: 5.0      # Celcius Degree per second
+      - decrease: 15.0     # Celcius Degree per second
 
 localization_target: 10.0
 localization:
@@ -32,11 +32,11 @@ localization:
       - loc_uncertainty: 12.0      # cm
   - prediction_model:
     - TaskZone:
-      - loc_uncertainty: 16.0      # cm
+      - loc_uncertainty: 10.5     # cm
     - HighLocZone:
-      - loc_uncertainty: 1.0      # cm
+      - loc_uncertainty: 1.0     # cm 
     - ColdZone:
-      - loc_uncertainty: 13.0      # cm
+      - loc_uncertainty: 8.4      # cm
 
 # The renewal time is the time of exploiting a zone. The difference between the real model and 
 # is due to timing errors in the system.
@@ -86,15 +86,15 @@ penalty:
   - prediction_model:
     - fromTaskZone:
       - toTaskZone: 0.0
-      - toHighLocZone: 1.0
-      - toColdZone: 1.0
-    - fromHighLocZone:
-      - toTaskZone: 1.0
-      - toHighLocZone: 0.0
-      - toColdZone: 0.0
-    - fromColdZone:
-      - toTaskZone: 3.0
       - toHighLocZone: 2.0
+      - toColdZone: 2.0
+    - fromHighLocZone:
+      - toTaskZone: 2.0
+      - toHighLocZone: 0.0
+      - toColdZone: 1.0
+    - fromColdZone:
+      - toTaskZone: 2.0
+      - toHighLocZone: 1.0
       - toColdZone: 0.0
 
 arrival_task_per_second: 8.0
@@ -108,7 +108,7 @@ task_metrics:
       - departing_tasks_rate: 0.0      # Tasks per second
   - prediction_model:
     - TaskZone:
-      - departing_tasks_rate: 30.0     # Tasks per second
+      - departing_tasks_rate: 25.0     # Tasks per second
     - HighLocZone:
       - departing_tasks_rate: 0.0      # Tasks per second
     - ColdZone:
