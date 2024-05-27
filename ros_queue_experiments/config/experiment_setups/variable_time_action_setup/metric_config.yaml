@@ -97,7 +97,7 @@ penalty:
       - toHighLocZone: 1.0
       - toColdZone: 0.0
 
-arrival_task_per_second: 5.0
+arrival_task_per_second: 8.0
 task_metrics:
   - real_model:
     - TaskZone:
