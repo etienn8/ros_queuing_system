@@ -54,7 +54,7 @@ queue_list:
         # Weight in the cost function multplied with the size of the queue. 
         # A higher value means the controller will try to stabilize it faster compared to the other queues.
         # It could also be set as a normalization factor.       
-        - weight: 1000.0
+        - weight: 100.0
 
         # Name of the service to evaluate the expected arrivals of the queue based. 
         - expected_arrival_service_name: "auv_system_node/temperature/arrival/$(arg rate_or_change)/expected_metric"
@@ -80,7 +80,7 @@ queue_list:
         # Weight in the cost function multplied with the size of the queue. 
         # A higher value means the controller will try to stabilize it faster compared to the other queues.
         # It could also be set as a normalization factor.       
-        - weight: 1000.0
+        - weight: 100.0
 
         # Name of the service to evaluate the expected arrivals of the queue based. 
         - expected_arrival_service_name: "auv_system_node/localization/arrival/$(arg rate_or_change)/expected_metric"
