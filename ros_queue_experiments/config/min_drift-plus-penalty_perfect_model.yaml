@@ -76,6 +76,32 @@ queue_list:
         # type of controller.
         - departure_renewal_dependent: true
 
+    - LowTemperatureQueue:
+        # Weight in the cost function multplied with the size of the queue. 
+        # A higher value means the controller will try to stabilize it faster compared to the other queues.
+        # It could also be set as a normalization factor.       
+        - weight: 1000.0
+
+        # Name of the service to evaluate the expected arrivals of the queue based. 
+        - expected_arrival_service_name: "auv_system_node/low_temperature/arrival/change/real_expected_metric"
+        # If set to false, the arrival service request will be empty and use the srv ros_queue_msgs/FloatRequest. Default value.
+        # If set to true, the arrival service request will use the services specified by the template of the controller in its cpp file. 
+        - arrival_action_dependent: true
+        # If set to true, the arrival will be multiplied by the expected renewal time. In renewal systems, it's mainly used
+        # when the metric needs to scale with time like a static time average goal. Only used for the renewal_min_drift_plus_penalty
+        # type of controller.
+        - arrival_renewal_dependent: true
+
+        # Name of the service to evaluate the expected departures of the queue based on the evaluated action.
+        - expected_departure_service_name: "auv_system_node/low_temperature/departure/change/real_expected_metric"
+        # If set to false, the arrival service request will be empty and use the srv ros_queue_msgs/FloatRequest. Default value.
+        # If set to true, the arrival service request will use the services specified by the template of the controller in its cpp file. 
+        - departure_action_dependent: true
+        # If set to true, the departures will be multiplied by the expected renewal time. In renewal systems, it's mainly used
+        # when the metric needs to scale with time like a static time average goal. Only used for the renewal_min_drift_plus_penalty
+        # type of controller.
+        - departure_renewal_dependent: false
+
     - LocalizationQueue:
         # Weight in the cost function multplied with the size of the queue. 
         # A higher value means the controller will try to stabilize it faster compared to the other queues.

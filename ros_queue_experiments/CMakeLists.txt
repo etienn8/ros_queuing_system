@@ -146,6 +146,7 @@ add_executable(performance_monitor_node
   src/metric_monitor.cpp
   src/action_monitor.cpp
   src/localization_monitor.cpp
+  src/low_temperature_monitor.cpp
   src/real_queue_monitor.cpp
   src/temperature_monitor.cpp
   src/virtual_queue_monitor.cpp
@@ -157,6 +158,7 @@ add_executable(AUV_system_node
   src/auv_node.cpp
   src/auv_states.cpp
   src/dual_metric_services.cpp
+  src/low_temperature_services.cpp
   src/metric_services.cpp
   src/auv_state_manager.cpp
   src/temperature_services.cpp

@@ -6,6 +6,7 @@
 
 #include "localization_monitor.hpp"
 #include "temperature_monitor.hpp"
+#include "low_temperature_monitor.hpp"
 
 class VirtualQueueMonitor
 {
@@ -52,4 +53,9 @@ class VirtualQueueMonitor
          * @brief Temperature monitor that handles the computation and the publishing of the metrics of the temperature.
         */
         TemperatureMonitor temperature_monitor_;
+
+        /**
+         * @brief Temperature monitor for the lower bound of the temperature that handles the computation and the publishing of the metrics of the temperature.
+        */
+        LowTemperatureMonitor low_temperature_monitor_;
 };

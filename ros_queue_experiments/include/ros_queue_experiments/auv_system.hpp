@@ -6,6 +6,7 @@
 
 #include <memory>
 
+#include "ros_queue_experiments/metrics/low_temperature_services.hpp"
 #include "ros_queue_experiments/metrics/metric_services.hpp"
 #include "ros_queue_experiments/metrics/temperature_services.hpp"
 #include "ros_queue_experiments/metrics/renewal_time_services.hpp"
@@ -30,6 +31,7 @@ class AUVSystem
         std::shared_ptr<PenaltyServices> penalty_metric_services_;
         std::shared_ptr<RenewalTimeServices> expected_time_services_; 
         std::shared_ptr<TemperatureServices> temperature_services_;
+        std::shared_ptr<LowTemperatureServices> low_temperature_services_;
         std::shared_ptr<LocalizationServices> localization_services_;
         std::shared_ptr<TaskPublisher> task_services_;
 

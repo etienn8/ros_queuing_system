@@ -23,6 +23,20 @@ queue_list:
     - arrival_evaluation_service_name: "auv_system_node/temperature/arrival/$(arg rate_or_change)/real_metric"
     - departure_evaluation_service_name: "auv_system_node/temperature/departure/$(arg rate_or_change)/real_metric"
 
+  - LowTemperatureQueue: # Queue name
+      # Existing types of queues: 
+      # - real_queue: Queues that store ROS messages and its size is equal to sum of all its messages in bytes.
+      # - inequality_constraint_virtual_queue: Virtual queues that can't go below a 0 value.
+      # - equality_constraint_virtual_queue:  Virtual queues that can go below a 0 value.
+    - type_of_queue: "inequality_constraint_virtual_queue"
+
+      # A float value for virtual queues and value in bytes for real_queues. Don't forget to put a decimal, otherwise an error might occur.
+    - max_queue_size: 100000.0
+      
+      # === Services calls for virtual queues to evaluate the change in their size. Only used for virtual queues. ===
+    - arrival_evaluation_service_name: "auv_system_node/low_temperature/arrival/$(arg rate_or_change)/real_metric"
+    - departure_evaluation_service_name: "auv_system_node/low_temperature/departure/$(arg rate_or_change)/real_metric"  
+
   - LocalizationQueue: # Queue name
       # Existing types of queues: 
       # - real_queue: Queues that store ROS messages and its size is equal to sum of all its messages in bytes.

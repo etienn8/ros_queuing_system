@@ -92,7 +92,7 @@ float TemperatureServices::getRealDeparture(AUVStates::Zones zone)
 }
 
 // Change service
-bool TemperatureServices::realArrivalMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
+bool TemperatureServices::TempRealArrivalMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
                                                     ros_queue_msgs::FloatRequest::Response& res)
 {
     ros_queue_msgs::GetQueueControllerTiming last_renewal_msg;
@@ -131,7 +131,7 @@ bool TemperatureServices::realArrivalMetricCallback(ros_queue_msgs::FloatRequest
     return true;
 }
 
-bool TemperatureServices::realArrivalPredictionMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+bool TemperatureServices::TempRealArrivalPredictionMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
                                                         ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
 {
     if(renewal_time_services_)
@@ -160,7 +160,7 @@ bool TemperatureServices::realArrivalPredictionMetricCallback(ros_queue_msgs::Me
     return false;
 }
 
-bool TemperatureServices::expectedArrivalMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+bool TemperatureServices::TempExpectedArrivalMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
                                                         ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
 {
     if(renewal_time_services_)
@@ -189,7 +189,7 @@ bool TemperatureServices::expectedArrivalMetricCallback(ros_queue_msgs::MetricTr
     return false;
 }
 
-bool TemperatureServices::realDepartureMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
+bool TemperatureServices::TempRealDepartureMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
                                                       ros_queue_msgs::FloatRequest::Response& res)
 {
     ros_queue_msgs::GetQueueControllerTiming last_renewal_msg;
@@ -211,7 +211,7 @@ bool TemperatureServices::realDepartureMetricCallback(ros_queue_msgs::FloatReque
     return true;
 }
 
-bool TemperatureServices::realDeparturePredictionMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+bool TemperatureServices::TempRealDeparturePredictionMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
                                                           ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
 {
     for(int action_index = 0; action_index < req.action_set.action_set.size(); ++action_index)
@@ -224,7 +224,7 @@ bool TemperatureServices::realDeparturePredictionMetricCallback(ros_queue_msgs::
     return true;
 }
 
-bool TemperatureServices::expectedDepartureMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+bool TemperatureServices::TempExpectedDepartureMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
                                                           ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
 {
     for(int action_index = 0; action_index < req.action_set.action_set.size(); ++action_index)
@@ -238,7 +238,7 @@ bool TemperatureServices::expectedDepartureMetricCallback(ros_queue_msgs::Metric
 }
 
 // Rate services
-bool TemperatureServices::realArrivalRateMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
+bool TemperatureServices::TempRealArrivalRateMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
                                                         ros_queue_msgs::FloatRequest::Response& res)
 {
     ros_queue_experiments::AuvStates current_states = getCurrentStates();
@@ -246,7 +246,7 @@ bool TemperatureServices::realArrivalRateMetricCallback(ros_queue_msgs::FloatReq
     return true;
 }
 
-bool TemperatureServices::expectedArrivalRateMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+bool TemperatureServices::TempExpectedArrivalRateMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
                                     ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
 {
     if(renewal_time_services_)
@@ -277,14 +277,14 @@ bool TemperatureServices::expectedArrivalRateMetricCallback(ros_queue_msgs::Metr
     return false;
 }
 
-bool TemperatureServices::realDepartureRateMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
+bool TemperatureServices::TempRealDepartureRateMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
                                 ros_queue_msgs::FloatRequest::Response& res)
 {
     res.value = temp_target_;
     return true;
 }
 
-bool TemperatureServices::expectedDepartureRateMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+bool TemperatureServices::TempExpectedDepartureRateMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
                                     ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
 {
     for(int action_index = 0; action_index < req.action_set.action_set.size(); ++action_index)
@@ -292,4 +292,66 @@ bool TemperatureServices::expectedDepartureRateMetricCallback(ros_queue_msgs::Me
         res.predictions.push_back(temp_target_);
     }
     return true;
+}
+
+// Overriden methods
+bool TemperatureServices::realArrivalMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
+                                        ros_queue_msgs::FloatRequest::Response& res)
+{
+    return TempRealArrivalMetricCallback(req, res);
+}
+
+bool TemperatureServices::realArrivalPredictionMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                                    ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
+{
+    return TempRealArrivalPredictionMetricCallback(req, res);
+}
+
+bool TemperatureServices::expectedArrivalMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                    ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
+{
+    return TempExpectedArrivalMetricCallback(req, res);
+}
+
+bool TemperatureServices::realDepartureMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
+                                            ros_queue_msgs::FloatRequest::Response& res)
+{
+    return TempRealDepartureMetricCallback(req, res);
+}
+
+bool TemperatureServices::realDeparturePredictionMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                                    ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
+{
+    return TempRealDeparturePredictionMetricCallback(req, res);
+}
+
+bool TemperatureServices::expectedDepartureMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                    ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
+{
+    return TempExpectedDepartureMetricCallback(req, res);
+}
+
+// Rate callbacks
+bool TemperatureServices::realArrivalRateMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
+                                ros_queue_msgs::FloatRequest::Response& res)
+{
+    return TempRealArrivalRateMetricCallback(req, res);
+}
+
+bool TemperatureServices::expectedArrivalRateMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                    ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
+{
+    return TempExpectedArrivalRateMetricCallback(req, res);
+}
+
+bool TemperatureServices::realDepartureRateMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
+                                ros_queue_msgs::FloatRequest::Response& res)
+{
+    return TempRealDepartureRateMetricCallback(req, res);
+}
+
+bool TemperatureServices::expectedDepartureRateMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                    ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res)
+{
+    return TempExpectedDepartureRateMetricCallback(req, res);
 }

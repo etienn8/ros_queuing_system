@@ -1,6 +1,7 @@
 #include "ros_queue_experiments/auv_system.hpp"
 #include "ros_queue_experiments/auv_state_manager.hpp"
 
+#include "ros_queue_experiments/metrics/low_temperature_services.hpp"
 #include "ros_queue_experiments/metrics/metric_services.hpp"
 #include "ros_queue_experiments/metrics/temperature_services.hpp"
 #include "ros_queue_experiments/metrics/renewal_time_services.hpp"
@@ -17,6 +18,7 @@ AUVSystem::AUVSystem(ros::NodeHandle& nh): nh_(nh), ns_nh_(ros::NodeHandle())
     
     expected_time_services_ = std::make_shared<RenewalTimeServices>(nh_, "renewal_time", auv_state_manager_);
     temperature_services_ = std::make_shared<TemperatureServices>(nh_, "temperature", auv_state_manager_, expected_time_services_);
+    low_temperature_services_ = std::make_shared<LowTemperatureServices>(nh_, "low_temperature", auv_state_manager_, expected_time_services_);
     task_services_ = std::make_shared<TaskPublisher>(nh_, "task", auv_state_manager_, expected_time_services_);
     localization_services_ = std::make_shared<LocalizationServices>(nh_, "localization", auv_state_manager_, expected_time_services_);
     penalty_metric_services_ = std::make_shared<PenaltyServices>(nh_, "penalty", auv_state_manager_);

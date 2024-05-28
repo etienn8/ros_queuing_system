@@ -3,7 +3,7 @@
 #include "std_msgs/Empty.h"
 #include "ros_queue_msgs/QueueServerStatsFetch.h"
 
-VirtualQueueMonitor::VirtualQueueMonitor(ros::NodeHandle& nh): nhp_(nh), nh_(ros::NodeHandle()), localization_monitor_(nhp_), temperature_monitor_(nhp_)
+VirtualQueueMonitor::VirtualQueueMonitor(ros::NodeHandle& nh): nhp_(nh), nh_(ros::NodeHandle()), localization_monitor_(nhp_), temperature_monitor_(nhp_), low_temperature_monitor_(nhp_)
 {
     queue_server_stats_client_ = nh_.serviceClient<ros_queue_msgs::QueueServerStatsFetch>("queue_server/get_server_stats");
     ROS_INFO_STREAM("Waiting for existence of the "<< queue_server_stats_client_.getService() << " service");
@@ -22,6 +22,7 @@ void VirtualQueueMonitor::realStateCallback(const ros_queue_experiments::AuvStat
     {
         localization_monitor_.realStateMetricCallback(msg, queue_stats_metric_srv);
         temperature_monitor_.realStateMetricCallback(msg, queue_stats_metric_srv);
+        low_temperature_monitor_.realStateMetricCallback(msg, queue_stats_metric_srv);  
         
         monitoring_sample_done_pub_.publish(std_msgs::Empty());
     }

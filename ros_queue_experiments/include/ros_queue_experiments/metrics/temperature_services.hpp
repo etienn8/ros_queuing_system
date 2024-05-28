@@ -19,6 +19,40 @@ class TemperatureServices: public DualMetricServices
         float getRealDeparture(AUVStates::Zones zone);
 
     protected:
+        // Temperature specific that could be swapped for inversed limits
+        // Change callbacks
+        virtual bool TempRealArrivalMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
+                                               ros_queue_msgs::FloatRequest::Response& res);
+
+        virtual bool TempRealArrivalPredictionMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                                         ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res);
+        
+        virtual bool TempExpectedArrivalMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                            ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res);
+
+        virtual bool TempRealDepartureMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
+                                                 ros_queue_msgs::FloatRequest::Response& res);
+        
+        virtual bool TempRealDeparturePredictionMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                                         ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res);
+
+        virtual bool TempExpectedDepartureMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                            ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res) ;
+        
+        // Rate callbacks
+        virtual bool TempRealArrivalRateMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
+                                        ros_queue_msgs::FloatRequest::Response& res);
+        
+        virtual bool TempExpectedArrivalRateMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                            ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res);
+
+        virtual bool TempRealDepartureRateMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
+                                        ros_queue_msgs::FloatRequest::Response& res);
+        
+        virtual bool TempExpectedDepartureRateMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
+                                            ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res);
+
+        // Methods to override
         // Change callbacks
         virtual bool realArrivalMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
                                                ros_queue_msgs::FloatRequest::Response& res) override;
@@ -51,12 +85,11 @@ class TemperatureServices: public DualMetricServices
         virtual bool expectedDepartureRateMetricCallback(ros_queue_msgs::MetricTransmissionVectorPredictions::Request& req, 
                                             ros_queue_msgs::MetricTransmissionVectorPredictions::Response& res) override;
 
+        float temp_target_ = 0.0f;
     private:
         std::map<AUVStates::Zones, float> expected_arrivals_;
         std::map<AUVStates::Zones, float> expected_departures_;
 
         std::map<AUVStates::Zones, float> real_expected_arrivals_;
         std::map<AUVStates::Zones, float> real_expected_departures_;
-
-        float temp_target_ = 0.0f;
 };

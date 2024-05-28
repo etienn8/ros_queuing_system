@@ -1,4 +1,5 @@
 temp_target: 40.0
+low_temp_target: 0.0
 temp:
   - real_model:
     - TaskZone:
