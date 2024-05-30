@@ -84,6 +84,12 @@ class MetricMonitor
          */
         virtual double getMetricTarget() = 0;        
     
+    protected:
+        /**
+         * @brief Time at initialization.
+         */
+        ros::Time init_time_;
+        
     private:        
         /**
          * @brief Compute the mean of the real state metric
@@ -119,9 +125,4 @@ class MetricMonitor
          * @brief Number of real state samples.
          */
         long long nb_real_state_samples_;
-        
-        /**
-         * @brief Time at initialization.
-         */
-        ros::Time init_time_;
 };
