@@ -3,5 +3,6 @@ ros_queue_msgs/TransmissionVector target_action
 ros_queue_msgs/TransmissionVector applied_action
 ros_queue_msgs/TransmissionVector optimal_action
 
+int8 applied_action_index
 int8 action_index_difference 
 int8 optimal_action_index_difference

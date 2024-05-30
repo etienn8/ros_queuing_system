@@ -22,6 +22,7 @@ void ActionMonitor::action_messages_callbacks(const ros_queue_experiments::Actio
     synchronized_action_performance.applied_action = perturbated_action_performance->applied_action;
     synchronized_action_performance.optimal_action = optimal_action_performance->target_action;
 
+    synchronized_action_performance.applied_action_index = AUVStates::getZoneFromTransmissionVector(synchronized_action_performance.applied_action);
     synchronized_action_performance.action_index_difference = AUVStates::getZoneFromTransmissionVector(synchronized_action_performance.applied_action) - AUVStates::getZoneFromTransmissionVector(synchronized_action_performance.target_action);
     synchronized_action_performance.optimal_action_index_difference = AUVStates::getZoneFromTransmissionVector(synchronized_action_performance.optimal_action) - AUVStates::getZoneFromTransmissionVector(synchronized_action_performance.target_action);
 
