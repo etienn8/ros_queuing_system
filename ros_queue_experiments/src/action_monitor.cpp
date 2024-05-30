@@ -15,7 +15,7 @@ ActionMonitor::ActionMonitor(ros::NodeHandle& nh, const std::string& perturbated
 void ActionMonitor::action_messages_callbacks(const ros_queue_experiments::ActionPerformance::ConstPtr& perturbated_action_performance, 
                                               const ros_queue_experiments::ActionPerformance::ConstPtr& optimal_action_performance)
 {
-        ros_queue_experiments::ActionPerformance synchronized_action_performance;
+    ros_queue_experiments::ActionPerformance synchronized_action_performance;
     synchronized_action_performance.header.stamp = ros::Time::now();
 
     synchronized_action_performance.target_action = perturbated_action_performance->target_action;

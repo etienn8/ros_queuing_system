@@ -1,6 +1,7 @@
 std_msgs/Header header
 ros_queue_msgs/TransmissionVector current_zone
 ros_queue_msgs/TransmissionVector last_zone
+ros_queue_msgs/TransmissionVector zone_selected_by_controller
 
 float32 temperature
 float32 temperature_integral
@@ -8,7 +9,8 @@ float32 temperature_integral
 float32 localization
 float32 localization_integral
 
-float32 penalty
+float32 real_penalty
+float32 controller_penalty
 
 float32 transition_completion
 

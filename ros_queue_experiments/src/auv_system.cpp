@@ -80,7 +80,7 @@ bool AUVSystem::commandCallback(ros_queue_experiments::SendNewAUVCommand::Reques
 
         AUVStates::Zones new_zone = AUVStates::getZoneFromTransmissionVector(req.command);
         res.time_to_execute = expected_time_services_->getRealRenewalTimeWithTransitionFromCurrentState(new_zone);
-        auv_state_manager_->commandToNextZone(new_zone);
+        auv_state_manager_->commandToNextZone(new_zone, req.command_of_controller);
         ROS_INFO("New command received. Going to zone %d", new_zone);
     }
     else

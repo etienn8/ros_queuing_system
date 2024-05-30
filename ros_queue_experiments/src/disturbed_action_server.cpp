@@ -140,6 +140,8 @@ void DisturbedActionServer::commandReceivedCallback()
         // Send the disturbed action to the AUV system
         ros_queue_experiments::SendNewAUVCommand action_srv;
         action_srv.request.command = disturbed_action;
+        action_srv.request.command_of_controller = target_action;
+        
         float time_to_execute = 0.0;
         if(auv_action_client_.call(action_srv))
         {

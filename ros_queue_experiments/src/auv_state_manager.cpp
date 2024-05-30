@@ -7,10 +7,12 @@ AUVStateManager::AUVStateManager(AUVSystem* auv_system): auv_system_(auv_system)
     // Initialize to cold zone 
     states_at_last_transition_.current_zone = AUVStates::getTransmissionVectorFromZone(AUVStates::Zones::TaskZone);
     states_at_last_transition_.last_zone = AUVStates::getTransmissionVectorFromZone(AUVStates::Zones::TaskZone);
+    states_at_last_transition_.zone_selected_by_controller = AUVStates::getTransmissionVectorFromZone(AUVStates::Zones::TaskZone);
     states_at_last_transition_.localization  = 1.0;
     states_at_last_transition_.temperature  = 20.0;
     
-    states_at_last_transition_.penalty = 0.0;
+    states_at_last_transition_.real_penalty = 0.0;
+    states_at_last_transition_.controller_penalty = 0.0;
     states_at_last_transition_.transition_completion = 0.0;
 
     time_spent_in_zones_.addState();
@@ -34,6 +36,7 @@ ros_queue_experiments::AuvStates AUVStateManager::getCurrentStates()
         
         const AUVStates::Zones current_zone = AUVStates::getZoneFromTransmissionVector(current_states.current_zone);
         const AUVStates::Zones last_zone = AUVStates::getZoneFromTransmissionVector(current_states.last_zone);
+        const AUVStates::Zones zone_selected_by_controller = AUVStates::getZoneFromTransmissionVector(current_states.zone_selected_by_controller);
         
         const double elapsed_time_since_last_transition = (ros::Time::now() - last_transition_time_).toSec();
 
@@ -50,8 +53,9 @@ ros_queue_experiments::AuvStates AUVStateManager::getCurrentStates()
             current_states.transition_completion = 1.0;
         }
         
-        // The penalty is the total accumulated energy spent during transitions since the beginning.
-        current_states.penalty += auv_system_->penalty_metric_services_->getRealPenaltyTransition(last_zone, current_zone);
+        current_states.real_penalty = auv_system_->penalty_metric_services_->getRealPenaltyTransition(last_zone, current_zone);
+        current_states.controller_penalty = auv_system_->penalty_metric_services_->getPredictedPenaltyTransition(last_zone, zone_selected_by_controller);
+
 
         float current_localization = auv_system_->localization_services_->getRealLocalizationUncertainty(current_zone);
         current_states.localization_integral += current_localization*elapsed_time_since_last_transition;
@@ -66,7 +70,7 @@ ros_queue_experiments::AuvStates AUVStateManager::getCurrentStates()
     return current_states;
 }
 
-void AUVStateManager::commandToNextZone(AUVStates::Zones new_zone)
+void AUVStateManager::commandToNextZone(AUVStates::Zones new_zone, ros_queue_msgs::TransmissionVector command_of_controller)
 {
     ros_queue_experiments::AuvStates current_state = getCurrentStates();
 
@@ -82,6 +86,7 @@ void AUVStateManager::commandToNextZone(AUVStates::Zones new_zone)
     // Set the new zone and the timing of the transition.
     states_at_last_transition_.last_zone = states_at_last_transition_.current_zone;
     states_at_last_transition_.current_zone = AUVStates::getTransmissionVectorFromZone(new_zone);
+    states_at_last_transition_.zone_selected_by_controller = command_of_controller;
     states_at_last_transition_.transition_completion = 0.0;
 
     last_transition_time_ = ros::Time::now();

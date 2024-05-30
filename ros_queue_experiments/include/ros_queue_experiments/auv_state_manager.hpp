@@ -29,9 +29,10 @@ class AUVStateManager
         /**
          * @brief Set the auv to a new zone and take a snapshot of the current states.
          * 
-         * @param states 
+         * @param new_zone Zone to transition to from the real action applied.
+         * @param command_of_controller Command that the controller would have applied without perturbation. 
          */
-        void commandToNextZone(AUVStates::Zones new_zone);
+        void commandToNextZone(AUVStates::Zones new_zone, ros_queue_msgs::TransmissionVector command_of_controller);
 
     private:
 

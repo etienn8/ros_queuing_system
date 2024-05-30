@@ -91,6 +91,11 @@ float PenaltyServices::getRealPenaltyTransition(AUVStates::Zones from_zone, AUVS
     return real_penalty_transitions_[from_zone][to_zone];
 }
 
+float PenaltyServices::getPredictedPenaltyTransition(AUVStates::Zones from_zone, AUVStates::Zones to_zone)
+{
+    return this->predicted_penalty_transitions_[from_zone][to_zone];
+}
+
 bool PenaltyServices::realMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
                         ros_queue_msgs::FloatRequest::Response& res)
 {
