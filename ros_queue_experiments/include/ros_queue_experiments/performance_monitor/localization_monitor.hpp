@@ -1,3 +1,4 @@
+#pragma once
 #include "metric_monitor.hpp"
 #include "ros_queue_msgs/QueueServerStatsFetch.h"
 
