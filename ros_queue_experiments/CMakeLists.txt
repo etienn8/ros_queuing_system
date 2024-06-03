@@ -142,15 +142,15 @@ include_directories(
 ## The recommended prefix ensures that target names across packages don't collide
 
 add_executable(performance_monitor_node
-  src/performance_monitor_node.cpp
-  src/metric_monitor.cpp
-  src/action_monitor.cpp
-  src/localization_monitor.cpp
-  src/low_temperature_monitor.cpp
-  src/penalty_monitor.cpp
-  src/real_queue_monitor.cpp
-  src/temperature_monitor.cpp
-  src/virtual_queue_monitor.cpp
+  src/performance_monitor/performance_monitor_node.cpp
+  src/performance_monitor/metric_monitor.cpp
+  src/performance_monitor/action_monitor.cpp
+  src/performance_monitor/localization_monitor.cpp
+  src/performance_monitor/low_temperature_monitor.cpp
+  src/performance_monitor/penalty_monitor.cpp
+  src/performance_monitor/real_queue_monitor.cpp
+  src/performance_monitor/temperature_monitor.cpp
+  src/performance_monitor/virtual_queue_monitor.cpp
   src/auv_states.cpp
 )
 
@@ -158,15 +158,15 @@ add_executable(AUV_system_node
   src/auv_system.cpp
   src/auv_node.cpp
   src/auv_states.cpp
-  src/dual_metric_services.cpp
-  src/low_temperature_services.cpp
-  src/metric_services.cpp
+  src/metrics/dual_metric_services.cpp
+  src/metrics/low_temperature_services.cpp
+  src/metrics/metric_services.cpp
   src/auv_state_manager.cpp
-  src/temperature_services.cpp
-  src/renewal_time_services.cpp
-  src/localization_services.cpp
-  src/task_publisher.cpp
-  src/penalty_services.cpp
+  src/metrics/temperature_services.cpp
+  src/metrics/renewal_time_services.cpp
+  src/metrics/localization_services.cpp
+  src/metrics/task_publisher.cpp
+  src/metrics/penalty_services.cpp
   src/proportion_time_spent.cpp
 )
 
