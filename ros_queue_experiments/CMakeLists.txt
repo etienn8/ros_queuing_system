@@ -147,6 +147,7 @@ add_executable(performance_monitor_node
   src/action_monitor.cpp
   src/localization_monitor.cpp
   src/low_temperature_monitor.cpp
+  src/penalty_monitor.cpp
   src/real_queue_monitor.cpp
   src/temperature_monitor.cpp
   src/virtual_queue_monitor.cpp

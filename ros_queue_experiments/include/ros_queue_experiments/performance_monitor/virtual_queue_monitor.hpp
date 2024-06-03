@@ -7,6 +7,7 @@
 #include "localization_monitor.hpp"
 #include "temperature_monitor.hpp"
 #include "low_temperature_monitor.hpp"
+#include "penalty_monitor.hpp"
 
 class VirtualQueueMonitor
 {
@@ -58,4 +59,9 @@ class VirtualQueueMonitor
          * @brief Temperature monitor for the lower bound of the temperature that handles the computation and the publishing of the metrics of the temperature.
         */
         LowTemperatureMonitor low_temperature_monitor_;
+
+        /**
+         * @brief Penalty monitor that handles the computation and the publishing of the metrics of the penalty.
+        */
+        PenaltyMonitor penalty_monitor_;
 };
