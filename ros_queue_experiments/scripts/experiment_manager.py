@@ -3,43 +3,29 @@
 import os
 import rospy
 import roslaunch
+import rosbag
+from datetime import datetime
+import csv
+from ros_queue_msgs.msg import QueueServerStats
 
-# Get the path of the launch file
-launch_file = "experiment_launcher.launch"
-script_path_list = os.path.normpath(os.path.abspath(__file__)).split(os.sep)
-launch_directory_path_list = script_path_list[:-2]
-launch_directory_path_list.append("launch")
+import common_experiment_utils
+import experiment_instance
+import experiment1_definition
 
-launch_directory_path = os.sep.join(launch_directory_path_list)
+if __name__ == "__main__":
+    # Start the launch file
+    rospy.init_node('experiment_manager', anonymous=False)
 
-full_launch_path = launch_directory_path + "/" + launch_file
+    uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
+    roslaunch.configure_logging(uuid)
 
-# Start the launch file
-rospy.init_node('experiment_manager', anonymous=False)
+    # Experiment 1
 
-uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
-roslaunch.configure_logging(uuid)
+    cli_args = [common_experiment_utils.LAUNCH_DIRECTORY_PATH + "experiment_launcher.launch", 'experiment_setup:=perfect_model_and_setup']
 
+    exp1_analyser = experiment1_definition.Experiment1Analyser()
+    exp1 = experiment_instance.ExperimentInstance(uuid, cli_args, 10, exp1_analyser)
+    exp1.execute()
+    rospy.loginfo("Experiment 1 completed")
 
-# Experiment 1 
-exp1_duration_sec = 120
-cli_args = [full_launch_path, 'experiment_setup:=perfect_model_and_setup']
-roslaunch_args = cli_args[1:]
-roslaunch_file = [(roslaunch.rlutil.resolve_launch_arguments(cli_args)[0], roslaunch_args)]
-
-parent = roslaunch.parent.ROSLaunchParent(uuid, roslaunch_file)
-
-parent.start()
-
-rospy.sleep(5)
-
-parent.shutdown()
-
-# Is parent still shuting down?
-parent = roslaunch.parent.ROSLaunchParent(uuid, roslaunch_file)
-parent.start()
-
-rospy.sleep(exp1_duration_sec)
-
-parent.shutdown()
 

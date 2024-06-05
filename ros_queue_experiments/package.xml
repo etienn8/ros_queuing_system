@@ -38,7 +38,9 @@
   <depend>actionlib</depend>
   <depend>actionlib_msgs</depend>
   <depend>message_filters</depend>
+  <exec_depend>rosbag</exec_depend>
   <exec_depend>rospy</exec_depend>
+  <exec_depend>roslaunch</exec_depend>
   
 
 

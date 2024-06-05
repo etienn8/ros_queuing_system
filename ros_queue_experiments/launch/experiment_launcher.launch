@@ -4,6 +4,9 @@
         time_uncertainties, variable_time_action_setup  -->
     <arg name="experiment_setup" default="perfect_model_and_setup"/>
 
+    <arg name="record_bags" default="true"/>
+    <arg name="rosbag_args" default="-o $(find ros_queue_experiments)/experiment_bags/$(arg experiment_setup) /NoRew_Inv/auv_system_node/auv_state /NoRew_Inv/monitoring_node/localization /NoRew_Inv/monitoring_node/real_queue /NoRew_Inv/monitoring_node/synced_action_performances /NoRew_Inv/monitoring_node/temperature /NoRew_Inv/queue_controller/renewal_time /NoRew_Inv/queue_controller/controller_costs /Rew_Inv/auv_system_node/auv_state /Rew_Inv/monitoring_node/localization /Rew_Inv/monitoring_node/real_queue /Rew_Inv/monitoring_node/synced_action_performances /Rew_Inv/monitoring_node/temperature /Rew_Inv/queue_controller/renewal_time /Rew_Inv/queue_controller/controller_costs /Rew_NoInv/auv_system_node/auv_state /Rew_NoInv/monitoring_node/localization /Rew_NoInv/monitoring_node/real_queue /Rew_NoInv/monitoring_node/synced_action_performances /Rew_NoInv/monitoring_node/temperature /Rew_NoInv/queue_controller/renewal_time /Rew_NoInv/queue_controller/controller_costs /NoRew_NoInv/auv_system_node/auv_state /NoRew_NoInv/monitoring_node/localization /NoRew_NoInv/monitoring_node/real_queue /NoRew_NoInv/monitoring_node/synced_action_performances /NoRew_NoInv/monitoring_node/temperature /NoRew_NoInv/queue_controller/renewal_time /NoRew_NoInv/queue_controller/controller_costs"/>
+
     <!-- Start an experiment with a non-renewal controller and no step inversion -->
     <group ns="NoRew_NoInv"> 
         <include file="$(find ros_queue_experiments)/launch/queue_system_setup_template.launch">
@@ -56,5 +59,8 @@
         </include>
     </group>
 
-    <node name="rosbag_recorder" pkg="rosbag" type="record" args=" --duration=2m -o $(find ros_queue_experiments)/experiment_bags/$(arg experiment_setup) /NoRew_Inv/auv_system_node/auv_state /NoRew_Inv/monitoring_node/localization /NoRew_Inv/monitoring_node/real_queue /NoRew_Inv/monitoring_node/synced_action_performances /NoRew_Inv/monitoring_node/temperature /NoRew_Inv/queue_controller/renewal_time /NoRew_Inv/queue_controller/controller_costs /Rew_Inv/auv_system_node/auv_state /Rew_Inv/monitoring_node/localization /Rew_Inv/monitoring_node/real_queue /Rew_Inv/monitoring_node/synced_action_performances /Rew_Inv/monitoring_node/temperature /Rew_Inv/queue_controller/renewal_time /Rew_Inv/queue_controller/controller_costs /Rew_NoInv/auv_system_node/auv_state /Rew_NoInv/monitoring_node/localization /Rew_NoInv/monitoring_node/real_queue /Rew_NoInv/monitoring_node/synced_action_performances /Rew_NoInv/monitoring_node/temperature /Rew_NoInv/queue_controller/renewal_time /Rew_NoInv/queue_controller/controller_costs /NoRew_NoInv/auv_system_node/auv_state /NoRew_NoInv/monitoring_node/localization /NoRew_NoInv/monitoring_node/real_queue /NoRew_NoInv/monitoring_node/synced_action_performances /NoRew_NoInv/monitoring_node/temperature /NoRew_NoInv/queue_controller/renewal_time /NoRew_NoInv/queue_controller/controller_costs"/>
+    <!-- Record the experiment data if the arg record_bags is true -->
+    <group if="$(arg record_bags)">
+        <node name="rosbag_recorder" pkg="rosbag" type="record" args="$(arg rosbag_args)"/>
+    </group>
 </launch>
