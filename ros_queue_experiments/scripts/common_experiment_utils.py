@@ -2,6 +2,7 @@
 import os
 import rosbag
 import rospy
+import csv
 
 from ros_queue_experiments.msg import MetricPerformance
 
@@ -10,6 +11,11 @@ package_path = script_path_list[:-2]
 LAUNCH_DIRECTORY_PATH = os.sep.join(package_path) + "/launch/"
 BAG_DIRECTORY_PATH = os.sep.join(package_path) + "/experiment_bags/"
 RESULT_DIRECTORY_PATH = BAG_DIRECTORY_PATH + "results/"
+
+class Series:
+    def __init__(self):
+        self.variable_name = ""
+        self.values = []
 
 class QueueServerMetricStatsStruct:
     def __init__(self):
@@ -69,6 +75,27 @@ class AllMetricPerformanceStruct:
             metric.real_continuous_average_diff_with_target.append(msg.real_continuous_average_diff_with_target)
             metric.real_continuous_average_diff_with_server_mean.append(msg.real_continuous_average_diff_with_server_mean)
             metric.real_continuous_average_diff_with_server_time_average.append(msg.real_continuous_average_diff_with_server_time_average)
+
+def createCSV(list_of_series, csv_filename):
+    max_nb_rows = max([len(series.values) for series in list_of_series])
+    
+    with open(csv_filename, 'w') as csvfile:
+        csvwriter = csv.writer(csvfile, delimiter=';')
+        
+        row = []
+        for series in list_of_series:
+            row.append(series.variable_name)
+
+        csvwriter.writerow(row)
+        for row_index in range(max_nb_rows):
+            row = []
+            for series in list_of_series:
+                if row_index < len(series.values):
+                    row.append(series.values[row_index])
+                else:
+                    row.append("")
+            csvwriter.writerow(row)
+
 
 class QueueEndValues:
     def __init__(self):
