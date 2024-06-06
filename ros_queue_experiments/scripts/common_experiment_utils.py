@@ -19,41 +19,79 @@ class Series:
 
 class QueueServerMetricStatsStruct:
     def __init__(self):
-        self.queue_size = []
-        self.time_average_arrival = []
-        self.time_average_departure = []
+        self.queue_size = Series()
+        self.time_average_arrival = Series()
+        self.time_average_departure = Series()
 
 class QueueServerStatsStruct:
     def __init__(self):
-        self.time_stamps = []
+        self.time_stamps = Series()
+        self.time_stamps.variable_name = "queue_server_time"
+
         self.localization_stats = QueueServerMetricStatsStruct()
+        self.localization_stats.queue_size.variable_name = "localization_queue_size"
+        self.localization_stats.time_average_arrival.variable_name = "localization_time_average_arrival"
+        self.localization_stats.time_average_departure.variable_name = "localization_time_average_departure"
+
         self.temperture_stats = QueueServerMetricStatsStruct()
+        self.temperture_stats.queue_size.variable_name = "temperature_queue_size"
+        self.temperture_stats.time_average_arrival.variable_name = "temperature_time_average_arrival"
+        self.temperture_stats.time_average_departure.variable_name = "temperature_time_average_departure"
+
         self.low_temperature_stats = QueueServerMetricStatsStruct()
+        self.low_temperature_stats.queue_size.variable_name = "low_temperature_queue_size"
+        self.low_temperature_stats.time_average_arrival.variable_name = "low_temperature_time_average_arrival"
+        self.low_temperature_stats.time_average_departure.variable_name = "low_temperature_time_average_departure"
+
         self.real_queue_stats = QueueServerMetricStatsStruct()
+        self.real_queue_stats.queue_size.variable_name = "real_queue_size"
+        self.real_queue_stats.time_average_arrival.variable_name = "real_queue_time_average_arrival"
+        self.real_queue_stats.time_average_departure.variable_name = "real_queue_time_average_departure"
 
 class MetricPerformanceStruct:
-    def __init__(self):
-        self.time_stamps = []
+    def __init__(self, metric_name: str = ""):
+        self.time_stamps = Series()
+        self.time_stamps.variable_name = metric_name + "_time"
+        
+        self.current_real_value = Series()
+        self.current_real_value.variable_name = metric_name + "_current_real_value"
 
-        self.current_real_value = []
-        self.real_average_value = []
-        self.real_continous_average_value = []
-        self.real_time_average_value = []
-        self.queue_server_time_average_value = []
-        self.queue_server_arrival_mean = []
-        self.target_value = []
-        self.real_current_diff_with_target = []
-        self.real_continuous_average_diff_with_target = []
-        self.real_continuous_average_diff_with_server_mean = []
-        self.real_continuous_average_diff_with_server_time_average = []
+        self.real_average_value = Series()
+        self.real_average_value.variable_name = metric_name + "_real_average_value"
 
+        self.real_continous_average_value = Series()
+        self.real_continous_average_value.variable_name = metric_name + "_real_continous_average_value"
+
+        self.real_time_average_value = Series()
+        self.real_time_average_value.variable_name = metric_name + "_real_time_average_value"
+
+        self.queue_server_time_average_value = Series()
+        self.queue_server_time_average_value.variable_name = metric_name + "_queue_server_time_average_value"
+
+        self.queue_server_arrival_mean = Series()
+        self.queue_server_arrival_mean.variable_name = metric_name + "_queue_server_arrival_mean"
+
+        self.target_value = Series()
+        self.target_value.variable_name = metric_name + "_target_value"
+
+        self.real_current_diff_with_target = Series()
+        self.real_current_diff_with_target.variable_name = metric_name + "_real_current_diff_with_target"
+
+        self.real_continuous_average_diff_with_target = Series()
+        self.real_continuous_average_diff_with_target.variable_name = metric_name + "_real_continuous_average_diff_with_target"
+
+        self.real_continuous_average_diff_with_server_mean = Series()
+        self.real_continuous_average_diff_with_server_mean.variable_name = metric_name + "_real_continuous_average_diff_with_server_mean"
+
+        self.real_continuous_average_diff_with_server_time_average = Series()
+        self.real_continuous_average_diff_with_server_time_average.variable_name = metric_name + "_real_continuous_average_diff_with_server_time_average"
 
 class AllMetricPerformanceStruct:
     def __init__(self):
-        self.localization = MetricPerformanceStruct()
-        self.temperature = MetricPerformanceStruct()
-        self.real_queue = MetricPerformanceStruct()
-        self.penalty = MetricPerformanceStruct()
+        self.localization = MetricPerformanceStruct("localization")
+        self.temperature = MetricPerformanceStruct("temperature")
+        self.real_queue = MetricPerformanceStruct("real_queue")
+        self.penalty = MetricPerformanceStruct("penalty")
 
     def populateWithBag(self, bag: rosbag.Bag, monitoring_prefix: str, time_init: rospy.Time):
         self.__populateMetric(bag, monitoring_prefix + "monitoring_node/localization", self.localization, time_init)
@@ -63,18 +101,18 @@ class AllMetricPerformanceStruct:
  
     def __populateMetric(self, bag: rosbag.Bag, topic_name: str, metric: MetricPerformanceStruct, time_init: float):
         for topic, msg, t in bag.read_messages(topics=[topic_name]):
-            metric.time_stamps.append(t.to_sec() - time_init)
-            metric.current_real_value.append(msg.current_real_value)
-            metric.real_average_value.append(msg.real_average_value)
-            metric.real_continous_average_value.append(msg.real_continous_average_value)
-            metric.real_time_average_value.append(msg.real_time_average_value)
-            metric.queue_server_time_average_value.append(msg.queue_server_time_average_value)
-            metric.queue_server_arrival_mean.append(msg.queue_server_arrival_mean)
-            metric.target_value.append(msg.target_value)
-            metric.real_current_diff_with_target.append(msg.real_current_diff_with_target)
-            metric.real_continuous_average_diff_with_target.append(msg.real_continuous_average_diff_with_target)
-            metric.real_continuous_average_diff_with_server_mean.append(msg.real_continuous_average_diff_with_server_mean)
-            metric.real_continuous_average_diff_with_server_time_average.append(msg.real_continuous_average_diff_with_server_time_average)
+            metric.time_stamps.values.append(t.to_sec() - time_init)
+            metric.current_real_value.values.append(msg.current_real_value)
+            metric.real_average_value.values.append(msg.real_average_value)
+            metric.real_continous_average_value.values.append(msg.real_continous_average_value)
+            metric.real_time_average_value.values.append(msg.real_time_average_value)
+            metric.queue_server_time_average_value.values.append(msg.queue_server_time_average_value)
+            metric.queue_server_arrival_mean.values.append(msg.queue_server_arrival_mean)
+            metric.target_value.values.append(msg.target_value)
+            metric.real_current_diff_with_target.values.append(msg.real_current_diff_with_target)
+            metric.real_continuous_average_diff_with_target.values.append(msg.real_continuous_average_diff_with_target)
+            metric.real_continuous_average_diff_with_server_mean.values.append(msg.real_continuous_average_diff_with_server_mean)
+            metric.real_continuous_average_diff_with_server_time_average.values.append(msg.real_continuous_average_diff_with_server_time_average)
 
 def createCSV(list_of_series, csv_filename):
     max_nb_rows = max([len(series.values) for series in list_of_series])
