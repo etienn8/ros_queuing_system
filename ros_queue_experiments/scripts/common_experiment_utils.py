@@ -33,10 +33,10 @@ class QueueServerStatsStruct:
         self.localization_stats.time_average_arrival.variable_name = "localization_time_average_arrival"
         self.localization_stats.time_average_departure.variable_name = "localization_time_average_departure"
 
-        self.temperture_stats = QueueServerMetricStatsStruct()
-        self.temperture_stats.queue_size.variable_name = "temperature_queue_size"
-        self.temperture_stats.time_average_arrival.variable_name = "temperature_time_average_arrival"
-        self.temperture_stats.time_average_departure.variable_name = "temperature_time_average_departure"
+        self.temperature_stats = QueueServerMetricStatsStruct()
+        self.temperature_stats.queue_size.variable_name = "temperature_queue_size"
+        self.temperature_stats.time_average_arrival.variable_name = "temperature_time_average_arrival"
+        self.temperature_stats.time_average_departure.variable_name = "temperature_time_average_departure"
 
         self.low_temperature_stats = QueueServerMetricStatsStruct()
         self.low_temperature_stats.queue_size.variable_name = "low_temperature_queue_size"
@@ -90,12 +90,14 @@ class AllMetricPerformanceStruct:
     def __init__(self):
         self.localization = MetricPerformanceStruct("localization")
         self.temperature = MetricPerformanceStruct("temperature")
+        self.low_temperature = MetricPerformanceStruct("low_temperature")
         self.real_queue = MetricPerformanceStruct("real_queue")
         self.penalty = MetricPerformanceStruct("penalty")
 
     def populateWithBag(self, bag: rosbag.Bag, monitoring_prefix: str, time_init: rospy.Time):
         self.__populateMetric(bag, monitoring_prefix + "monitoring_node/localization", self.localization, time_init)
         self.__populateMetric(bag, monitoring_prefix + "monitoring_node/temperature", self.temperature, time_init)
+        self.__populateMetric(bag, monitoring_prefix + "monitoring_node/low_temperature", self.low_temperature, time_init)
         self.__populateMetric(bag, monitoring_prefix + "monitoring_node/real_queue", self.real_queue, time_init)
         self.__populateMetric(bag, monitoring_prefix + "monitoring_node/penalty", self.penalty, time_init)
  
@@ -137,16 +139,29 @@ def createCSV(list_of_series, csv_filename):
 
 class QueueEndValues:
     def __init__(self):
-        self.localization_arrival = 0.0
-        self.localization_departure = 0.0
+        self.localization_arrival = Series()
+        self.localization_arrival.variable_name = "end_localization_arrival"
 
-        self.temperature_arrival = 0.0
-        self.temperature_departure = 0.0
+        self.localization_departure = Series()
+        self.localization_departure.variable_name = "end_localization_departure"
 
-        self.low_temperature_arrival = 0.0
-        self.low_temperature_departure = 0.0
+        self.temperature_arrival = Series()
+        self.temperature_arrival.variable_name = "end_temperature_arrival"
 
-        self.real_queue_arrival = 0.0
-        self.real_queue_departure = 0.0
+        self.temperature_departure = Series()
+        self.temperature_departure.variable_name = "end_temperature_departure"
 
-        self.penalty = 0.0
+        self.low_temperature_arrival = Series()
+        self.low_temperature_arrival.variable_name = "end_low_temperature_arrival"
+
+        self.low_temperature_departure = Series()
+        self.low_temperature_departure.variable_name = "end_low_temperature_departure"
+
+        self.real_queue_arrival = Series()
+        self.real_queue_arrival.variable_name = "end_real_queue_arrival"
+
+        self.real_queue_departure = Series()
+        self.real_queue_departure.variable_name = "end_real_queue_departure"
+
+        self.penalty = Series()
+        self.penalty.variable_name = "end_penalty"
