@@ -999,11 +999,11 @@ class QueueController
                 
                     if(part_of_multicontroller_synchronization_)
                     {
-                        optimization_done_pub_.publish(std_msgs::Empty());
                         if(is_dependent_on_a_another_controller_)
                         {
                             waitForSynchronization();
                         }
+                        optimization_done_pub_.publish(std_msgs::Empty());
                     }
 
                     sendBestCommand(best_action_parameters.action);
