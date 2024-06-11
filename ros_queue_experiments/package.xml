@@ -41,6 +41,7 @@
   <exec_depend>rosbag</exec_depend>
   <exec_depend>rospy</exec_depend>
   <exec_depend>roslaunch</exec_depend>
+  <depend>ros_boosted_utilities</depend>
   
 
 

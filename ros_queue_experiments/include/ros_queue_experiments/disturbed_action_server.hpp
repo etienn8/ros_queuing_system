@@ -4,9 +4,12 @@
 #include <mutex>
 
 #include "ros/ros.h"
+#include "ros_boosted_utilities/persistent_service_client.hpp"
 #include "actionlib/server/simple_action_server.h"
 
 #include "ros_queue_msgs/TransmissionVectorAction.h"
+#include "ros_queue_experiments/GetRealAUVStates.h"
+#include "ros_queue_experiments/SendNewAUVCommand.h"
 
 class DisturbedActionServer
 {
@@ -82,12 +85,12 @@ class DisturbedActionServer
         /**
          * @brief Service client to get the current AUV states
         */
-        ros::ServiceClient auv_state_client_;
+        PersistentServiceClient<ros_queue_experiments::GetRealAUVStates> auv_state_client_;
 
         /**
          * @brief Service client to send the disturbed action to the AUV system.
         */
-        ros::ServiceClient auv_action_client_;
+        PersistentServiceClient<ros_queue_experiments::SendNewAUVCommand> auv_action_client_;
 
         /**
          * @brief ROS publisher to indicated the desired and the real taken actions.

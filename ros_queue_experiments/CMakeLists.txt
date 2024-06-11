@@ -16,6 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
   actionlib
   actionlib_msgs
   message_filters
+  ros_boosted_utilities
 )
 
 ## System dependencies are found with CMake's conventions

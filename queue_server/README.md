@@ -35,10 +35,11 @@ This is research code, expect that it changes often and any fitness for a partic
 	sudo rosdep install --from-paths src
 #### Building
 
-To build from source, clone the [rosparam_utils](https://github.com/etienn8/rosparam_utils) repo, clone the latest version from this repository into your catkin workspace and compile all the packages using
+To build from source, clone the [rosparam_utils](https://github.com/etienn8/rosparam_utils), clone the [ros_boosted_utilities](https://github.com/etienn8/ros_boosted_utilities) repo, clone the latest version from this repository into your catkin workspace and compile all the packages using
 
 	cd catkin_workspace/src
 	git clone https://github.com/etienn8/rosparam_utils.git
+	git clone https://github.com/etienn8/ros_boosted_utilities.git
 	git clone https://github.com/etienn8/ros_queuing_system.git
 	cd ../
 	rosdep install --from-paths . --ignore-src

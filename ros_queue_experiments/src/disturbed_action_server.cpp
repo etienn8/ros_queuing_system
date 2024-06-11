@@ -1,7 +1,5 @@
 #include "ros_queue_experiments/disturbed_action_server.hpp"
 
-#include "ros_queue_experiments/GetRealAUVStates.h"
-#include "ros_queue_experiments/SendNewAUVCommand.h"
 #include "ros_queue_experiments/ActionPerformance.h"
 
 #include "std_msgs/UInt8.h"
@@ -55,12 +53,12 @@ DisturbedActionServer::DisturbedActionServer(ros::NodeHandle& nh): nhp_(nh), nh_
     }
     else 
     {
-        auv_state_client_ = nh_.serviceClient<ros_queue_experiments::GetRealAUVStates>("auv_system_node/get_auv_state");
+        auv_state_client_ = PersistentServiceClient<ros_queue_experiments::GetRealAUVStates>(nh_, "auv_system_node/get_auv_state");
         ROS_INFO("Waiting for the AUV state service to be ready...");
         auv_state_client_.waitForExistence();
         ROS_INFO("AUV state service is ready.");
 
-        auv_action_client_ = nh_.serviceClient<ros_queue_experiments::SendNewAUVCommand>("auv_system_node/new_command");
+        auv_action_client_ = PersistentServiceClient<ros_queue_experiments::SendNewAUVCommand>(nh_, "auv_system_node/new_command");
         ROS_INFO("Waiting for the AUV action service to be ready...");
         auv_action_client_.waitForExistence();
         ROS_INFO("AUV action service is ready.");
