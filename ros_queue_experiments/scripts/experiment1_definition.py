@@ -25,8 +25,16 @@ class Experiment1Analyser:
              "/NoRew_NoInv/monitoring_node/low_temperature",
             "/NoRew_NoInv/monitoring_node/penalty"]
 
-    def generateOutput(self, time_init):
-        bag = rosbag.Bag(common_experiment_utils.BAG_DIRECTORY_PATH + self.bag_name + ".bag")
+    def generateOutput(self, time_init, bag_name, base_init_time_on_first_value=False):
+        bag = rosbag.Bag(common_experiment_utils.BAG_DIRECTORY_PATH + bag_name + ".bag")
+
+        # Get init time if not set
+        init_time_set = False
+
+        for topic, msg, t in bag.read_messages(topics=["/NoRew_NoInv/queue_server/server_stats"]):
+            if (not init_time_set) and base_init_time_on_first_value:
+                time_init = t.to_sec()
+                init_time_set = True
 
         # Get action performances
         action_performances = common_experiment_utils.ActionSeries()

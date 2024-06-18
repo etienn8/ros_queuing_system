@@ -11,8 +11,10 @@ from ros_queue_msgs.msg import QueueServerStats
 import common_experiment_utils
 import experiment_instance
 import experiment1_definition
+
 import matplotlib.pyplot as plt
 import scienceplots
+
 # Using the formating from https://github.com/garrettj403/SciencePlots to follow IEEE requirements
 plt.style.use('science')
 # plt.style.use(['science', 'ieee'])
@@ -29,8 +31,11 @@ if __name__ == "__main__":
     cli_args = [common_experiment_utils.LAUNCH_DIRECTORY_PATH + "experiment_launcher.launch", 'experiment_setup:=perfect_model_and_setup']
 
     exp1_analyser = experiment1_definition.Experiment1Analyser()
-    exp1 = experiment_instance.ExperimentInstance(uuid, cli_args, 10, exp1_analyser)
-    exp1.execute()
+    exp1 = experiment_instance.ExperimentInstance(uuid, cli_args, 60, exp1_analyser)
+    exp1.execute(generate_output=False)
+    #exp1.analyser.generateOutput(0, "experiment1_2024-06-10_14-55-02", base_init_time_on_first_value=True)
+    exp1.analyser.generateOutput(exp1.time_init.to_sec(), exp1.analyser.getBagName())
     rospy.loginfo("Experiment 1 completed")
+    
 
 

@@ -16,11 +16,12 @@ class ExperimentInstance:
 
         self.parent = roslaunch.parent.ROSLaunchParent(uuid, roslaunch_file)
 
-    def execute(self):
+    def execute(self, generate_output=True):
         self.time_init = rospy.Time.now()
         self.parent.start()
         rospy.sleep(self.duration_sec)
         self.parent.shutdown()
         # Analyse results
-        self.analyser.generateOutput(self.time_init.to_sec())
+        if generate_output:
+            self.analyser.generateOutput(self.time_init.to_sec(), self.analyser.getBagName())
 
