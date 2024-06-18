@@ -3,8 +3,10 @@ import os
 import rosbag
 import rospy
 import csv
+from enum import Enum
 
 from ros_queue_experiments.msg import MetricPerformance
+from ros_queue_experiments.msg import ActionPerformance
 
 script_path_list = os.path.normpath(os.path.abspath(__file__)).split(os.sep)
 package_path = script_path_list[:-2]
@@ -135,6 +137,55 @@ def createCSV(list_of_series, csv_filename):
                 else:
                     row.append("")
             csvwriter.writerow(row)
+
+class ActionType(Enum):
+    TASK_ZONE = 0,
+    HIGH_LOCALIZATION_ZONE = 1,
+    LOW_TEMPERATURE_ZONE = 2
+
+
+class ActionSeries:
+    def __init__(self):
+        self.time_stamps = Series()
+        self.time_stamps.variable_name = "action_time"
+
+        self.selected_action = Series()
+        self.selected_action.variable_name = "selected_action"
+
+        self.applied_action = Series()
+        self.applied_action.variable_name = "applied_action"
+
+        self.synchronized_queue_stats = QueueServerStatsStruct()
+    
+    def populateWithBag(self, bag: rosbag.Bag, monitoring_prefix: str, time_init: rospy.Time):
+        for topic, msg, t in bag.read_messages(topics=[monitoring_prefix + "perturbation_node/action_performance"]):
+            self.time_stamps.values.append(t.to_sec() - time_init)
+            
+            for internal_struct,msg_action in zip([self.selected_action, self.applied_action], [msg.controller_action_index, msg.applied_action_index]):
+                if msg_action == 0:
+                    internal_struct.values.append(ActionType.TASK_ZONE)
+                elif msg_action == 1:
+                    internal_struct.values.append(ActionType.HIGH_LOCALIZATION_ZONE)
+                elif msg_action == 2:
+                    internal_struct.values.append(ActionType.LOW_TEMPERATURE_ZONE)
+            
+            for queue_stats in msg.queue_server_stats.queue_stats:
+                if queue_stats.queue_name == "LocalizationQueue":
+                    self.synchronized_queue_stats.localization_stats.queue_size.values.append(queue_stats.current_size)
+                    self.synchronized_queue_stats.localization_stats.time_average_arrival.values.append(queue_stats.arrival_time_average)
+                    self.synchronized_queue_stats.localization_stats.time_average_departure.values.append(queue_stats.departure_time_average)
+                elif queue_stats.queue_name == "TemperatureQueue":
+                    self.synchronized_queue_stats.temperature_stats.queue_size.values.append(queue_stats.current_size)
+                    self.synchronized_queue_stats.temperature_stats.time_average_arrival.values.append(queue_stats.arrival_time_average)
+                    self.synchronized_queue_stats.temperature_stats.time_average_departure.values.append(queue_stats.departure_time_average)
+                elif queue_stats.queue_name == "LowTemperatureQueue":
+                    self.synchronized_queue_stats.low_temperature_stats.queue_size.values.append(queue_stats.current_size)
+                    self.synchronized_queue_stats.low_temperature_stats.time_average_arrival.values.append(queue_stats.arrival_time_average)
+                    self.synchronized_queue_stats.low_temperature_stats.time_average_departure.values.append(queue_stats.departure_time_average)
+                elif queue_stats.queue_name == "TaskQueue":
+                    self.synchronized_queue_stats.real_queue_stats.queue_size.values.append(queue_stats.current_size)
+                    self.synchronized_queue_stats.real_queue_stats.time_average_arrival.values.append(queue_stats.arrival_time_average)
+                    self.synchronized_queue_stats.real_queue_stats.time_average_departure.values.append(queue_stats.departure_time_average)
 
 
 class QueueEndValues:

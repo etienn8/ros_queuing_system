@@ -28,6 +28,9 @@ class Experiment1Analyser:
     def generateOutput(self, time_init):
         bag = rosbag.Bag(common_experiment_utils.BAG_DIRECTORY_PATH + self.bag_name + ".bag")
 
+        # Get action performances
+        action_performances = common_experiment_utils.ActionSeries()
+        action_performances.populateWithBag(bag, "/NoRew_NoInv/", time_init)
 
         # Get queue server end values
         queue_server_stats = common_experiment_utils.QueueServerStatsStruct()
