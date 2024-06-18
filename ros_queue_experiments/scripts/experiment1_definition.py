@@ -17,13 +17,15 @@ class Experiment1Analyser:
 
         self.topics_to_record = [
             "/NoRew_NoInv/queue_server/server_stats",
-            "/NoRew_NoInv/monitoring_node/synced_action_performances",
             "/NoRew_NoInv/auv_system_node/auv_state",
             "/NoRew_NoInv/monitoring_node/localization",
             "/NoRew_NoInv/monitoring_node/real_queue",
             "/NoRew_NoInv/monitoring_node/temperature",
              "/NoRew_NoInv/monitoring_node/low_temperature",
-            "/NoRew_NoInv/monitoring_node/penalty"]
+            "/NoRew_NoInv/monitoring_node/penalty",
+            "/NoRew_NoInv/queue_controller/optimization_done",
+            "/NoRew_NoInv/queue_controller/control_loop_started",
+            "/NoRew_NoInv/perturbation_node/action_performance"]
 
     def generateOutput(self, time_init, bag_name, base_init_time_on_first_value=False):
         bag = rosbag.Bag(common_experiment_utils.BAG_DIRECTORY_PATH + bag_name + ".bag")
@@ -41,42 +43,19 @@ class Experiment1Analyser:
         action_performances.populateWithBag(bag, "/NoRew_NoInv/", time_init)
 
         # Get queue server end values
-        queue_server_stats = common_experiment_utils.QueueServerStatsStruct()
         queue_server_arrival_departures_end_values = common_experiment_utils.QueueEndValues()
-
-        for topic, msg, t in bag.read_messages(topics=["/NoRew_NoInv/queue_server/server_stats"]):
-            queue_server_stats.time_stamps.values.append((t.to_sec()-time_init))
-            
-            for queue_stats in msg.queue_stats:
-                if queue_stats.queue_name == "LocalizationQueue":
-                    queue_server_stats.localization_stats.queue_size.values.append(queue_stats.current_size)
-                    queue_server_stats.localization_stats.time_average_arrival.values.append(queue_stats.arrival_time_average)
-                    queue_server_stats.localization_stats.time_average_departure.values.append(queue_stats.departure_time_average)
-                elif queue_stats.queue_name == "TemperatureQueue":
-                    queue_server_stats.temperature_stats.queue_size.values.append(queue_stats.current_size)
-                    queue_server_stats.temperature_stats.time_average_arrival.values.append(queue_stats.arrival_time_average)
-                    queue_server_stats.temperature_stats.time_average_departure.values.append(queue_stats.departure_time_average)
-                elif queue_stats.queue_name == "LowTemperatureQueue":
-                    queue_server_stats.low_temperature_stats.queue_size.values.append(queue_stats.current_size)
-                    queue_server_stats.low_temperature_stats.time_average_arrival.values.append(queue_stats.arrival_time_average)
-                    queue_server_stats.low_temperature_stats.time_average_departure.values.append(queue_stats.departure_time_average)
-                elif queue_stats.queue_name == "TaskQueue":
-                    queue_server_stats.real_queue_stats.queue_size.values.append(queue_stats.current_size)
-                    queue_server_stats.real_queue_stats.time_average_arrival.values.append(queue_stats.arrival_time_average)
-                    queue_server_stats.real_queue_stats.time_average_departure.values.append(queue_stats.departure_time_average)
-         
         
         for topic, msg, t in bag.read_messages(topics=["/NoRew_NoInv/monitoring_node/penalty"]):
             queue_server_arrival_departures_end_values.penalty.values.append(msg.queue_server_time_average_value)
 
-        queue_server_arrival_departures_end_values.localization_arrival.values.append(queue_server_stats.localization_stats.time_average_arrival.values[-1])
-        queue_server_arrival_departures_end_values.localization_departure.values.append(queue_server_stats.localization_stats.time_average_departure.values[-1])
-        queue_server_arrival_departures_end_values.temperature_arrival.values.append(queue_server_stats.temperature_stats.time_average_arrival.values[-1])
-        queue_server_arrival_departures_end_values.temperature_departure.values.append(queue_server_stats.temperature_stats.time_average_departure.values[-1])
-        queue_server_arrival_departures_end_values.low_temperature_arrival.values.append(queue_server_stats.low_temperature_stats.time_average_arrival.values[-1])
-        queue_server_arrival_departures_end_values.low_temperature_departure.values.append(queue_server_stats.low_temperature_stats.time_average_departure.values[-1])
-        queue_server_arrival_departures_end_values.real_queue_arrival.values.append(queue_server_stats.real_queue_stats.time_average_arrival.values[-1])
-        queue_server_arrival_departures_end_values.real_queue_departure.values.append(queue_server_stats.real_queue_stats.time_average_departure.values[-1])
+        queue_server_arrival_departures_end_values.localization_arrival.values.append(action_performances.synchronized_queue_stats.localization_stats.time_average_arrival.values[-1])
+        queue_server_arrival_departures_end_values.localization_departure.values.append(action_performances.synchronized_queue_stats.localization_stats.time_average_departure.values[-1])
+        queue_server_arrival_departures_end_values.temperature_arrival.values.append(action_performances.synchronized_queue_stats.temperature_stats.time_average_arrival.values[-1])
+        queue_server_arrival_departures_end_values.temperature_departure.values.append(action_performances.synchronized_queue_stats.temperature_stats.time_average_departure.values[-1])
+        queue_server_arrival_departures_end_values.low_temperature_arrival.values.append(action_performances.synchronized_queue_stats.low_temperature_stats.time_average_arrival.values[-1])
+        queue_server_arrival_departures_end_values.low_temperature_departure.values.append(action_performances.synchronized_queue_stats.low_temperature_stats.time_average_departure.values[-1])
+        queue_server_arrival_departures_end_values.real_queue_arrival.values.append(action_performances.synchronized_queue_stats.real_queue_stats.time_average_arrival.values[-1])
+        queue_server_arrival_departures_end_values.real_queue_departure.values.append(action_performances.synchronized_queue_stats.real_queue_stats.time_average_departure.values[-1])
         queue_server_arrival_departures_end_values.penalty.values = [queue_server_arrival_departures_end_values.penalty.values[-1]]
 
         # Get performance metrics 
@@ -103,11 +82,11 @@ class Experiment1Analyser:
                             all_metric_performance_structs.penalty.time_stamps,
                             all_metric_performance_structs.penalty.real_time_average_value,
                             separator_second_graph,
-                            queue_server_stats.time_stamps,
-                            queue_server_stats.localization_stats.queue_size,
-                            queue_server_stats.temperature_stats.queue_size,
-                            queue_server_stats.low_temperature_stats.queue_size,
-                            queue_server_stats.real_queue_stats.queue_size,
+                            action_performances.time_stamps,
+                            action_performances.synchronized_queue_stats.localization_stats.queue_size,
+                            action_performances.synchronized_queue_stats.temperature_stats.queue_size,
+                            action_performances.synchronized_queue_stats.low_temperature_stats.queue_size,
+                            action_performances.synchronized_queue_stats.real_queue_stats.queue_size,
                             separator_end_values_table,
                             queue_server_arrival_departures_end_values.localization_arrival,
                             queue_server_arrival_departures_end_values.localization_departure,
