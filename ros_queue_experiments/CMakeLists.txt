@@ -174,6 +174,7 @@ add_executable(AUV_system_node
 add_executable(perturbation_action_node
   src/disturbed_action_server_node.cpp
   src/disturbed_action_server.cpp
+  src/auv_states.cpp
 )
 
 add_executable(service_tester_node
