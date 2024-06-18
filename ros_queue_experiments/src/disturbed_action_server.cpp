@@ -1,6 +1,7 @@
 #include "ros_queue_experiments/disturbed_action_server.hpp"
 
 #include "ros_queue_experiments/ActionPerformance.h"
+#include "ros_queue_experiments/auv_states.hpp"
 
 #include "std_msgs/UInt8.h"
 
@@ -71,6 +72,8 @@ DisturbedActionServer::DisturbedActionServer(ros::NodeHandle& nh): nhp_(nh), nh_
     action_server_.registerPreemptCallback(boost::bind(&DisturbedActionServer::preemptActionCallback, this));
     action_server_.start();
 
+    queue_stats_client_ = PersistentServiceClient<ros_queue_msgs::QueueServerStatsFetch>(nh_, "queue_server/get_server_stats");
+    queue_stats_client_.waitForExistence();
     action_performance_publisher_ = nhp_.advertise<ros_queue_experiments::ActionPerformance>("action_performance", 10);
 }
 
@@ -158,12 +161,25 @@ void DisturbedActionServer::commandReceivedCallback()
 
     // Send action performance monitoring
     ros_queue_experiments::ActionPerformance action_performance_msg;
-    action_performance_msg.header.stamp = ros::Time::now();
+    ros_queue_msgs::QueueServerStatsFetch queue_server_stats_fetch;
+    if(queue_stats_client_.call(queue_server_stats_fetch))
+    {
+        action_performance_msg.header.stamp = ros::Time::now();
 
-    action_performance_msg.target_action = target_action;
-    action_performance_msg.applied_action = disturbed_action;
+        action_performance_msg.target_action = target_action;
+        action_performance_msg.applied_action = disturbed_action;
 
-    action_performance_publisher_.publish(action_performance_msg);
+        action_performance_msg.controller_action_index = AUVStates::getZoneFromTransmissionVector(action_performance_msg.target_action);
+        action_performance_msg.applied_action_index = AUVStates::getZoneFromTransmissionVector(action_performance_msg.applied_action);
+        action_performance_msg.queue_server_stats = queue_server_stats_fetch.response.queue_stats;
+
+        action_performance_publisher_.publish(action_performance_msg);
+    }
+    else
+    {
+        ROS_ERROR("Perturbation node: Failed to call service to get the queue server stats.");
+    }
+
 }
 
 void DisturbedActionServer::preemptActionCallback()

@@ -8,6 +8,7 @@
 #include "actionlib/server/simple_action_server.h"
 
 #include "ros_queue_msgs/TransmissionVectorAction.h"
+#include "ros_queue_msgs/QueueServerStatsFetch.h"
 #include "ros_queue_experiments/GetRealAUVStates.h"
 #include "ros_queue_experiments/SendNewAUVCommand.h"
 
@@ -91,6 +92,11 @@ class DisturbedActionServer
          * @brief Service client to send the disturbed action to the AUV system.
         */
         PersistentServiceClient<ros_queue_experiments::SendNewAUVCommand> auv_action_client_;
+
+        /**
+         * @brief Service client to get the queue server current stats.
+        */
+        PersistentServiceClient<ros_queue_msgs::QueueServerStatsFetch> queue_stats_client_;
 
         /**
          * @brief ROS publisher to indicated the desired and the real taken actions.
