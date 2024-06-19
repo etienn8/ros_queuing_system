@@ -43,7 +43,7 @@ class Experiment1Analyser:
                 break
 
         # Get action performances
-        action_performances = common_experiment_utils.ActionSeries()
+        action_performances = common_experiment_utils.ActionPerformanceSeries()
         action_performances.populateWithBag(bag, "/NoRew_NoInv/", time_init)
 
         # Get queue server end values

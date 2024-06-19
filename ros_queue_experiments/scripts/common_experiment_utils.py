@@ -84,6 +84,9 @@ class MetricPerformanceStruct:
 
         self.real_continuous_average_diff_with_server_mean = Series()
         self.real_continuous_average_diff_with_server_mean.variable_name = metric_name + "_real_continuous_average_diff_with_server_mean"
+        
+        self.absolute_real_continuous_average_diff_with_server_mean = Series()
+        self.absolute_real_continuous_average_diff_with_server_mean.variable_name = metric_name + "_real_continuous_average_diff_with_server_mean_abs"
 
         self.real_continuous_average_diff_with_server_time_average = Series()
         self.real_continuous_average_diff_with_server_time_average.variable_name = metric_name + "_real_continuous_average_diff_with_server_time_average"
@@ -117,6 +120,7 @@ class AllMetricPerformanceStruct:
             metric.real_continuous_average_diff_with_target.values.append(msg.real_continuous_average_diff_with_target)
             metric.real_continuous_average_diff_with_server_mean.values.append(msg.real_continuous_average_diff_with_server_mean)
             metric.real_continuous_average_diff_with_server_time_average.values.append(msg.real_continuous_average_diff_with_server_time_average)
+        metric.absolute_real_continuous_average_diff_with_server_mean.values = [abs(value) for value in metric.real_continuous_average_diff_with_server_mean.values]
 
 def createCSV(list_of_series, csv_filename):
     max_nb_rows = max([len(series.values) for series in list_of_series])
@@ -143,8 +147,21 @@ class ActionType(Enum):
     HIGH_LOCALIZATION_ZONE = 1,
     LOW_TEMPERATURE_ZONE = 2
 
+def actionTypeToString(action_type: ActionType):
+    if action_type == ActionType.TASK_ZONE:
+        return "TASK_ZONE"
+    elif action_type == ActionType.HIGH_LOCALIZATION_ZONE:
+        return "HIGH_LOCALIZATION_ZONE"
+    elif action_type == ActionType.LOW_TEMPERATURE_ZONE:
+        return "LOW_TEMPERATURE_ZONE"
 
-class ActionSeries:
+def actionSeriesToStringSeries(action_series: Series):
+    action_string_series = Series()
+    action_string_series.variable_name = action_series.variable_name
+    action_string_series.values = [actionTypeToString(action_type) for action_type in action_series.values]
+    return action_string_series
+
+class ActionPerformanceSeries:
     def __init__(self):
         self.time_stamps = Series()
         self.time_stamps.variable_name = "action_time"
@@ -154,6 +171,9 @@ class ActionSeries:
 
         self.applied_action = Series()
         self.applied_action.variable_name = "applied_action"
+        
+        self.action_index_difference = Series()
+        self.action_index_difference.variable_name = "action_index_difference"
 
         self.synchronized_queue_stats = QueueServerStatsStruct()
     
@@ -161,7 +181,7 @@ class ActionSeries:
         for topic, msg, t in bag.read_messages(topics=[monitoring_prefix + "perturbation_node/action_performance"]):
             self.time_stamps.values.append(t.to_sec() - time_init)
             
-            for internal_struct,msg_action in zip([self.selected_action, self.applied_action], [msg.controller_action_index, msg.applied_action_index]):
+            for internal_struct,msg_action in zip([self.selected_action, self.applied_action, self.action_index_difference], [msg.controller_action_index, msg.applied_action_index, msg.action_index_difference]):
                 if msg_action == 0:
                     internal_struct.values.append(ActionType.TASK_ZONE)
                 elif msg_action == 1:
