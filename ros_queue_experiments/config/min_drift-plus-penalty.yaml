@@ -132,7 +132,7 @@ queue_list:
         # Weight in the cost function multplied with the size of the queue. 
         # A higher value means the controller will try to stabilize it faster compared to the other queues.
         # It could also be set as a normalization factor.       
-        - weight: 1.0
+        - weight: 5.0
 
         # Name of the service to evaluate the expected arrivals of the queue based. 
         - expected_arrival_service_name: "auv_system_node/task/arrival/$(arg rate_or_change)/expected_metric"
@@ -160,7 +160,7 @@ penalty_service_name:  "auv_system_node/penalty/expected_metric"
 # The V parameter that is multplied with the penalty (like a weight). When a high penalty metric also increases the queue size,
 # this parameter balances the tradeoff between a lower penalty or lower queue delays. A high V will prioritize the minimization
 # of the penalty while a low V will prioritize low queue sizes and delays.
-v_parameter: 100.0
+v_parameter: 1000.0
 # If set to true, the controller will optimize the ratio of the time average penalty over the expected renewal frame duration.
 # If set to false, the controller will optimize the time average penalty.
 # Only used for the renewal_min_drift_plus_penalty type of controller.
