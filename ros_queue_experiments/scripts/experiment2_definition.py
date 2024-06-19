@@ -154,51 +154,6 @@ class Experiment2Analyser:
         ax4.grid(False)
         ax4.legend()
         ax4.set_xlabel("Time (s)")
-
-        # ## Queue size graph and action sacrifices
-        # time_frame = [57.4, 58.1]
-        # #time_frame = [0, 60]
-        # fig2, (ax5) = plt.subplots(1, 1, sharex=True)
-        # ax5.set_title("Queue sizes balancing over time under a min drift-plus-penalty queue controller in ROS")
-        # ax5.plot(normal_action_performances.time_stamps.values, normal_action_performances.synchronized_queue_stats.localization_stats.queue_size.values, label="Localization queue", drawstyle='steps-post')
-        # ax5.plot(normal_action_performances.time_stamps.values, normal_action_performances.synchronized_queue_stats.temperature_stats.queue_size.values, label="Temperature queue", drawstyle='steps-post')
-        # ax5.plot(normal_action_performances.time_stamps.values, normal_action_performances.synchronized_queue_stats.low_temperature_stats.queue_size.values, label="Low temperature queue", drawstyle='steps-post')
-        # ax5.plot(normal_action_performances.time_stamps.values, normal_action_performances.synchronized_queue_stats.real_queue_stats.queue_size.values, label="Task queue", drawstyle='steps-post')
-        # ax5.set_xlim(time_frame[0], time_frame[1])
-        # ax5.set_ylabel("Queue sizes")
-        # ax5.legend()
-        
-        # # Add actions
-        # max_queue_size = max(normal_action_performances.synchronized_queue_stats.localization_stats.queue_size.values + normal_action_performances.synchronized_queue_stats.temperature_stats.queue_size.values + normal_action_performances.synchronized_queue_stats.low_temperature_stats.queue_size.values + normal_action_performances.synchronized_queue_stats.real_queue_stats.queue_size.values)
-        # time_frame_start_index = 0
-        # time_frame_end_index = 0
-        # start_found = False
-        # for action_index in range(len(normal_action_performances.time_stamps.values)):
-        #     if normal_action_performances.time_stamps.values[action_index] >= time_frame[0] and not start_found:
-        #         time_frame_start_index = action_index
-        #         start_found = True
-        #     if normal_action_performances.time_stamps.values[action_index] >= time_frame[1]:
-        #         time_frame_end_index = action_index
-        #         break
-        
-        # action_color_dict = {common_experiment_utils.ActionType.TASK_ZONE: "#00CAFF", 
-        #               common_experiment_utils.ActionType.HIGH_LOCALIZATION_ZONE: "#FF00CA", 
-        #               common_experiment_utils.ActionType.LOW_TEMPERATURE_ZONE: "#CAFF00"}
-        # action_label_dict = {common_experiment_utils.ActionType.TASK_ZONE: "TaskZ",
-        #                 common_experiment_utils.ActionType.HIGH_LOCALIZATION_ZONE: "LocZ",
-        #                 common_experiment_utils.ActionType.LOW_TEMPERATURE_ZONE: "ColdZ"}
-
-        # last_action_index = time_frame_start_index
-        # for action_index in range(time_frame_start_index, time_frame_end_index):
-        #     if normal_action_performances.applied_action).values[last_action_index] != normal_action_performances.applied_action).values[action_index]:
-        #         last_action = normal_action_performances.applied_action).values[last_action_index]
-        #         start = normal_action_performances.time_stamps.values[last_action_index]
-        #         elapsed_time = normal_action_performances.time_stamps.values[action_index] - start
-        #         rect = patches.Rectangle((start, 0), elapsed_time, max_queue_size, color=action_color_dict[last_action], alpha=0.25)
-        #         ax5.add_patch(rect)
-        #         ax5.text(start + elapsed_time/2, max_queue_size-1.5, action_label_dict[last_action], ha='center', va='center')
-        #         last_action_index = action_index
-
         plt.show()
 
     def getNormalBagName(self):
