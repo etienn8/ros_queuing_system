@@ -24,7 +24,7 @@ class Experiment1Analyser:
             "/NoRew_NoInv/monitoring_node/localization",
             "/NoRew_NoInv/monitoring_node/real_queue",
             "/NoRew_NoInv/monitoring_node/temperature",
-             "/NoRew_NoInv/monitoring_node/low_temperature",
+            "/NoRew_NoInv/monitoring_node/low_temperature",
             "/NoRew_NoInv/monitoring_node/penalty",
             "/NoRew_NoInv/queue_controller/optimization_done",
             "/NoRew_NoInv/queue_controller/control_loop_started",
@@ -40,6 +40,7 @@ class Experiment1Analyser:
             if (not init_time_set) and base_init_time_on_first_value:
                 time_init = t.to_sec()
                 init_time_set = True
+                break
 
         # Get action performances
         action_performances = common_experiment_utils.ActionSeries()
