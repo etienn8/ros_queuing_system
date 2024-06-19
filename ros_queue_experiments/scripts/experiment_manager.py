@@ -41,7 +41,8 @@ if __name__ == "__main__":
     # Experiment 2
     exp2_analyser = experiment2_definition.Experiment2Analyser()
     exp2 = experiment_instance.Experiment2Instance(uuid, 90, exp2_analyser)
-    exp2.execute(generate_output=True)
+    #exp2.execute(generate_output=False)
+    exp2.analyser.generateOutput(0,0, "normal_experiment2_2024-06-19_15-03-02", "perturbation_experiment2_2024-06-19_15-03-02",base_init_time_on_first_value=True)
      
     
 
