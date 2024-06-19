@@ -11,6 +11,7 @@ from ros_queue_msgs.msg import QueueServerStats
 import common_experiment_utils
 import experiment_instance
 import experiment1_definition
+import experiment2_definition
 
 import matplotlib.pyplot as plt
 import scienceplots
@@ -28,14 +29,20 @@ if __name__ == "__main__":
 
     # Experiment 1
 
-    cli_args = [common_experiment_utils.LAUNCH_DIRECTORY_PATH + "experiment_launcher.launch", 'experiment_setup:=perfect_model_and_setup']
+    # cli_args = ['experiment_setup:=perfect_model_and_setup']
 
-    exp1_analyser = experiment1_definition.Experiment1Analyser()
-    exp1 = experiment_instance.ExperimentInstance(uuid, cli_args, 60, exp1_analyser)
-    exp1.execute(generate_output=False)
-    #exp1.analyser.generateOutput(0, "experiment1_2024-06-10_14-55-02", base_init_time_on_first_value=True)
-    exp1.analyser.generateOutput(exp1.time_init.to_sec(), exp1.analyser.getBagName())
-    rospy.loginfo("Experiment 1 completed")
+    # exp1_analyser = experiment1_definition.Experiment1Analyser()
+    # exp1 = experiment_instance.ExperimentInstance(uuid, cli_args, 60, exp1_analyser)
+    # exp1.execute(generate_output=False)
+    # #exp1.analyser.generateOutput(0, "experiment1_2024-06-10_14-55-02", base_init_time_on_first_value=True)
+    # exp1.analyser.generateOutput(exp1.time_init.to_sec(), exp1.analyser.getBagName())
+    # rospy.loginfo("Experiment 1 completed")
+
+    # Experiment 2
+    exp2_analyser = experiment2_definition.Experiment2Analyser()
+    exp2 = experiment_instance.Experiment2Instance(uuid, 90, exp2_analyser)
+    exp2.execute(generate_output=True)
+     
     
 
 
