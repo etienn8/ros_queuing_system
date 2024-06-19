@@ -132,7 +132,7 @@ class Experiment2Analyser:
         fig2, (ax3, ax4) = plt.subplots(2, 1, sharex=True)
         fig2.suptitle("Estimation error of the queue server with the real metric mean for the temperature metric of a min drift plus penalty with and without action uncertainties")
 
-        ax3.set_title("Error between the real metric mean and the estimated metric mean from the queue server metric over time")
+        ax3.set_title("Absolute error between the real metric mean and the estimated metric mean from the queue server metric over time")
         ax3.plot(normal_all_metric_performance_structs.temperature.time_stamps.values,
                     normal_all_metric_performance_structs.temperature.absolute_real_continuous_average_diff_with_server_mean.values,
                     label="Without perturbation")
@@ -143,7 +143,7 @@ class Experiment2Analyser:
         ax3.grid(False)
         ax3.legend()
 
-        ax4.set_title("Error between the real metric mean and the mean target for the temperature")
+        ax4.set_title("Absolute error between the real metric mean and the mean target for the temperature")
         ax4.plot(normal_all_metric_performance_structs.temperature.time_stamps.values,
                     normal_all_metric_performance_structs.temperature.real_continuous_average_diff_with_target.values,
                     label="Without perturbation")
