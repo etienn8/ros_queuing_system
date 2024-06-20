@@ -30,6 +30,12 @@ jobs:
           repository: etienn8/rosparam_utils
           path: 'catkin_ws/src/rosparam_utils'
 
+      - name: Checkout ros_boosted_utilities
+        uses: actions/checkout@v4
+        with:
+          repository: etienn8/ros_boosted_utilities
+          path: 'catkin_ws/src/ros_boosted_utilities'
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
