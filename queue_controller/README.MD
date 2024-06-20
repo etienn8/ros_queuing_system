@@ -29,6 +29,7 @@ This is research code, expect that it changes often and any fitness for a partic
 - [message_runtime](http://wiki.ros.org/message_runtime) (ROS message dependencies package),
 - [actionlib_msgs](http://wiki.ros.org/actionlib_msgs) (Message definitions of the actionlib package used for the output of the controller),
 - [actionlib](http://wiki.ros.org/actionlib) (Interfaces that gives a result and feedback for an action. Used by the output of the controller),
+- [ros_boosted_utilities](https://github.com/etienn8/ros_boosted_utilities) (Contains persistent ROS service clients to make the interfaces between the system faster.)
 - [std_srvs](http://wiki.ros.org/std_srvs) (ROS standard service definitions), 
 - [std_msgs](http://wiki.ros.org/std_msgs) (ROS standard service definitions),
 - std::map (Standard library for C++ dictionnaries),
