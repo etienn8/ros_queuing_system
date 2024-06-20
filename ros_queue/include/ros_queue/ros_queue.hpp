@@ -13,6 +13,8 @@
 
 #include "ros_queue_msgs/QueueInfo.h"
 
+#include "ros_boosted_utilities/persistent_service_client.hpp"
+
 using std::string;
 using std::invalid_argument;
 using std::deque;
@@ -70,7 +72,7 @@ class ROSQueue: public DynamicQueue<typename QueueElementTrait<TROSMsgType>::Ele
             }
             else if (!interfaces.arrival_prediction_service_name.empty())
             {
-                arrival_service_client_ = nh_.serviceClient<TPredictionServiceClass>(interfaces.arrival_prediction_service_name);
+                arrival_service_client_ = PersistentServiceClient<TPredictionServiceClass>(nh, interfaces.arrival_prediction_service_name);
             }
             else
             {
@@ -89,7 +91,7 @@ class ROSQueue: public DynamicQueue<typename QueueElementTrait<TROSMsgType>::Ele
             }
             else if (!interfaces.transmission_prediction_service_name.empty())
             {
-                transmission_service_client_ = nh_.serviceClient<TPredictionServiceClass>(interfaces.transmission_prediction_service_name);
+                transmission_service_client_ = PersistentServiceClient<TPredictionServiceClass>(nh, interfaces.transmission_prediction_service_name);
             }
             else
             {
@@ -133,12 +135,9 @@ class ROSQueue: public DynamicQueue<typename QueueElementTrait<TROSMsgType>::Ele
                 TPredictionServiceClass local_service= service;
 
                 // Service ROS call
-                if (arrival_service_client_.waitForExistence(WAIT_DURATION_FOR_SERVICE_EXISTENCE))
+                if (arrival_service_client_.call(local_service))
                 {
-                    if (arrival_service_client_.call(local_service))
-                    {
-                        return local_service.response.prediction;
-                    }
+                    return local_service.response.prediction;
                 }
                 else
                 {
@@ -166,12 +165,9 @@ class ROSQueue: public DynamicQueue<typename QueueElementTrait<TROSMsgType>::Ele
                 TPredictionServiceClass local_service = service; 
 
                 // Service ROS call
-                if (transmission_service_client_.waitForExistence(WAIT_DURATION_FOR_SERVICE_EXISTENCE))
+                if (transmission_service_client_.call(local_service))
                 {
-                    if (transmission_service_client_.call(local_service))
-                    {
-                        return local_service.response.prediction;
-                    }
+                    return local_service.response.prediction;
                 }
                 else
                 {
@@ -222,7 +218,8 @@ class ROSQueue: public DynamicQueue<typename QueueElementTrait<TROSMsgType>::Ele
         /**
          * @brief Service client used for the arrival prediction service calls.
          */
-        ros::ServiceClient arrival_service_client_;
+        PersistentServiceClient<TPredictionServiceClass> arrival_service_client_;
+
         /**
          * @brief Function pointer for the arrival prediction service calls.
          * @param TPredictionServiceClass& Service class used as a data structure to pass input to predictions.
@@ -232,7 +229,8 @@ class ROSQueue: public DynamicQueue<typename QueueElementTrait<TROSMsgType>::Ele
         /**
          * @brief Service client used for the transmission prediction service calls.
          */
-        ros::ServiceClient transmission_service_client_;
+        PersistentServiceClient<TPredictionServiceClass> transmission_service_client_;
+        
         /**
          * @brief Function pointer for the transmission prediction service calls.
          * @param TPredictionServiceClass& Service class used as a data structure to pass input to predictions.

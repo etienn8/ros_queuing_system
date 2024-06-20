@@ -13,6 +13,8 @@
 #include "ros_queue_msgs/FloatRequest.h"
 #include "ros_queue_msgs/QueueInfo.h"
 
+#include "ros_boosted_utilities/persistent_service_client.hpp"
+
 using std::string;
 using std::invalid_argument;
 
@@ -64,7 +66,7 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType, public ROSQueueCommonInt
             }
             else if (!interfaces.arrival_evaluation_service_name.empty())
             {
-                arrival_evaluation_service_client_ = nh_.serviceClient<ros_queue_msgs::FloatRequest>(interfaces.arrival_evaluation_service_name);
+                arrival_evaluation_service_client_ = PersistentServiceClient<ros_queue_msgs::FloatRequest>(nh, interfaces.arrival_evaluation_service_name);
             }
             else
             {
@@ -83,7 +85,7 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType, public ROSQueueCommonInt
             }
             else if (!interfaces.departure_evaluation_service_name.empty())
             {
-                departure_evaluation_service_client_ = nh_.serviceClient<ros_queue_msgs::FloatRequest>(interfaces.departure_evaluation_service_name);
+                departure_evaluation_service_client_ = PersistentServiceClient<ros_queue_msgs::FloatRequest>(nh, interfaces.departure_evaluation_service_name);
             }
             else
             {
@@ -112,13 +114,10 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType, public ROSQueueCommonInt
                 ros_queue_msgs::FloatRequest local_service; 
 
                 // Service ROS call
-                if (arrival_evaluation_service_client_.waitForExistence(WAIT_DURATION_FOR_SERVICE_EXISTENCE))
+                if (arrival_evaluation_service_client_.call(local_service))
                 {
-                    if (arrival_evaluation_service_client_.call(local_service))
-                    {
-                        arrival = local_service.response.value;
-                        was_arrival_evaluated = true;
-                    }
+                    arrival = local_service.response.value;
+                    was_arrival_evaluated = true;
                 }
                 else
                 {
@@ -136,13 +135,10 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType, public ROSQueueCommonInt
                 ros_queue_msgs::FloatRequest local_service; 
 
                 // Service ROS call
-                if (departure_evaluation_service_client_.waitForExistence(WAIT_DURATION_FOR_SERVICE_EXISTENCE))
+                if (departure_evaluation_service_client_.call(local_service))
                 {
-                    if (departure_evaluation_service_client_.call(local_service))
-                    {
-                        departure = local_service.response.value;
-                        was_departure_evaluated = true;
-                    }
+                    departure = local_service.response.value;
+                    was_departure_evaluated = true;
                 }
                 else
                 {
@@ -175,7 +171,8 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType, public ROSQueueCommonInt
         /**
          * @brief Service client used to compute the increase of the virtual queue.
          */
-        ros::ServiceClient arrival_evaluation_service_client_;
+        PersistentServiceClient<ros_queue_msgs::FloatRequest> arrival_evaluation_service_client_;
+
         /**
          * @brief Function pointer used to compute the increase of the virtual queue.
          */
@@ -184,7 +181,8 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType, public ROSQueueCommonInt
         /**
          * @brief Service client used to compute the decrease of the virtual queue.
          */
-        ros::ServiceClient departure_evaluation_service_client_;
+        PersistentServiceClient<ros_queue_msgs::FloatRequest> departure_evaluation_service_client_;
+
         /**
          * @brief Function pointer used to compute the decrease of the virtual queue.
          */
