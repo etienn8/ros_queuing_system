@@ -86,6 +86,7 @@ class ROSByteConvertedQueue: public DynamicConvertedQueue<topic_tools::ShapeShif
             else
             {  
                 transmission_evaluation_service_client_ = PersistentServiceClient<ros_queue_msgs::ByteSizeRequest>(nh_, interfaces.transmission_evaluation_service_name);
+                transmission_evaluation_service_client_.waitForExistence();
             }
 
             manual_transmit_subscriber_ = nhp_.subscribe("nb_bytes_to_transmit", 10, &ROSByteConvertedQueue::manualTransmissionCallback, this);
