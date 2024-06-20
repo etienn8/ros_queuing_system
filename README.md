@@ -26,6 +26,7 @@ Here's a procedure on how to get started with the configurations and the launchi
 - [ros_queue_msgs](https://github.com/etienn8/ros_queuing_system/tree/main/ros_queue_msgs) (ROS messages and services used as interface for the ros_queuing system, included already in the ros_queuing_system repo).
 - [ros_queue_msgs](https://github.com/etienn8/ros_queuing_system/tree/main/ros_queue_msgs) (Implementation examples and dummy stochastic services to test the system, included already in the ros_queuing_system repo).
 - [rosparam_utils](https://github.com/etienn8/rosparam_utils) (Tools to fetch rosparams more easily. Not directly dependent but some dependent packages need it).
+- [ros_boosted_utilities](https://github.com/etienn8/ros_boosted_utilities) (Contains persistent ROS service clients to make the interfaces between the system faster.)
 ##### Optional
 - [Catkin tools](https://catkin-tools.readthedocs.io/en/latest/#)(Tools to help build all the packages in parallel and to test the system)
 	- Follow their [installation](https://catkin-tools.readthedocs.io/en/latest/installing.html) and [initialization](https://catkin-tools.readthedocs.io/en/latest/quick_start.html) guide before building this package.
@@ -33,10 +34,11 @@ Here's a procedure on how to get started with the configurations and the launchi
 
 #### Building
 
-To build from source, clone the [rosparam_utils](https://github.com/etienn8/rosparam_utils) repo, clone the latest version from this repository into your catkin workspace and compile all the packages using
+To build from source, clone the [rosparam_utils](https://github.com/etienn8/rosparam_utils), clone the [ros_boosted_utilities](https://github.com/etienn8/ros_boosted_utilities) repo, clone the latest version from this repository into your catkin workspace and compile all the packages using
 
 	cd catkin_workspace/src
 	git clone https://github.com/etienn8/rosparam_utils.git
+	git clone https://github.com/etienn8/ros_boosted_utilities.git
 	git clone https://github.com/etienn8/ros_queuing_system.git
 	cd ../
 	rosdep install --from-paths . --ignore-src

@@ -36,6 +36,8 @@
 #include "rosparam_utils/parameter_package_fetch_struct.hpp"
 #include "rosparam_utils/data_validation.hpp"
 
+#include "ros_boosted_utilities/persistent_service_client.hpp"
+
 #include "queue_server/queue_server_utils.hpp"
 
 using std::string;
@@ -149,7 +151,7 @@ class QueueController
                 }
                 else
                 {
-                    renewal_service_client_ = nh_.serviceClient<TMetricControlPredictionSrv>(expected_renewal_time_service_name, true);
+                    renewal_service_client_ = PersistentServiceClient<TMetricControlPredictionSrv>(expected_renewal_time_service_name);
 
                     ROS_INFO_STREAM("Waiting for the expected renewal time service named :" << expected_renewal_time_service_name);
                     renewal_service_client_.waitForExistence();
@@ -173,7 +175,7 @@ class QueueController
             string solution_space_service_name;
             if(nhp_.getParam("solution_space_service_name", solution_space_service_name))
             {
-                solution_space_client_ = nh_.serviceClient<TPotentialActionSetSrv>(solution_space_service_name, true);
+                solution_space_client_ = PersistentServiceClient<TPotentialActionSetSrv>(solution_space_service_name); 
                 
                 ROS_INFO_STREAM("Waiting for the solution space client named :" << solution_space_service_name);
                 solution_space_client_.waitForExistence();
@@ -187,7 +189,7 @@ class QueueController
             string penalty_service_name;
             if(nhp_.getParam("penalty_service_name", penalty_service_name))
             {
-                penalty_service_client_ = nh_.serviceClient<TMetricControlPredictionSrv>(penalty_service_name, true);
+                penalty_service_client_ = PersistentServiceClient<TMetricControlPredictionSrv>(penalty_service_name); 
                 
                 ROS_INFO_STREAM("Waiting for the penalty space client named :" << penalty_service_name);
                 penalty_service_client_.waitForExistence();
@@ -303,7 +305,7 @@ class QueueController
             if (can_create_controller)
             {   
                 // Connect to queue_server for queue sizes
-                server_state_client_ = nh_.serviceClient<ros_queue_msgs::QueueServerStateFetch>(queue_server_name_ + "/get_server_state", true);
+                server_state_client_ = PersistentServiceClient<ros_queue_msgs::QueueServerStateFetch>(queue_server_name_ + "/get_server_state");
 
                 ROS_INFO_STREAM("Waiting for the server service named :" << server_state_client_.getService());
                 server_state_client_.waitForExistence();
@@ -317,7 +319,7 @@ class QueueController
                     }
                     else
                     {
-                        virtual_queues_trigger_ = nh_.serviceClient<std_srvs::Empty>(queue_server_name_ + "/trigger_service", true);
+                        virtual_queues_trigger_ = PersistentServiceClient<std_srvs::Empty>(queue_server_name_ + "/trigger_service"); 
                         ROS_INFO_STREAM("Waiting for the server service named :" << virtual_queues_trigger_.getService());
                         virtual_queues_trigger_.waitForExistence();
                     }
@@ -690,7 +692,7 @@ class QueueController
         /**
          * @brief ROS service client used to computed the expected time ot execute each given action.
         */
-        ros::ServiceClient renewal_service_client_;
+        PersistentServiceClient<TMetricControlPredictionSrv> renewal_service_client_;
 
         /**
          * @brief ROS topic publisher that periodically sends the last renewal time.
@@ -705,7 +707,7 @@ class QueueController
         /**
          * @brief ROS service client used to get the current states of the queues in the queue server.
         */
-        ros::ServiceClient server_state_client_;
+        PersistentServiceClient<ros_queue_msgs::QueueServerStateFetch> server_state_client_;
 
         /**
          * @brief ROS topic publisher use to send manual changes to the virtual queues of a queue server.
@@ -718,7 +720,7 @@ class QueueController
          * @brief ROS Service client that whenever it's called, the virtual queues in the queue server
          * will update based on the current system's state.
         */
-        ros::ServiceClient virtual_queues_trigger_;
+        PersistentServiceClient<std_srvs::Empty> virtual_queues_trigger_;
 
         /**
          * @brief Action lib client that sends the optimal action to a server.
@@ -745,7 +747,7 @@ class QueueController
          * is the queue's name and the value is all the usefull parameters of the queue to evaluate and 
          * udpate the queues.
         */
-        map<string, std::unique_ptr<ControllerQueueStruct>> queue_list_;
+        map<string, std::unique_ptr<ControllerQueueStruct<TMetricControlPredictionSrv>>> queue_list_;
 
         /**
          * @brief Populate the internal queue_list_ based on the parsed_queue_configs. It will also verify
@@ -771,7 +773,7 @@ class QueueController
 
                     if(ros::service::call(queue_server_name_+"/"+queue_name_temp+"/getQueueInfo", queue_info_srv))
                     {
-                        auto new_controller_struct = std::make_unique<ControllerQueueStruct>();
+                        auto new_controller_struct = std::make_unique<ControllerQueueStruct<TMetricControlPredictionSrv>>();
 
                         new_controller_struct->queue_name_ = queue_name_temp;
                         new_controller_struct->is_virtual_ = queue_info_srv.response.info.is_virtual;
@@ -813,7 +815,7 @@ class QueueController
                                 {
                                     new_controller_struct->is_arrival_action_dependent = true;
                                     new_controller_struct->expected_arrival_service_ = 
-                                                            nh_.serviceClient<TMetricControlPredictionSrv>(service_name_temp, true);
+                                                            PersistentServiceClient<TMetricControlPredictionSrv>(service_name_temp);
                                     ROS_INFO_STREAM("Waiting for the server service named :" << new_controller_struct->expected_arrival_service_.getService());
                                     new_controller_struct->expected_arrival_service_.waitForExistence();
                                 }
@@ -826,7 +828,7 @@ class QueueController
                                     }
                                     new_controller_struct->is_arrival_action_dependent = false;
                                     new_controller_struct->arrival_independent_from_action_service_ = 
-                                                            nh_.serviceClient<ros_queue_msgs::FloatRequest>(service_name_temp, true);
+                                                            PersistentServiceClient<ros_queue_msgs::FloatRequest>(service_name_temp);
                                     ROS_INFO_STREAM("Waiting for the server service named :" << new_controller_struct->arrival_independent_from_action_service_.getService());
                                     new_controller_struct->arrival_independent_from_action_service_.waitForExistence();
                                 }
@@ -861,7 +863,7 @@ class QueueController
                                 {
                                     new_controller_struct->is_departure_action_dependent= true;
                                     new_controller_struct->expected_departure_service_ = 
-                                                            nh_.serviceClient<TMetricControlPredictionSrv>(service_name_temp, true);
+                                                            PersistentServiceClient<TMetricControlPredictionSrv>(service_name_temp);
                                     ROS_INFO_STREAM("Waiting for the server service named :" << new_controller_struct->expected_departure_service_.getService());
                                     new_controller_struct->expected_departure_service_.waitForExistence();
                                 }
@@ -874,7 +876,7 @@ class QueueController
                                     }
                                     new_controller_struct->is_departure_action_dependent= false;
                                     new_controller_struct->departure_independent_from_action_service_ = 
-                                                            nh_.serviceClient<ros_queue_msgs::FloatRequest>(service_name_temp, true);
+                                                            PersistentServiceClient<ros_queue_msgs::FloatRequest>(service_name_temp);
                                     ROS_INFO_STREAM("Waiting for the server service named :" << new_controller_struct->expected_departure_service_.getService());
                                     new_controller_struct->expected_departure_service_.waitForExistence();
                                     
@@ -1067,8 +1069,6 @@ class QueueController
         TPotentialActionSetMsg getActionSet()
         {
             ROS_DEBUG("Calling action set service");
-
-            queue_controller_utils::check_persistent_service_connection<TPotentialActionSetSrv>(nh_, solution_space_client_);
             
             TPotentialActionSetSrv potential_set_srv;
             if(!solution_space_client_.call(potential_set_srv))
@@ -1098,7 +1098,7 @@ class QueueController
         template<typename TSrvType>
         struct AsyncMetricFutureStruct
         {
-            std::shared_ptr<ros::ServiceClient> client_;
+            std::shared_ptr<PersistentServiceClient<TSrvType>> client_;
             TSrvType current_srv_msg_;
             bool current_call_succeeded_;
 
@@ -1117,13 +1117,13 @@ class QueueController
          * if the parameter_type is arrival or departure.
         */
         void addServiceCallToActionFutureArray(std::vector<std::future<std::shared_ptr<AsyncMetricFutureStruct<TMetricControlPredictionSrv>>>>& future_array, 
-                            ros::ServiceClient& client,
+                            PersistentServiceClient<TMetricControlPredictionSrv>& client,
                             const TPotentialActionSetMsg& action_set_msg,
                             ParameterType parameter_type,
                             string queue_name = "")
         {
             auto temp_metric_control_future_struct = std::make_shared<AsyncMetricFutureStruct<TMetricControlPredictionSrv>>();
-            temp_metric_control_future_struct->client_ = std::make_shared<ros::ServiceClient>(client);
+            temp_metric_control_future_struct->client_ = std::make_shared<PersistentServiceClient<TMetricControlPredictionSrv>>(client);
             temp_metric_control_future_struct->current_srv_msg_.request.action_set = action_set_msg;
             temp_metric_control_future_struct->parameter_type_ = parameter_type;
 
@@ -1155,13 +1155,13 @@ class QueueController
          * if the parameter_type is arrival or departure.
         */
         void addServiceCallToFloatFutureArray(std::vector<std::future<std::shared_ptr<AsyncMetricFutureStruct<ros_queue_msgs::FloatRequest>>>>& future_array, 
-                            ros::ServiceClient& client,
+                            PersistentServiceClient<ros_queue_msgs::FloatRequest>& client,
                             const TPotentialActionSetMsg& action_set_msg,
                             ParameterType parameter_type,
                             string queue_name = "")
         {
             auto temp_metric_control_future_struct = std::make_shared<AsyncMetricFutureStruct<ros_queue_msgs::FloatRequest>>();
-            temp_metric_control_future_struct->client_ = std::make_shared<ros::ServiceClient>(client);
+            temp_metric_control_future_struct->client_ = std::make_shared<PersistentServiceClient<ros_queue_msgs::FloatRequest>>(client);
             temp_metric_control_future_struct->parameter_type_ = parameter_type;
 
             if (parameter_type == ParameterType::Arrival || parameter_type == ParameterType::Departure)
@@ -1213,13 +1213,11 @@ class QueueController
             std::vector<std::future<std::shared_ptr<AsyncMetricFutureStruct<ros_queue_msgs::FloatRequest>>>> float_request_future_array;
 
             // Penalty service
-            queue_controller_utils::check_persistent_service_connection<TMetricControlPredictionSrv>(nh_, penalty_service_client_);
             addServiceCallToActionFutureArray(metric_control_future_array, penalty_service_client_, action_set_msg, ParameterType::Penalty);
 
             if (controller_type_ == ControllerType::RenewalDriftPlusPenalty)
             {
                 // Expected time
-                queue_controller_utils::check_persistent_service_connection<TMetricControlPredictionSrv>(nh_, renewal_service_client_);
                 addServiceCallToActionFutureArray(metric_control_future_array, renewal_service_client_, action_set_msg, ParameterType::RenewalTime);
             }
 
@@ -1231,24 +1229,20 @@ class QueueController
                 // Arrivals
                 if(queue_it->second->is_arrival_action_dependent)
                 {
-                    queue_controller_utils::check_persistent_service_connection<TMetricControlPredictionSrv>(nh_, queue_it->second->expected_arrival_service_);
                     addServiceCallToActionFutureArray(metric_control_future_array, queue_it->second->expected_arrival_service_, action_set_msg, ParameterType::Arrival, queue_name);
                 }
                 else
                 {
-                    queue_controller_utils::check_persistent_service_connection<ros_queue_msgs::FloatRequest>(nh_, queue_it->second->arrival_independent_from_action_service_);
                     addServiceCallToFloatFutureArray(float_request_future_array, queue_it->second->arrival_independent_from_action_service_, action_set_msg, ParameterType::Arrival, queue_name);
                 }
 
                 // Departures
                 if(queue_it->second->is_departure_action_dependent)
                 {
-                    queue_controller_utils::check_persistent_service_connection<TMetricControlPredictionSrv>(nh_, queue_it->second->expected_departure_service_);
                     addServiceCallToActionFutureArray(metric_control_future_array, queue_it->second->expected_departure_service_, action_set_msg, ParameterType::Departure, queue_name);
                 }
                 else
                 {
-                    queue_controller_utils::check_persistent_service_connection<ros_queue_msgs::FloatRequest>(nh_, queue_it->second->departure_independent_from_action_service_);
                     addServiceCallToFloatFutureArray(float_request_future_array, queue_it->second->departure_independent_from_action_service_, action_set_msg, ParameterType::Departure, queue_name);
                 }
             }
@@ -1621,8 +1615,6 @@ class QueueController
         */
         void updateVirtualQueuesBasedOnCurrentState()
         {
-            queue_controller_utils::check_persistent_service_connection<std_srvs::Empty>(nhp_, virtual_queues_trigger_);
-
             std_srvs::Empty trigger;
             if(!virtual_queues_trigger_.call(trigger))
             {
@@ -1703,13 +1695,13 @@ class QueueController
          * @brief ROS service client that returns a set of possible actions that the controller will used
          * to compute its objetives metrics. The best solution will be a solution in this set.
         */
-        ros::ServiceClient solution_space_client_;
+        PersistentServiceClient<TPotentialActionSetSrv> solution_space_client_;
         
         /**
          * @brief Service client that evaluates the optimization variable (penalty) given the state of
          * the system and an evaluating solution;
         */
-        ros::ServiceClient penalty_service_client_;
+        PersistentServiceClient<TMetricControlPredictionSrv> penalty_service_client_;
 
         /**
          * @brief  The V parameter that is multplied with the penalty (like a weight). 
