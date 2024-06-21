@@ -87,7 +87,7 @@ class ROSConvertedQueue: public DynamicConvertedQueue<typename QueueElementTrait
             }
             else if (!interfaces.arrival_prediction_service_name.empty())
             {
-                arrival_service_client_ = PersistentServiceClient<TPredictionServiceClass>(nh, interfaces.arrival_prediction_service_name);
+                arrival_service_client_ = PersistentServiceClient<TPredictionServiceClass>(nh_, interfaces.arrival_prediction_service_name);
             }
             else
             {
@@ -106,7 +106,7 @@ class ROSConvertedQueue: public DynamicConvertedQueue<typename QueueElementTrait
             }
             else if (!interfaces.transmission_prediction_service_name.empty())
             {
-                transmission_service_client_ = PersistentServiceClient<TPredictionServiceClass>(nh, interfaces.transmission_prediction_service_name);
+                transmission_service_client_ = PersistentServiceClient<TPredictionServiceClass>(nh_, interfaces.transmission_prediction_service_name);
             }
             else
             {
