@@ -14,12 +14,21 @@ LAUNCH_DIRECTORY_PATH = os.sep.join(package_path) + "/launch/"
 BAG_DIRECTORY_PATH = os.sep.join(package_path) + "/experiment_bags/"
 RESULT_DIRECTORY_PATH = BAG_DIRECTORY_PATH + "results/"
 
+# ============= Constants lists for experiments =============
+
+class ActionType(Enum):
+    TASK_ZONE = 0,
+    HIGH_LOCALIZATION_ZONE = 1,
+    LOW_TEMPERATURE_ZONE = 2
+
+controller_type_list = ["NoRew_NoInv", "NoRew_Inv", "Rew_NoInv", "Rew_Inv"]
+metric_type_list = ["localization", "temperature", "low_temperature", "real_queue", "penalty"]
+
+# ============= Experiment's data structures =============
 class Series:
     def __init__(self):
         self.variable_name = ""
         self.values = []
-
-# ============= Experiment's data structures =============
 
 class QueueServerMetricStatsStruct:
     def __init__(self):
@@ -264,12 +273,3 @@ def actionSeriesToStringSeries(action_series: Series):
     action_string_series.values = [actionTypeToString(action_type) for action_type in action_series.values]
     return action_string_series
 
-# ============= Constants lists for experiments =============
-
-class ActionType(Enum):
-    TASK_ZONE = 0,
-    HIGH_LOCALIZATION_ZONE = 1,
-    LOW_TEMPERATURE_ZONE = 2
-
-controller_type_list = ["NoRew_NoInv", "NoRew_Inv", "Rew_NoInv", "Rew_Inv"]
-metric_type_list = ["localization", "temperature", "low_temperature", "real_queue", "penalty"]
