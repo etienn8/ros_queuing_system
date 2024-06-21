@@ -66,7 +66,7 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType, public ROSQueueCommonInt
             }
             else if (!interfaces.arrival_evaluation_service_name.empty())
             {
-                arrival_evaluation_service_client_ = PersistentServiceClient<ros_queue_msgs::FloatRequest>(nh, interfaces.arrival_evaluation_service_name);
+                arrival_evaluation_service_client_ = PersistentServiceClient<ros_queue_msgs::FloatRequest>(nh_, interfaces.arrival_evaluation_service_name);
             }
             else
             {
@@ -85,7 +85,7 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType, public ROSQueueCommonInt
             }
             else if (!interfaces.departure_evaluation_service_name.empty())
             {
-                departure_evaluation_service_client_ = PersistentServiceClient<ros_queue_msgs::FloatRequest>(nh, interfaces.departure_evaluation_service_name);
+                departure_evaluation_service_client_ = PersistentServiceClient<ros_queue_msgs::FloatRequest>(nh_, interfaces.departure_evaluation_service_name);
             }
             else
             {
