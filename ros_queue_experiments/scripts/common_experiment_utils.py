@@ -147,6 +147,9 @@ class ActionType(Enum):
     HIGH_LOCALIZATION_ZONE = 1,
     LOW_TEMPERATURE_ZONE = 2
 
+controller_type_list = ["NoRew_NoInv", "NoRew_Inv", "Rew_NoInv", "Rew_Inv"]
+metric_type_list = ["localization", "temperature", "low_temperature", "real_queue", "penalty"]
+
 def actionTypeToString(action_type: ActionType):
     if action_type == ActionType.TASK_ZONE:
         return "TASK_ZONE"
@@ -236,3 +239,35 @@ class QueueEndValues:
 
         self.penalty = Series()
         self.penalty.variable_name = "end_penalty"
+
+
+class EndMetricStruct:
+    def __init__(self, metric_name: str = ""):
+        self.estimation_error = Series()
+        self.estimation_error.variable_name = "err_est"
+
+        self.estimation_error_dispersion = Series()
+        self.estimation_error_dispersion.variable_name = "err_est_dispersion"
+
+        self.target_error = Series()
+        self.target_error.variable_name = "err_target"
+
+        self.target_error_dispersion = Series()
+        self.target_error_dispersion.variable_name = "err_target_dispersion"
+
+
+class ControllerEndMetricStruct:
+    def __init__(self):
+        self.metric = {"localization": EndMetricStruct("localization"),
+                       "temperature": EndMetricStruct("temperature"),
+                       "low_temperature": EndMetricStruct("low_temperature"),
+                       "real_queue": EndMetricStruct("real_queue"),
+                       "penalty": EndMetricStruct("penalty")}
+
+
+class MultiControllerEndMetricStruct:
+    def __init__(self):
+        self.controller_end_metrics = {"NoRew_NoInv": ControllerEndMetricStruct(),
+                                       "NoRew_Inv": ControllerEndMetricStruct(),
+                                       "Rew_NoInv": ControllerEndMetricStruct(),
+                                       "Rew_Inv": ControllerEndMetricStruct()}
