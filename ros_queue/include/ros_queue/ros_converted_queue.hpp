@@ -88,7 +88,6 @@ class ROSConvertedQueue: public DynamicConvertedQueue<typename QueueElementTrait
             else if (!interfaces.arrival_prediction_service_name.empty())
             {
                 arrival_service_client_ = PersistentServiceClient<TPredictionServiceClass>(nh, interfaces.arrival_prediction_service_name);
-                arrival_service_client_.waitForExistence();
             }
             else
             {
@@ -108,7 +107,6 @@ class ROSConvertedQueue: public DynamicConvertedQueue<typename QueueElementTrait
             else if (!interfaces.transmission_prediction_service_name.empty())
             {
                 transmission_service_client_ = PersistentServiceClient<TPredictionServiceClass>(nh, interfaces.transmission_prediction_service_name);
-                transmission_service_client_.waitForExistence();
             }
             else
             {
@@ -139,7 +137,7 @@ class ROSConvertedQueue: public DynamicConvertedQueue<typename QueueElementTrait
             }
             else if (!interfaces.conversion_service_name.empty())
             {
-                conversion_service_client_ = nh_.serviceClient<TConversionServiceClass>(interfaces.conversion_service_name);
+                conversion_service_client_ = PersistentServiceClient<TConversionServiceClass>(nh_, interfaces.conversion_service_name);
             }
             else
             {
@@ -168,6 +166,11 @@ class ROSConvertedQueue: public DynamicConvertedQueue<typename QueueElementTrait
                 TPredictionServiceClass local_service = service; 
 
                 // Service ROS call
+                if(!arrival_service_waited_)
+                {
+                    arrival_service_client_.waitForExistence();
+                    arrival_service_waited_ = true;
+                }
                 if (arrival_service_client_.call(local_service))
                 {
                     return local_service.response.prediction;
@@ -198,6 +201,11 @@ class ROSConvertedQueue: public DynamicConvertedQueue<typename QueueElementTrait
                 TPredictionServiceClass local_service = service; 
 
                 // Service ROS call
+                if(!transmission_service_waited_)
+                {
+                    transmission_service_client_.waitForExistence();
+                    transmission_service_waited_ = true;
+                }
                 if (transmission_service_client_.call(local_service))
                 {
                     return local_service.response.prediction;
@@ -267,25 +275,27 @@ class ROSConvertedQueue: public DynamicConvertedQueue<typename QueueElementTrait
                     }
 
                     // Service ROS call
-                    if (conversion_service_client_.waitForExistence(WAIT_DURATION_FOR_SERVICE_EXISTENCE))
+                    if(!conversion_service_waited_)
                     {
-                        if (conversion_service_client_.call(service_msg))
+                        conversion_service_client_.waitForExistence();
+                        true;
+                    }
+                    if (conversion_service_client_.call(service_msg))
+                    {
+                        if (arriving_queue_size != service_msg.request.queue_to_convert.size())
                         {
-                            if (arriving_queue_size != service_msg.request.queue_to_convert.size())
-                            {
-                                throw BadConversionException("The size of sent queue_to_convert changed in size while it should stay constant.");
-                            }
-                            if (arriving_queue_size != service_msg.response.converted_costs.size())
-                            {
-                                throw BadConversionException("The size of converted costs vector of the conversion service is not the same size as the sent queue. Likely due to a bad conversion function.");
-                            }
+                            throw BadConversionException("The size of sent queue_to_convert changed in size while it should stay constant.");
+                        }
+                        if (arriving_queue_size != service_msg.response.converted_costs.size())
+                        {
+                            throw BadConversionException("The size of converted costs vector of the conversion service is not the same size as the sent queue. Likely due to a bad conversion function.");
+                        }
 
-                            for(int index =0; index < service_msg.request.queue_to_convert.size(); ++index)
-                            {
-                                // @TODO: Reduce the copies with rvalues
-                                ElementWithConvertedSize<typename QueueElementTrait<TROSMsgType>::ElementType> convertedElement(std::move(service_msg.request.queue_to_convert[index]), service_msg.response.converted_costs[index]);
-                                converted_queue.push_back(std::move(convertedElement));
-                            }
+                        for(int index =0; index < service_msg.request.queue_to_convert.size(); ++index)
+                        {
+                            // @TODO: Reduce the copies with rvalues
+                            ElementWithConvertedSize<typename QueueElementTrait<TROSMsgType>::ElementType> convertedElement(std::move(service_msg.request.queue_to_convert[index]), service_msg.response.converted_costs[index]);
+                            converted_queue.push_back(std::move(convertedElement));
                         }
                     }
                     else
@@ -319,6 +329,11 @@ class ROSConvertedQueue: public DynamicConvertedQueue<typename QueueElementTrait
         int (*arrival_prediction_fptr_)(const TPredictionServiceClass&) = nullptr;
 
         /**
+         * @brief Flag to know if the arrival service was waited for.
+        */
+        bool arrival_service_waited_ = false;
+
+        /**
          * @brief Service client used for the transmission prediction service calls.
          */
         PersistentServiceClient<TPredictionServiceClass> transmission_service_client_;
@@ -333,6 +348,12 @@ class ROSConvertedQueue: public DynamicConvertedQueue<typename QueueElementTrait
          * @brief Publisher used for the transmission publication calls.
          */
         ros::Publisher transmission_pub_;
+
+        /**
+         * @brief Flag to indicates if the transmission service was waited for.
+        */
+        bool transmission_service_waited_ = false;
+
         /**
          * @brief Function pointer for the transmission of data queue from the updates.
          * @param deque<typename QueueElementTrait<TROSMsgType>::ElementType>&& Rvalue to the deque to transmit.
@@ -342,7 +363,7 @@ class ROSConvertedQueue: public DynamicConvertedQueue<typename QueueElementTrait
         /**
          * @brief Service client used to evaluate the converted size of a queue element through a ROS service calls.
          */
-        ros::ServiceClient conversion_service_client_;
+        PersistentServiceClient<TConversionServiceClass> conversion_service_client_;
         /**
          * @brief Function pointer to a function that creates a new queue that stores the original queue elements in addition to a converted size.
          * @param deque<QueueElementTrait<TROSMsgType>::ElementType>&& Rvalue to a queue to convert.
@@ -353,6 +374,11 @@ class ROSConvertedQueue: public DynamicConvertedQueue<typename QueueElementTrait
          */
         void (*conversion_fptr_)(deque<typename QueueElementTrait<TROSMsgType>::ElementType>&&,
                                 deque<ElementWithConvertedSize<typename QueueElementTrait<TROSMsgType>::ElementType>>&) = nullptr;
+
+        /**
+         * @brief Flag to indicates if the conversion service was waited for.
+        */
+        bool conversion_service_waited_ = false;
 
         /**
          * @brief Duration to wait for the existence of services at each call.

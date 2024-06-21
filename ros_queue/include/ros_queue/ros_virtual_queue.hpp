@@ -67,7 +67,6 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType, public ROSQueueCommonInt
             else if (!interfaces.arrival_evaluation_service_name.empty())
             {
                 arrival_evaluation_service_client_ = PersistentServiceClient<ros_queue_msgs::FloatRequest>(nh, interfaces.arrival_evaluation_service_name);
-                arrival_evaluation_service_client_.waitForExistence();
             }
             else
             {
@@ -87,7 +86,6 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType, public ROSQueueCommonInt
             else if (!interfaces.departure_evaluation_service_name.empty())
             {
                 departure_evaluation_service_client_ = PersistentServiceClient<ros_queue_msgs::FloatRequest>(nh, interfaces.departure_evaluation_service_name);
-                departure_evaluation_service_client_.waitForExistence();
             }
             else
             {
@@ -96,7 +94,9 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType, public ROSQueueCommonInt
         }
 
         /**
-         * @brief Method that updates the virtual queue. It changes by the target_metric_ minus the returned value of the metric calculator (chose at the constructor).
+         * @brief Method that updates the virtual queue. It changes by the target_metric_ minus the returned value of the 
+         * metric calculator (chosen at the constructor). It will wait for the existences of the services if they were not 
+         * waited for already.
          */
         void update()
         {
@@ -116,6 +116,11 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType, public ROSQueueCommonInt
                 ros_queue_msgs::FloatRequest local_service; 
 
                 // Service ROS call
+                if (!arrival_service_waited_)
+                {
+                    arrival_evaluation_service_client_.waitForExistence();
+                    arrival_service_waited_ = true;
+                }
                 if (arrival_evaluation_service_client_.call(local_service))
                 {
                     arrival = local_service.response.value;
@@ -137,6 +142,11 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType, public ROSQueueCommonInt
                 ros_queue_msgs::FloatRequest local_service; 
 
                 // Service ROS call
+                if (!departure_service_waited_)
+                {
+                    departure_evaluation_service_client_.waitForExistence();
+                    departure_service_waited_ = true;
+                }
                 if (departure_evaluation_service_client_.call(local_service))
                 {
                     departure = local_service.response.value;
@@ -181,6 +191,11 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType, public ROSQueueCommonInt
         float (*arrival_evaluation_fptr_)() = nullptr;
 
         /**
+         * @brief Flag to know if the arrival service was waited for.
+        */
+        bool arrival_service_waited_ = false;
+
+        /**
          * @brief Service client used to compute the decrease of the virtual queue.
          */
         PersistentServiceClient<ros_queue_msgs::FloatRequest> departure_evaluation_service_client_;
@@ -189,6 +204,11 @@ class ROSVirtualQueue: public TDynamicVirtualQueueType, public ROSQueueCommonInt
          * @brief Function pointer used to compute the decrease of the virtual queue.
          */
         float (*departure_evaluation_fptr_)() = nullptr;
+
+        /**
+         * @brief Flag to know if the arrival service was waited for.
+        */
+        bool departure_service_waited_ = false;
 
         /**
          * @brief Duration to wait for the existence of services at each call.

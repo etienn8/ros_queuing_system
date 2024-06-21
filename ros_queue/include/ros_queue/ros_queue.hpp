@@ -73,7 +73,6 @@ class ROSQueue: public DynamicQueue<typename QueueElementTrait<TROSMsgType>::Ele
             else if (!interfaces.arrival_prediction_service_name.empty())
             {
                 arrival_service_client_ = PersistentServiceClient<TPredictionServiceClass>(nh, interfaces.arrival_prediction_service_name);
-                arrival_service_client_.waitForExistence();
             }
             else
             {
@@ -93,7 +92,6 @@ class ROSQueue: public DynamicQueue<typename QueueElementTrait<TROSMsgType>::Ele
             else if (!interfaces.transmission_prediction_service_name.empty())
             {
                 transmission_service_client_ = PersistentServiceClient<TPredictionServiceClass>(nh, interfaces.transmission_prediction_service_name);
-                transmission_service_client_.waitForExistence();
             }
             else
             {
@@ -137,6 +135,11 @@ class ROSQueue: public DynamicQueue<typename QueueElementTrait<TROSMsgType>::Ele
                 TPredictionServiceClass local_service= service;
 
                 // Service ROS call
+                if(!arrival_service_waited_)
+                {
+                    arrival_service_client_.waitForExistence();
+                    arrival_service_waited_ = true;
+                }
                 if (arrival_service_client_.call(local_service))
                 {
                     return local_service.response.prediction;
@@ -167,6 +170,11 @@ class ROSQueue: public DynamicQueue<typename QueueElementTrait<TROSMsgType>::Ele
                 TPredictionServiceClass local_service = service; 
 
                 // Service ROS call
+                if(!transmission_service_waited_)
+                {
+                    transmission_service_client_.waitForExistence();
+                    transmission_service_waited_ = true;
+                }
                 if (transmission_service_client_.call(local_service))
                 {
                     return local_service.response.prediction;
@@ -229,6 +237,11 @@ class ROSQueue: public DynamicQueue<typename QueueElementTrait<TROSMsgType>::Ele
         int (*arrival_prediction_fptr_)(const TPredictionServiceClass&) = nullptr;
 
         /**
+         * @brief Flag to know if the arrival service was waited for.
+         */ 
+        bool arrival_service_waited_ = false;
+
+        /**
          * @brief Service client used for the transmission prediction service calls.
          */
         PersistentServiceClient<TPredictionServiceClass> transmission_service_client_;
@@ -238,6 +251,11 @@ class ROSQueue: public DynamicQueue<typename QueueElementTrait<TROSMsgType>::Ele
          * @param TPredictionServiceClass& Service class used as a data structure to pass input to predictions.
          */
         int (*transmission_prediction_fptr_)(const TPredictionServiceClass&) = nullptr;
+
+        /**
+         * @brief Flag to know if the transmission service was waited for.
+         */
+        bool transmission_service_waited_ = false;
 
         /**
          * @brief Publisher used for the transmission publication calls.

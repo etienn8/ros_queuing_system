@@ -91,6 +91,4 @@ class ROSQueueCommonInterfaces
          * @return Size of the queue.
         */
         virtual float getSizeForService()=0;
-
-
 };
