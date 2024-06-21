@@ -19,6 +19,8 @@ class Series:
         self.variable_name = ""
         self.values = []
 
+# ============= Experiment's data structures =============
+
 class QueueServerMetricStatsStruct:
     def __init__(self):
         self.queue_size = Series()
@@ -122,48 +124,6 @@ class AllMetricPerformanceStruct:
             metric.real_continuous_average_diff_with_server_time_average.values.append(msg.real_continuous_average_diff_with_server_time_average)
         metric.absolute_real_continuous_average_diff_with_server_mean.values = [abs(value) for value in metric.real_continuous_average_diff_with_server_mean.values]
 
-def createCSV(list_of_series, csv_filename):
-    max_nb_rows = max([len(series.values) for series in list_of_series])
-    
-    with open(csv_filename, 'w') as csvfile:
-        csvwriter = csv.writer(csvfile, delimiter=';')
-        
-        row = []
-        for series in list_of_series:
-            row.append(series.variable_name)
-
-        csvwriter.writerow(row)
-        for row_index in range(max_nb_rows):
-            row = []
-            for series in list_of_series:
-                if row_index < len(series.values):
-                    row.append(series.values[row_index])
-                else:
-                    row.append("")
-            csvwriter.writerow(row)
-
-class ActionType(Enum):
-    TASK_ZONE = 0,
-    HIGH_LOCALIZATION_ZONE = 1,
-    LOW_TEMPERATURE_ZONE = 2
-
-controller_type_list = ["NoRew_NoInv", "NoRew_Inv", "Rew_NoInv", "Rew_Inv"]
-metric_type_list = ["localization", "temperature", "low_temperature", "real_queue", "penalty"]
-
-def actionTypeToString(action_type: ActionType):
-    if action_type == ActionType.TASK_ZONE:
-        return "TASK_ZONE"
-    elif action_type == ActionType.HIGH_LOCALIZATION_ZONE:
-        return "HIGH_LOCALIZATION_ZONE"
-    elif action_type == ActionType.LOW_TEMPERATURE_ZONE:
-        return "LOW_TEMPERATURE_ZONE"
-
-def actionSeriesToStringSeries(action_series: Series):
-    action_string_series = Series()
-    action_string_series.variable_name = action_series.variable_name
-    action_string_series.values = [actionTypeToString(action_type) for action_type in action_series.values]
-    return action_string_series
-
 class ActionPerformanceSeries:
     def __init__(self):
         self.time_stamps = Series()
@@ -210,7 +170,6 @@ class ActionPerformanceSeries:
                     self.synchronized_queue_stats.real_queue_stats.time_average_arrival.values.append(queue_stats.arrival_time_average)
                     self.synchronized_queue_stats.real_queue_stats.time_average_departure.values.append(queue_stats.departure_time_average)
 
-
 class QueueEndValues:
     def __init__(self):
         self.localization_arrival = Series()
@@ -240,7 +199,6 @@ class QueueEndValues:
         self.penalty = Series()
         self.penalty.variable_name = "end_penalty"
 
-
 class EndMetricStruct:
     def __init__(self, metric_name: str = ""):
         self.estimation_error = Series()
@@ -255,7 +213,6 @@ class EndMetricStruct:
         self.target_error_dispersion = Series()
         self.target_error_dispersion.variable_name = "err_target_dispersion"
 
-
 class ControllerEndMetricStruct:
     def __init__(self):
         self.metric = {"localization": EndMetricStruct("localization"),
@@ -264,10 +221,55 @@ class ControllerEndMetricStruct:
                        "real_queue": EndMetricStruct("real_queue"),
                        "penalty": EndMetricStruct("penalty")}
 
-
 class MultiControllerEndMetricStruct:
     def __init__(self):
         self.controller_end_metrics = {"NoRew_NoInv": ControllerEndMetricStruct(),
                                        "NoRew_Inv": ControllerEndMetricStruct(),
                                        "Rew_NoInv": ControllerEndMetricStruct(),
                                        "Rew_Inv": ControllerEndMetricStruct()}
+
+# ============= Utilities function for the experiments =============
+
+def createCSV(list_of_series, csv_filename):
+    max_nb_rows = max([len(series.values) for series in list_of_series])
+    
+    with open(csv_filename, 'w') as csvfile:
+        csvwriter = csv.writer(csvfile, delimiter=';')
+        
+        row = []
+        for series in list_of_series:
+            row.append(series.variable_name)
+
+        csvwriter.writerow(row)
+        for row_index in range(max_nb_rows):
+            row = []
+            for series in list_of_series:
+                if row_index < len(series.values):
+                    row.append(series.values[row_index])
+                else:
+                    row.append("")
+            csvwriter.writerow(row)
+
+def actionTypeToString(action_type: ActionType):
+    if action_type == ActionType.TASK_ZONE:
+        return "TASK_ZONE"
+    elif action_type == ActionType.HIGH_LOCALIZATION_ZONE:
+        return "HIGH_LOCALIZATION_ZONE"
+    elif action_type == ActionType.LOW_TEMPERATURE_ZONE:
+        return "LOW_TEMPERATURE_ZONE"
+
+def actionSeriesToStringSeries(action_series: Series):
+    action_string_series = Series()
+    action_string_series.variable_name = action_series.variable_name
+    action_string_series.values = [actionTypeToString(action_type) for action_type in action_series.values]
+    return action_string_series
+
+# ============= Constants lists for experiments =============
+
+class ActionType(Enum):
+    TASK_ZONE = 0,
+    HIGH_LOCALIZATION_ZONE = 1,
+    LOW_TEMPERATURE_ZONE = 2
+
+controller_type_list = ["NoRew_NoInv", "NoRew_Inv", "Rew_NoInv", "Rew_Inv"]
+metric_type_list = ["localization", "temperature", "low_temperature", "real_queue", "penalty"]
