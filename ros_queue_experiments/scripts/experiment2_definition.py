@@ -205,7 +205,7 @@ class Experiment2Analyser:
         ax7.grid(False)
         ax7.legend()
         ax7.set_xlabel("Time (s)")
-        plt.show()
+        #plt.show()
 
     def getNormalBagName(self):
         return self.normal_bag_name

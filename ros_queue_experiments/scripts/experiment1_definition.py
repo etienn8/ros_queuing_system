@@ -175,7 +175,7 @@ class Experiment1Analyser:
                 ax5.text(start + elapsed_time/2, max_queue_size-1.5, action_label_dict[last_action], ha='center', va='center')
                 last_action_index = action_index
 
-        plt.show()
+        #plt.show()
 
     def prefixToBagName(self, prefix):
         self.bag_name = prefix + self.bag_name
