@@ -51,6 +51,7 @@ if __name__ == "__main__":
     exp3 = experiment_instance.Experiment3Instance(uuid, 90, exp3_analyser)
     #exp3.execute(generate_output=True)
     exp3.generateAllSubExperimentOutputs("2024-06-25_17-09-34")
+    exp3.macro_analyser.generateMultiSetupOutputs(exp3.setup_analysers)
     rospy.loginfo("Experiment 3 completed")
 
     plt.show()

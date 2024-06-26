@@ -116,6 +116,9 @@ class MetricPerformanceStruct:
         self.real_continuous_average_diff_with_server_time_average = Series()
         self.real_continuous_average_diff_with_server_time_average.variable_name = metric_name + "_real_continuous_average_diff_with_server_time_average"
 
+        self.absolute_real_continuous_average_diff_with_server_time_average = Series()
+        self.absolute_real_continuous_average_diff_with_server_time_average.variable_name = metric_name + "_real_continuous_average_diff_with_server_mean_abs"
+
 class AllMetricPerformanceStruct:
     def __init__(self):
         self.localization = MetricPerformanceStruct("localization")
@@ -146,6 +149,7 @@ class AllMetricPerformanceStruct:
             metric.real_continuous_average_diff_with_server_mean.values.append(msg.real_continuous_average_diff_with_server_mean)
             metric.real_continuous_average_diff_with_server_time_average.values.append(msg.real_continuous_average_diff_with_server_time_average)
         metric.absolute_real_continuous_average_diff_with_server_mean.values = [abs(value) for value in metric.real_continuous_average_diff_with_server_mean.values]
+        metric.absolute_real_continuous_average_diff_with_server_time_average.values = [abs(value) for value in metric.real_continuous_average_diff_with_server_time_average.values]
 
 class ActionPerformanceSeries:
     def __init__(self):
@@ -250,6 +254,14 @@ class MultiControllerEndMetricStruct:
                                        "NoRew_Inv": ControllerEndMetricStruct(),
                                        "Rew_NoInv": ControllerEndMetricStruct(),
                                        "Rew_Inv": ControllerEndMetricStruct()}
+        
+class MultiSetupEndMetricStruct:
+    def __init__(self):
+        self.multi_controller_end_struct = {"perfect_model_and_setup": MultiControllerEndMetricStruct(),
+                                            "perturbation_on_action": MultiControllerEndMetricStruct(),
+                                            "bad_prediction_model": MultiControllerEndMetricStruct(),
+                                            "variable_time_action_setup": MultiControllerEndMetricStruct(),
+                                            "time_uncertainties": MultiControllerEndMetricStruct()}
 
 # ============= Utilities function for the experiments =============
 
