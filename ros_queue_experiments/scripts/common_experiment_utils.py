@@ -23,6 +23,20 @@ class ActionType(Enum):
 
 controller_type_list = ["NoRew_NoInv", "NoRew_Inv", "Rew_NoInv", "Rew_Inv"]
 metric_type_list = ["localization", "temperature", "low_temperature", "real_queue", "penalty"]
+experimental_setup_list = ["perfect_model_and_setup",
+                          "perturbation_on_action",
+                          "bad_prediction_model",
+                          "variable_time_action_setup",
+                          "time_uncertainties"]
+
+# experimental_setup_list = ["perfect_model_and_setup",
+                        #   "perturbation_on_action",
+                        #   "bad_prediction_model",
+                        #   "variable_time_action_setup",
+                        #   "time_uncertainties",
+                        #   "all_faults_without_penalty",
+                        #   "all_faults_with_penalty"]
+
 
 # ============= Experiment's data structures =============
 class Series:

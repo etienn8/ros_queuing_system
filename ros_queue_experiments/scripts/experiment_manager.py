@@ -48,9 +48,9 @@ if __name__ == "__main__":
     # Experiment 3
     # Graph experiment
     exp3_analyser = experiment3_definition.Experiment3Analyser()
-    exp3 = experiment_instance.ExperimentInstance(uuid, ['experiment_setup:=bad_prediction_model'], 90, exp3_analyser)
+    exp3 = experiment_instance.Experiment3Instance(uuid, 90, exp3_analyser)
     #exp3.execute(generate_output=True)
-    exp3.analyser.generateOutput(0, "experiment3_2024-06-21_13-07-26", base_init_time_on_first_value=True)
+    exp3.generateAllSubExperimentOutputs("2024-06-25_17-09-34")
     rospy.loginfo("Experiment 3 completed")
 
     plt.show()

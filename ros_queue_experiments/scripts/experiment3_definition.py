@@ -11,10 +11,18 @@ import common_experiment_utils
 class Experiment3Analyser:
     def __init__(self):
         time_now = datetime.now()
-        string_time_now = time_now.strftime("%Y-%m-%d_%H-%M-%S")
-        self.bag_name = "experiment3_" + string_time_now
+        self.string_time_now = time_now.strftime("%Y-%m-%d_%H-%M-%S")
 
+    def getStringTimeNow(self):
+        return self.string_time_now
+        
+
+class SubExperiment3Analyser:
+    def __init__(self, setup_name, string_time_now):
+        self.bag_name = "experiment3_" + setup_name + "_" + string_time_now
+        self.setup_name = setup_name
         self.sub_topics_to_record = [
+            "queue_controller/control_loop_started",
             "monitoring_node/localization",
             "monitoring_node/real_queue",
             "monitoring_node/temperature",
@@ -26,14 +34,11 @@ class Experiment3Analyser:
             for sub_topic in self.sub_topics_to_record:
                 self.topics_to_record.append("/" + controller_type + "/" + sub_topic)
 
-    def generateOutput(self, time_init, bag_name, base_init_time_on_first_value=False):
+    def generateOutput(self, time_init, bag_name, generate_plots = True, base_init_time_on_first_value=False):
         bag = rosbag.Bag(common_experiment_utils.BAG_DIRECTORY_PATH + bag_name + ".bag")
 
-        # Get init time if not set
-        init_time_set = False
-
-        for topic, msg, t in bag.read_messages(topics=["/NoRew_NoInv/queue_server/server_stats"]):
-            if (not init_time_set) and base_init_time_on_first_value:
+        for topic, msg, t in bag.read_messages(topics=["/NoRew_NoInv/queue_controller/control_loop_started"]):
+            if base_init_time_on_first_value:
                 time_init = t.to_sec()
                 init_time_set = True
                 break
@@ -95,31 +100,31 @@ class Experiment3Analyser:
         
         common_experiment_utils.createCSV(series_to_record, csv_filename)
 
-        # ==== Create plots ====
-        fig1, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
-        ax1.set_title("Estimation error between the real metric mean and the queue server mean for the localization metric for all controllers over time with model uncertainties")
-        for controller_type in common_experiment_utils.controller_type_list:
-            metric_performance_struct = controller_performance_metrics[controller_type].localization
-            ax1.plot(metric_performance_struct.time_stamps.values, 
-                     metric_performance_struct.absolute_real_continuous_average_diff_with_server_mean.values, 
-                     label=controller_type)
-    
-        ax1.set_ylabel("Localization estimation error (m)")
-        ax1.grid(True)
-        ax1.legend()
+        if generate_plots:
+            # ==== Create plots ====
+            fig1, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
+            ax1.set_title("Estimation error between the real metric mean and the queue server mean for the localization metric for all controllers over time with " + self.setup_name)
+            for controller_type in common_experiment_utils.controller_type_list:
+                metric_performance_struct = controller_performance_metrics[controller_type].localization
+                ax1.plot(metric_performance_struct.time_stamps.values, 
+                        metric_performance_struct.absolute_real_continuous_average_diff_with_server_mean.values, 
+                        label=controller_type)
+        
+            ax1.set_ylabel("Localization estimation error (m)")
+            ax1.grid(True)
+            ax1.legend()
 
-        ax2.set_title("Error between the real metric mean and the target value for the localization metric for all controllers over time with model uncertainties")
-        for controller_type in common_experiment_utils.controller_type_list:
-            metric_performance_struct = controller_performance_metrics[controller_type].localization
-            ax2.plot(metric_performance_struct.time_stamps.values, 
-                     metric_performance_struct.real_continuous_average_diff_with_target.values, 
-                     label=controller_type)
-        
-        ax2.set_ylabel("Localization error (m)")
-        ax2.grid(True)
-        ax2.legend()
-        ax2.set_xlabel("Time (s)")
-        
+            ax2.set_title("Error between the real metric mean and the target value for the localization metric for all controllers over time with model uncertainties" + self.setup_name)
+            for controller_type in common_experiment_utils.controller_type_list:
+                metric_performance_struct = controller_performance_metrics[controller_type].localization
+                ax2.plot(metric_performance_struct.time_stamps.values, 
+                        metric_performance_struct.real_continuous_average_diff_with_target.values, 
+                        label=controller_type)
+            
+            ax2.set_ylabel("Localization error (m)")
+            ax2.grid(True)
+            ax2.legend()
+            ax2.set_xlabel("Time (s)")
 
     def prefixToBagName(self, prefix):
         self.bag_name = prefix + self.bag_name
