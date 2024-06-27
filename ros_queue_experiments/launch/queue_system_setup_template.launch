@@ -14,6 +14,7 @@
     <arg name="is_target_renewal_dependent" default="false"/>
     <arg name="inverse_control_and_steps"   default="false"/>
     <arg name="rate_or_change"              default="rate"/>
+    <arg name="v_parameter"                 default="1000.0"/>
 
     <!-- Start the AUV system. Propagates states and host metric services -->
     <node name="auv_system_node" type="AUV_system_node" pkg="ros_queue_experiments" output="screen">

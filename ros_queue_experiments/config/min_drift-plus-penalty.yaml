@@ -160,7 +160,7 @@ penalty_service_name:  "auv_system_node/penalty/expected_metric"
 # The V parameter that is multplied with the penalty (like a weight). When a high penalty metric also increases the queue size,
 # this parameter balances the tradeoff between a lower penalty or lower queue delays. A high V will prioritize the minimization
 # of the penalty while a low V will prioritize low queue sizes and delays.
-v_parameter: 1000.0
+v_parameter: $(arg v_parameter)
 # If set to true, the controller will optimize the ratio of the time average penalty over the expected renewal frame duration.
 # If set to false, the controller will optimize the time average penalty.
 # Only used for the renewal_min_drift_plus_penalty type of controller.

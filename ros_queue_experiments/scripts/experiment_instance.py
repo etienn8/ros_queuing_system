@@ -82,6 +82,9 @@ class Experiment3Instance:
 
             cli_args = [common_experiment_utils.LAUNCH_DIRECTORY_PATH + "experiment_launcher.launch"] + ['experiment_setup:=' + setup_name, "rosbag_args:=" + this_analyser.getROSBagArguments()]
         
+            if setup_name == "all_faults_without_penalty":
+                cli_args.append('v_parameter:=0.0')
+
             roslaunch_args = cli_args[1:]
             roslaunch_file = [(roslaunch.rlutil.resolve_launch_arguments(cli_args)[0],roslaunch_args)]
 
