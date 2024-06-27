@@ -1,0 +1,116 @@
+temp_target: 40.0
+low_temp_target: 0.0
+temp:
+  - real_model:
+    - TaskZone:
+      - increase: 5.0      # Celcius Degree per second
+      - decrease: 0.0      # Celcius Degree per second
+    - HighLocZone:
+      - increase: 5.0      # Celcius Degree per second
+      - decrease: 4.0      # Celcius Degree per second
+    - ColdZone:
+      - increase: 5.0      # Celcius Degree per second
+      - decrease: 15.0     # Celcius Degree per second
+  - prediction_model:
+    - TaskZone:
+      - increase: 5.0      # Celcius Degree per second
+      - decrease: 0.0      # Celcius Degree per second
+    - HighLocZone:
+      - increase: 5.0      # Celcius Degree per second
+      - decrease: 4.0      # Celcius Degree per second
+    - ColdZone:
+      - increase: 5.0      # Celcius Degree per second
+      - decrease: 15.0     # Celcius Degree per second
+
+localization_target: 10.0
+localization:
+  - real_model:
+    - TaskZone:
+      - loc_uncertainty: 15.0      # cm
+    - HighLocZone:
+      - loc_uncertainty: 1.0      # cm
+    - ColdZone:
+      - loc_uncertainty: 12.0      # cm
+  - prediction_model:
+    - TaskZone:
+      - loc_uncertainty: 10.5     # cm
+    - HighLocZone:
+      - loc_uncertainty: 1.0     # cm 
+    - ColdZone:
+      - loc_uncertainty: 8.4      # cm
+
+# The renewal time is the time of exploiting a zone. The difference between the real model and 
+# is due to timing errors in the system.
+renewal_time:
+  - real_model:
+    - fromTaskZone:
+      - toTaskZone: 2.0 #ts
+      - toHighLocZone: 1.0 #t
+      - toColdZone: 0.5 #t
+    - fromHighLocZone:
+      - toTaskZone: 2.0 #t
+      - toHighLocZone: 1.0 #ts
+      - toColdZone: 1.0 #t
+    - fromColdZone:
+      - toTaskZone: 1.0 #t
+      - toHighLocZone: 1.0 #t
+      - toColdZone: 0.5 #ts
+  - prediction_model:
+    - fromTaskZone:
+      - toTaskZone: 1.5 #ts
+      - toHighLocZone: 0.5 #t
+      - toColdZone: 0.1 #t
+    - fromHighLocZone:
+      - toTaskZone: 1.5 #t
+      - toHighLocZone: 0.5 #ts
+      - toColdZone: 0.5 #t
+    - fromColdZone:
+      - toTaskZone: 0.5 #t
+      - toHighLocZone: 0.5 #t
+      - toColdZone: 0.1 #ts
+
+# The penalty represents the cost in energy (joule) to change from one state to another.
+penalty:
+  - real_model:
+    - fromTaskZone:
+      - toTaskZone: 0.0
+      - toHighLocZone: 2.0
+      - toColdZone: 2.0
+    - fromHighLocZone:
+      - toTaskZone: 2.0
+      - toHighLocZone: 0.0
+      - toColdZone: 1.0
+    - fromColdZone:
+      - toTaskZone: 2.0
+      - toHighLocZone: 1.0
+      - toColdZone: 0.0
+  - prediction_model:
+    - fromTaskZone:
+      - toTaskZone: 0.0
+      - toHighLocZone: 2.0
+      - toColdZone: 2.0
+    - fromHighLocZone:
+      - toTaskZone: 2.0
+      - toHighLocZone: 0.0
+      - toColdZone: 1.0
+    - fromColdZone:
+      - toTaskZone: 2.0
+      - toHighLocZone: 1.0
+      - toColdZone: 0.0
+
+arrival_task_per_second: 8.0
+task_metrics:
+  - real_model:
+    - TaskZone:
+      - departing_tasks_rate: 25.0     # Tasks per second
+    - HighLocZone:
+      - departing_tasks_rate: 0.0      # Tasks per second
+    - ColdZone:
+      - departing_tasks_rate: 0.0      # Tasks per second
+  - prediction_model:
+    - TaskZone:
+      - departing_tasks_rate: 25.0     # Tasks per second
+    - HighLocZone:
+      - departing_tasks_rate: 0.0      # Tasks per second
+    - ColdZone:
+      - departing_tasks_rate: 0.0      # Tasks per second
