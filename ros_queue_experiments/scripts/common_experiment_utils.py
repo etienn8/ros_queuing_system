@@ -240,6 +240,12 @@ class EndMetricStruct:
         self.target_error_dispersion = Series()
         self.target_error_dispersion.variable_name = "err_target_dispersion"
 
+        self.mean_value = Series()
+        self.mean_value.variable_name = "mean_value"
+
+        self.mean_value_dispersion = Series()
+        self.mean_value_dispersion.variable_name = "mean_value_dispersion"
+
 class ControllerEndMetricStruct:
     def __init__(self):
         self.metric = {"localization": EndMetricStruct("localization"),

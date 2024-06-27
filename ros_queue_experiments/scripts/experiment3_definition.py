@@ -56,11 +56,16 @@ class SubExperiment3Analyser:
             controller_end_struct = self.multi_controller_end_struct.controller_end_metrics[controller_type]
 
             for metric_name in common_experiment_utils.metric_type_list:
-                controller_end_struct.metric[metric_name].target_error.values = [controller_performance_metric_dict[metric_name].real_continuous_average_diff_with_target.values[-1]]
-                if controller_type == "Rew_NoInv" or controller_type == "Rew_Inv":
-                    controller_end_struct.metric[metric_name].estimation_error.values = [controller_performance_metric_dict[metric_name].absolute_real_continuous_average_diff_with_server_time_average.values[-1]]
+
+                if metric_name == "penalty":
+                    controller_end_struct.metric[metric_name].mean_value.values = [controller_performance_metric_dict[metric_name].real_average_value.values[-1]]
+                    controller_end_struct.metric[metric_name].estimation_error.values = [controller_performance_metric_dict[metric_name].real_continuous_average_diff_with_server_mean.values[-1]]
                 else:
-                    controller_end_struct.metric[metric_name].estimation_error.values = [controller_performance_metric_dict[metric_name].absolute_real_continuous_average_diff_with_server_mean.values[-1]]
+                    controller_end_struct.metric[metric_name].target_error.values = [controller_performance_metric_dict[metric_name].real_continuous_average_diff_with_target.values[-1]]
+                    if controller_type == "Rew_NoInv" or controller_type == "Rew_Inv":
+                        controller_end_struct.metric[metric_name].estimation_error.values = [controller_performance_metric_dict[metric_name].absolute_real_continuous_average_diff_with_server_time_average.values[-1]]
+                    else:
+                        controller_end_struct.metric[metric_name].estimation_error.values = [controller_performance_metric_dict[metric_name].absolute_real_continuous_average_diff_with_server_mean.values[-1]]
 
         # Create output CSV
         separator_second_graph = common_experiment_utils.Series()
@@ -207,7 +212,7 @@ class Experiment3Analyser:
         # ======= Create output CSV =======
 
         # Create variable names
-        nb_lines = 7 * 4 # 6 fields per controller and there are 4 controllers 
+        nb_lines = 8 * 4 # 8 fields per controller and there are 4 controllers 
         controller_name_spacers = common_experiment_utils.Series()
         controller_name_spacers.variable_name = "Controller type"
         metric_name_spacers = common_experiment_utils.Series()
@@ -224,16 +229,16 @@ class Experiment3Analyser:
         for index in range(nb_lines):
             if index == 0:
                 controller_name_spacers.values.append("NoRew_NoInv")
-            elif index == 7:
+            elif index == 8:
                 controller_name_spacers.values.append("NoRew_Inv")
-            elif index == 14:
+            elif index == 16:
                 controller_name_spacers.values.append("Rew_NoInv")
-            elif index == 21:
+            elif index == 24:
                 controller_name_spacers.values.append("Rew_Inv")
             else:
                 controller_name_spacers.values.append("")
 
-            metric_index = index % 7
+            metric_index = index % 8
             if metric_index == 0:
                 metric_name_spacers.values.append("Localization")
                 error_type_spaces.values.append("Estimation error (m)")
@@ -254,7 +259,10 @@ class Experiment3Analyser:
                 error_type_spaces.values.append("Departure-arrival diff (Task/s)")
             elif metric_index == 6:
                 metric_name_spacers.values.append("Penalty")
-                error_type_spaces.values.append("Penalty (J)")
+                error_type_spaces.values.append("Penalty estimation error (J)")
+            elif metric_index == 7:
+                metric_name_spacers.values.append("")
+                error_type_spaces.values.append("Penalty mean (J)")
             else:
                 metric_name_spacers.values.append("")
 
@@ -273,7 +281,8 @@ class Experiment3Analyser:
                 setup_series[setup_name].values.append(controller_end_metrics.metric["temperature"].target_error.values[0])
                 setup_series[setup_name].values.append(controller_end_metrics.metric["low_temperature"].target_error.values[0])
                 setup_series[setup_name].values.append(controller_end_metrics.metric["real_queue"].target_error.values[0])
-                setup_series[setup_name].values.append(controller_end_metrics.metric["penalty"].target_error.values[0])
+                setup_series[setup_name].values.append(controller_end_metrics.metric["penalty"].estimation_error.values[0])
+                setup_series[setup_name].values.append(controller_end_metrics.metric["penalty"].mean_value.values[0])
             series_to_record.append(setup_series[setup_name])
 
   
