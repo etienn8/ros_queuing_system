@@ -44,31 +44,30 @@ localization:
 renewal_time:
   - real_model:
     - fromTaskZone:
-      - toTaskZone: 2.0 #ts
-      - toHighLocZone: 1.0 #t
-      - toColdZone: 0.5 #t
+      - toTaskZone: 0.5 #ts
+      - toHighLocZone: 0.4 #t
+      - toColdZone: 0.3 #t
     - fromHighLocZone:
-      - toTaskZone: 2.0 #t
+      - toTaskZone: 0.6 #t
+      - toHighLocZone: 0.7 #ts
+      - toColdZone: 0.4 #t
+    - fromColdZone:
+      - toTaskZone: 0.9 #t
+      - toHighLocZone: 0.7 #t
+      - toColdZone: 0.8 #ts
+  - prediction_model:
+    - fromTaskZone:
+      - toTaskZone: 1.0 #ts
+      - toHighLocZone: 1.0 #t
+      - toColdZone: 1.0 #t
+    - fromHighLocZone:
+      - toTaskZone: 1.0 #t
       - toHighLocZone: 1.0 #ts
       - toColdZone: 1.0 #t
     - fromColdZone:
       - toTaskZone: 1.0 #t
       - toHighLocZone: 1.0 #t
-      - toColdZone: 0.5 #ts
-  - prediction_model:
-    - fromTaskZone:
-      - toTaskZone: 1.5 #ts
-      - toHighLocZone: 0.5 #t
-      - toColdZone: 0.1 #t
-    - fromHighLocZone:
-      - toTaskZone: 1.5 #t
-      - toHighLocZone: 0.5 #ts
-      - toColdZone: 0.5 #t
-    - fromColdZone:
-      - toTaskZone: 0.5 #t
-      - toHighLocZone: 0.5 #t
-      - toColdZone: 0.1 #ts
-
+      - toColdZone: 1.0 #ts
 # The penalty represents the cost in energy (joule) to change from one state to another.
 penalty:
   - real_model:
