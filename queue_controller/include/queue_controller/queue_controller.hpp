@@ -151,7 +151,7 @@ class QueueController
                 }
                 else
                 {
-                    renewal_service_client_ = PersistentServiceClient<TMetricControlPredictionSrv>(expected_renewal_time_service_name);
+                    renewal_service_client_ = PersistentServiceClient<TMetricControlPredictionSrv>(nh_, expected_renewal_time_service_name);
 
                     ROS_INFO_STREAM("Waiting for the expected renewal time service named :" << expected_renewal_time_service_name);
                     renewal_service_client_.waitForExistence();
@@ -175,7 +175,7 @@ class QueueController
             string solution_space_service_name;
             if(nhp_.getParam("solution_space_service_name", solution_space_service_name))
             {
-                solution_space_client_ = PersistentServiceClient<TPotentialActionSetSrv>(solution_space_service_name); 
+                solution_space_client_ = PersistentServiceClient<TPotentialActionSetSrv>(nh_, solution_space_service_name); 
                 
                 ROS_INFO_STREAM("Waiting for the solution space client named :" << solution_space_service_name);
                 solution_space_client_.waitForExistence();
@@ -189,7 +189,7 @@ class QueueController
             string penalty_service_name;
             if(nhp_.getParam("penalty_service_name", penalty_service_name))
             {
-                penalty_service_client_ = PersistentServiceClient<TMetricControlPredictionSrv>(penalty_service_name); 
+                penalty_service_client_ = PersistentServiceClient<TMetricControlPredictionSrv>(nh_, penalty_service_name); 
                 
                 ROS_INFO_STREAM("Waiting for the penalty space client named :" << penalty_service_name);
                 penalty_service_client_.waitForExistence();
@@ -305,7 +305,7 @@ class QueueController
             if (can_create_controller)
             {   
                 // Connect to queue_server for queue sizes
-                server_state_client_ = PersistentServiceClient<ros_queue_msgs::QueueServerStateFetch>(queue_server_name_ + "/get_server_state");
+                server_state_client_ = PersistentServiceClient<ros_queue_msgs::QueueServerStateFetch>(nh_, queue_server_name_ + "/get_server_state");
 
                 ROS_INFO_STREAM("Waiting for the server service named :" << server_state_client_.getService());
                 server_state_client_.waitForExistence();
@@ -319,7 +319,7 @@ class QueueController
                     }
                     else
                     {
-                        virtual_queues_trigger_ = PersistentServiceClient<std_srvs::Empty>(queue_server_name_ + "/trigger_service"); 
+                        virtual_queues_trigger_ = PersistentServiceClient<std_srvs::Empty>(nh_, queue_server_name_ + "/trigger_service"); 
                         ROS_INFO_STREAM("Waiting for the server service named :" << virtual_queues_trigger_.getService());
                         virtual_queues_trigger_.waitForExistence();
                     }
@@ -815,7 +815,7 @@ class QueueController
                                 {
                                     new_controller_struct->is_arrival_action_dependent = true;
                                     new_controller_struct->expected_arrival_service_ = 
-                                                            PersistentServiceClient<TMetricControlPredictionSrv>(service_name_temp);
+                                                            PersistentServiceClient<TMetricControlPredictionSrv>(nh_, service_name_temp);
                                     ROS_INFO_STREAM("Waiting for the server service named :" << new_controller_struct->expected_arrival_service_.getService());
                                     new_controller_struct->expected_arrival_service_.waitForExistence();
                                 }
@@ -828,7 +828,7 @@ class QueueController
                                     }
                                     new_controller_struct->is_arrival_action_dependent = false;
                                     new_controller_struct->arrival_independent_from_action_service_ = 
-                                                            PersistentServiceClient<ros_queue_msgs::FloatRequest>(service_name_temp);
+                                                            PersistentServiceClient<ros_queue_msgs::FloatRequest>(nh_, service_name_temp);
                                     ROS_INFO_STREAM("Waiting for the server service named :" << new_controller_struct->arrival_independent_from_action_service_.getService());
                                     new_controller_struct->arrival_independent_from_action_service_.waitForExistence();
                                 }
@@ -863,7 +863,7 @@ class QueueController
                                 {
                                     new_controller_struct->is_departure_action_dependent= true;
                                     new_controller_struct->expected_departure_service_ = 
-                                                            PersistentServiceClient<TMetricControlPredictionSrv>(service_name_temp);
+                                                            PersistentServiceClient<TMetricControlPredictionSrv>(nh_, service_name_temp);
                                     ROS_INFO_STREAM("Waiting for the server service named :" << new_controller_struct->expected_departure_service_.getService());
                                     new_controller_struct->expected_departure_service_.waitForExistence();
                                 }
@@ -876,7 +876,7 @@ class QueueController
                                     }
                                     new_controller_struct->is_departure_action_dependent= false;
                                     new_controller_struct->departure_independent_from_action_service_ = 
-                                                            PersistentServiceClient<ros_queue_msgs::FloatRequest>(service_name_temp);
+                                                            PersistentServiceClient<ros_queue_msgs::FloatRequest>(nh_, service_name_temp);
                                     ROS_INFO_STREAM("Waiting for the server service named :" << new_controller_struct->expected_departure_service_.getService());
                                     new_controller_struct->expected_departure_service_.waitForExistence();
                                     
