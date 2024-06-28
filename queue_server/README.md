@@ -35,10 +35,11 @@ This is research code, expect that it changes often and any fitness for a partic
 	sudo rosdep install --from-paths src
 #### Building
 
-To build from source, clone the [rosparam_utils](https://github.com/etienn8/rosparam_utils) repo, clone the latest version from this repository into your catkin workspace and compile all the packages using
+To build from source, clone the [rosparam_utils](https://github.com/etienn8/rosparam_utils), clone the [ros_boosted_utilities](https://github.com/etienn8/ros_boosted_utilities) repo, clone the latest version from this repository into your catkin workspace and compile all the packages using
 
 	cd catkin_workspace/src
 	git clone https://github.com/etienn8/rosparam_utils.git
+	git clone https://github.com/etienn8/ros_boosted_utilities.git
 	git clone https://github.com/etienn8/ros_queuing_system.git
 	cd ../
 	rosdep install --from-paths . --ignore-src
@@ -122,7 +123,7 @@ For all real queues configured in the config files:
 	Publishes the states of each queue. It's mainly containing the size of the queues.
 
 * **`server_stats`** ((ros_queue_msgs/QueueServerStats)[https://github.com/etienn8/ros_queuing_system/blob/main/ros_queue_msgs/msg/QueueServerStats.msg])
-	Publishes stats about the mean average metrics of the real queues (time average arrivals and departures and mean queue size). Only active if the param `compute_statistics` is set to true.
+	Publishes stats about the mean average metrics of the queues (time average arrivals and departures and mean queue size). Only active if the param `compute_statistics` is set to true.
 
 For all real queues configured in the config files
 * **`<queue_name>/<tranmission_topic_name>`** ([Type of first message received on the arrival_topic_name of a real queue])
@@ -134,10 +135,15 @@ For all real queues configured in the config files
 
 		rosservice call /<queue_server_name>/trigger_service
 
-* **`get_server_state`** ([std_queue_msgs/QueueServerStateFetch](https://github.com/etienn8/ros_queuing_system/blob/main/ros_queue_msgs/msg/QueueServerState.msg))
+* **`get_server_state`** ([ros_queue_msgs/QueueServerStateFetch](https://github.com/etienn8/ros_queuing_system/blob/main/ros_queue_msgs/srv/QueueServerStateFetch.msg))
 	Returns the current server states. It mainly includes the current queue sizes. For example, you can display the server states from the console with:
 
-		rosservice call /<queue_server_name>/trigger_service
+		rosservice call /<queue_server_name>/get_server_state
+
+* **`get_server_stats`** ([ros_queue_msgs/QueueServerStatsFetch](https://github.com/etienn8/ros_queuing_system/blob/main/ros_queue_msgs/srv/QueueServerStatsFetch.msg))
+	Returns the current server states. It mainly includes the time average size, arrivals and departures of each queues. It's only available if the param `compute_statistics` is set to true. For example, you can display the server states from the console with:
+
+		rosservice call /<queue_server_name>/get_server_stats
 
 For each queue (virtual and real):
 * **`<queue_name>/getQueueInfo`** ([ros_queue_msgs/QueueInfoFetch](https://github.com/etienn8/ros_queuing_system/blob/main/ros_queue_msgs/srv/QueueInfoFetch.srv))

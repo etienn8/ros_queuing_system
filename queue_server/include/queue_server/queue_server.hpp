@@ -13,6 +13,7 @@
 
 #include "ros_queue_msgs/QueueState.h"
 #include "ros_queue_msgs/QueueServerStateFetch.h"
+#include "ros_queue_msgs/QueueServerStatsFetch.h"
 #include "ros_queue_msgs/VirtualQueueChangesList.h"
 
 #include "std_srvs/Empty.h"
@@ -33,7 +34,7 @@ class QueueServer
          * @param spin_rate Rate (event per second) at which the real queues will be checked for transmission 
          * and the size of all queues will be published.
         */
-        QueueServer(ros::NodeHandle& nh, float spin_rate);
+        QueueServer(ros::NodeHandle& nhp, float spin_rate);
         
         /**
          * @brief Add a virtual queue in the inequality constraint queue map.
@@ -109,9 +110,9 @@ class QueueServer
         std::map<string, std::unique_ptr<ROSByteConvertedQueue>> real_queues_;
 
         /**
-         * @brief ROS nodle handle to to get the params and to create the services, publisher and subscribers.
+         * @brief Private ROS nodle handle to get the params and to create the services, publisher and subscribers to that are static.
         */
-        ros::NodeHandle nh_;
+        ros::NodeHandle nhp_;
 
         /**
          * @brief Name of the queue server to use a meta data.
@@ -170,6 +171,12 @@ class QueueServer
         void publishServerStats();
 
         /**
+         * @brief Compute and get the current statistics about the time average of the queues and
+         * other pefromance metrics.
+        */
+        ros_queue_msgs::QueueServerStats getCurrentServerStats();
+
+        /**
          * @brief For each real queues, verify how much data could be sent and the queue will transmit up to that quanity if possible.
         */
         void transmitRealQueues();
@@ -188,6 +195,16 @@ class QueueServer
          * @brief Callback function that returns the queue server states including the size of the queues.
         */
         bool serverStateCallback(ros_queue_msgs::QueueServerStateFetch::Request& req, ros_queue_msgs::QueueServerStateFetch::Response& res);
+
+        /**
+         * @brief Service server that provides on demand the stats of the queues.
+        */
+        ros::ServiceServer queue_server_stats_service_;
+
+        /**
+         * @brief Callback function that returns the queue server stats.
+        */
+        bool serverStatsCallback(ros_queue_msgs::QueueServerStatsFetch::Request& req, ros_queue_msgs::QueueServerStatsFetch::Response& res);
 
         /**
          * @brief Service server that provides on demand the meta information of all queues.

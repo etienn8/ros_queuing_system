@@ -42,8 +42,12 @@ To build from source, clone the latest version from this repository into your ca
 If you're using [catkin tools](https://catkin-tools.readthedocs.io/en/latest/installing.html), you could use `catkin build` command instead of `catkin_make`.
 
 ## Messages definitions
+* **`ControllerActionCosts.msg`**
+	List of all the metrics name and values in a control action and its total cost.
 * **`ManualByteTransmitSize.msg`**
 	Structure that contains an integer indicating how many bytes a real queue should manually transfer.
+* **`MetricCosts.msg`**
+	Name of the metric and its cost from a given control step.
 * **`PotentialTransmissionVectorSet.msg`**
 	Structure that contains an array of TransmissionVector.msg messages that represents a set of potential actions.
 * **`QueueInfo.msg`**
@@ -53,7 +57,7 @@ If you're using [catkin tools](https://catkin-tools.readthedocs.io/en/latest/ins
 * **`QueueServerState .msg`**
 	Metainformation about the [queue_server](https://github.com/etienn8/ros_queuing_system/tree/main/queue_server) and all the state of its queues given by an array of `ros_queue_msgs/QueueState`. 
 * **`QueueStats.msg`**
-	Contains some statistics of the time average metrics of a queue. It includes the mean size of the queue over all frames, the time average or the arrivals and departures, and the converted_remaining_mean that corresponds to the amount of data that could be sent because the remaining data that could be sent is smaller larger than the number of bytes in the front element in the queue.
+	Contains some statistics of the time average metrics of a queue. It includes the mean size of the queue over all frames and the time average or the arrivals and departures. The real departure represents the real data that could be transmitted if the queue was smaller than the transmission $`b(t)`$: $`\hat{b(t)}=min(b(t),Q(t))`$ for real queues and $`\hat{b}=min(b(t),q(t)+(a))`$ for virtual queues. Also, for real queues, it also sends the converted_remaining_mean that corresponds to the amount of data that couldn't be sent because the remaining data that could be sent is smaller than the number of bytes in the front element in the queue. For virtual queues, it also sends the time average of the changes.
 * **`QueueServerStats.msg`**
 	Contains an array of QueueStats of all real queues from a queue server.
 * **`QueueState.msg`**
@@ -62,6 +66,10 @@ If you're using [catkin tools](https://catkin-tools.readthedocs.io/en/latest/ins
 	Its an array of element that could be stored in queues. Its message template that should be copied where its array type should be changed to reflect the stored elements in a real queue. In this implementation, the type of the array is  `ros_queue_msgs/QueueIntElement`. Changing this value would required to change some include files in [ros_queue](https://github.com/etienn8/ros_queuing_system/tree/main/ros_queue) and to recompile the code.
 * **`TransmissionVector.msg`**
 	Contains an array with a size that represents the number of queues in a system and where their boloean values indicate if they could transmit or not.
+* **`TransmissionVectorControllerCosts.msg`**
+	Implementation of a TransmissionVector action linked to a **`ControllerActionCosts`** for a given action.
+* **`TransmissionVectorControllerCostsList.msg`**
+	List of **`TransmissionVectorControllerCosts`** that gives all the costs of all the metrics of each action evaluated in one controller step.
 * **`VirtualQueueChanges.msg`**
 	Manual changes on the arrival and the departures that should be manually applied to a specified(based on name of the queue) virtual queue.
 * **`VirtualQueueChangesList.msg`**
@@ -80,7 +88,9 @@ If you're using [catkin tools](https://catkin-tools.readthedocs.io/en/latest/ins
 * **`QueueinfoFetch.srv`**
 	Empty request service call that returns the `ros_queue_msgs/QueueInfo`. It's used to fetch the meta information of a queue. 
 * **`QueueServerStateFetch.srv`**
-	Empty request service call that returns a `ros_queue_msgs /QueueServerState`. It's mainly used to fetch the current state of a [queue_server](https://github.com/etienn8/ros_queuing_system/tree/main/ros_queue)
+	Empty request service call that returns a `ros_queue_msgs /QueueServerState`. It's mainly used to fetch the current state of a [queue_server](https://github.com/etienn8/ros_queuing_system/tree/main/queue_server)
+* **`QueueServerStatsFetch.srv`**
+	Empty request service call that returns a `ros_queue_msgs /QueueServerStats`. It's mainly used to fetch the current stats of a [queue_server](https://github.com/etienn8/ros_queuing_system/tree/main/queue_server)
 * **`QueueStatesPredictions.srv`**
 	Service call that takes arbitrary `ros_queue_msgs/States` and it returns a prediction in the form of an int. This is used for predicting the value of a metric based on the current state of the system. This definition is mainly designed to be copied to change the definition of the `ros_queue_msgs/States` for any `States`. However, doing so will required to recompile the code and change the included files in the queue_controller. *Subject to change since it should return a float*. 
 * **`MetricTransmissionVectorPredictions.srv`**

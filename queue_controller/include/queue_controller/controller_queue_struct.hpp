@@ -5,12 +5,17 @@
 
 #include "ros/ros.h"
 
+#include "ros_queue_msgs/FloatRequest.h"
+
+#include "ros_boosted_utilities/persistent_service_client.hpp"
+
 using std::string;
 
 /**
  * @brief Structure that contains all the necessary parameters about a queue that the controller 
  * needs to evaluate its changes and compute the best action.
 */
+template <typename TMetricControlPredictionSrv>
 struct ControllerQueueStruct
 {
     /**
@@ -58,14 +63,14 @@ struct ControllerQueueStruct
      * of the system and a given potential action. Should not be defined if arrival_based_on_queue_size_service_
      * is used. If both are defined, expected_arrival_service_ will be used.
     */
-    ros::ServiceClient expected_arrival_service_;
+    PersistentServiceClient<TMetricControlPredictionSrv> expected_arrival_service_;
 
     /**
      * @brief ROS Service used to compute the expected departures of a queue based on a the current state
      * of the system and a given potential action. Should not be defined if departure_based_on_queue_size_service_
      * is used. If both are defined, expected_arrival_service_ will be used.
     */
-    ros::ServiceClient expected_departure_service_;
+    PersistentServiceClient<TMetricControlPredictionSrv> expected_departure_service_;
 
     /**
      * @brief ROS Service used to get a a metric thas is independant from the action. Should not be defined 
@@ -73,7 +78,7 @@ struct ControllerQueueStruct
      * @details Since it uses a different service definition compared to expected_arrival_service_ because
      * the latter uses a potential action as an input, arrival_independant_from_action_service_ need to be created.
     */
-    ros::ServiceClient arrival_independent_from_action_service_;
+    PersistentServiceClient<ros_queue_msgs::FloatRequest> arrival_independent_from_action_service_;
 
     /**
      * @brief ROS Service used to get a current queue size if it's used as the departure metric. Should not be defined 
@@ -81,5 +86,5 @@ struct ControllerQueueStruct
      * @details Since it uses a different service definition  compared to expected_departure_service_ because
      * the latter uses a potential action as an input, departure_independant_from_action_service_ need to be created.
     */
-    ros::ServiceClient departure_independent_from_action_service_;
+    PersistentServiceClient<ros_queue_msgs::FloatRequest> departure_independent_from_action_service_;
 };

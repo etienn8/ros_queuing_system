@@ -1,0 +1,21 @@
+<launch>
+    <!-- Potential setup: all_faults_with_penalty, all_faults_without_penalty, 
+        bad_prediction_model, perfect_model_and_setup, perturbation_on_action, 
+        time_uncertainties, variable_time_action_setup  -->
+    <arg name="experiment_setup" default="perfect_model_and_setup"/>
+
+    <!-- Start an experiment with a non-renewal controller and no step inversion -->
+    <group ns="NoRew_NoInv"> 
+        <include file="$(find ros_queue_experiments)/launch/queue_system_setup_template.launch">
+            <!-- Parameter for the controller setup-->
+            <arg name="experiment_setup"            value="$(arg experiment_setup)"/>
+            <arg name="controller_type"             value="min_drift_plus_penalty"/>
+            <arg name="is_target_renewal_dependent" value="false"/>
+            <arg name="rate_or_change"              value="rate"/>
+
+            <arg name="inverse_control_and_steps"   value="false"/>
+        </include>
+    </group>
+
+    <node name="rosbag_recorder" pkg="rosbag" type="record" args=" --duration=2m -o $(find ros_queue_experiments)/experiment_bags/$(arg experiment_setup) /NoRew_Inv/auv_system_node/auv_state /NoRew_Inv/monitoring_node/localization /NoRew_Inv/monitoring_node/real_queue /NoRew_Inv/monitoring_node/synced_action_performances /NoRew_Inv/monitoring_node/temperature /NoRew_Inv/queue_controller/renewal_time /NoRew_Inv/queue_controller/controller_costs /Rew_Inv/auv_system_node/auv_state /Rew_Inv/monitoring_node/localization /Rew_Inv/monitoring_node/real_queue /Rew_Inv/monitoring_node/synced_action_performances /Rew_Inv/monitoring_node/temperature /Rew_Inv/queue_controller/renewal_time /Rew_Inv/queue_controller/controller_costs /Rew_NoInv/auv_system_node/auv_state /Rew_NoInv/monitoring_node/localization /Rew_NoInv/monitoring_node/real_queue /Rew_NoInv/monitoring_node/synced_action_performances /Rew_NoInv/monitoring_node/temperature /Rew_NoInv/queue_controller/renewal_time /Rew_NoInv/queue_controller/controller_costs /NoRew_NoInv/auv_system_node/auv_state /NoRew_NoInv/monitoring_node/localization /NoRew_NoInv/monitoring_node/real_queue /NoRew_NoInv/monitoring_node/synced_action_performances /NoRew_NoInv/monitoring_node/temperature /NoRew_NoInv/queue_controller/renewal_time /NoRew_NoInv/queue_controller/controller_costs"/>
+</launch>

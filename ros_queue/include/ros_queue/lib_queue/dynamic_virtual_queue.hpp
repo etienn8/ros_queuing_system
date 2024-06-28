@@ -4,6 +4,7 @@
 #include <stdexcept>
 
 #include "float_compare.hpp"
+#include "mean_stats.hpp"
 
 #include "I_dynamic_virtual_queue.hpp"
 #include "ros_queue/lib_queue/virtual_queue.hpp"
@@ -29,6 +30,34 @@ class InConVirtualQueue: public IDynamicVirtualQueue
             std::lock_guard<std::mutex> lock(queue_manipulation_mutex_);
             return this->internal_queue_.size();
         };
+
+        /**
+         * @brief Updates the queue by adding the arrival and removing the departure. It also computes time average metrics.
+         * @param arrival Amount of element to add to the queue.
+         * @param departure Amount of element to remove from the queue.
+         * @return Boolean of it the queue overflowed while adding elements.
+        */
+        bool update(const float arrival, const float departure)
+        {
+            if (mean_stats_.should_compute_means_)
+            {
+                const float current_queue_size = getSize();
+                const float real_departure = (current_queue_size +  arrival < departure)? 
+                                            current_queue_size + arrival: departure;
+                mean_stats_.increaseArrivalMean(arrival);
+                mean_stats_.increaseDepartureMean(departure);
+                mean_stats_.increaseRealDepartureMean(real_departure);
+            }
+
+            bool queue_overflowed = update(arrival - departure);
+
+            if(mean_stats_.should_compute_means_)
+            {
+                mean_stats_.increaseSizeMean(getSize());
+            }
+
+            return queue_overflowed;
+        }
 
         /**
          * @brief Updates the queue by adding the arriving_elements and by removing the specifiy number of departing elements while respecting the maximum queue size.
@@ -68,6 +97,12 @@ class InConVirtualQueue: public IDynamicVirtualQueue
             return float_compare(this->internal_queue_.size(), this->max_queue_size_);
         }
 
+        /**
+         * @brief Object that computes the time average of arrivals and
+         * departures and the mean of the queue size.
+        */
+        MeanStats mean_stats_;
+
     protected:
         /**
          * @brief Mutex to protect access to the internal queue.
@@ -97,6 +132,36 @@ class EqConVirtualQueue: public IDynamicVirtualQueue
             std::lock_guard<std::mutex> lock(queue_manipulation_mutex_);
             return this->internal_queue_.size();
         };
+
+        /**
+         * @brief Updates the queue by adding the arrival and removing the departure. It also computes time average metrics.
+         * @param arrival Amount of element to add to the queue.
+         * @param departure Amount of element to remove from the queue.
+         * @return Boolean of it the queue overflowed while adding elements.
+        */
+        bool update(const float arrival, const float departure)
+        {
+            if (mean_stats_.should_compute_means_)
+            {
+                const float current_queue_size = getSize();
+                mean_stats_.increaseArrivalMean(arrival);
+                mean_stats_.increaseDepartureMean(departure);
+
+                const float real_departure = (current_queue_size - departure < -this->max_queue_size_)? 
+                            current_queue_size + this->max_queue_size_: departure;
+
+                mean_stats_.increaseRealDepartureMean(departure);
+            }
+
+            bool queue_overflowed = update(arrival - departure);
+
+            if(mean_stats_.should_compute_means_)
+            {
+                mean_stats_.increaseSizeMean(getSize());
+            }
+
+            return queue_overflowed;
+        }
 
         /**
          * @brief Updates the queue by adding the arriving_elements and by removing the specifiy number of departing elements while respecting the maximum queue size.
@@ -137,6 +202,12 @@ class EqConVirtualQueue: public IDynamicVirtualQueue
             std::lock_guard<std::mutex> lock(queue_manipulation_mutex_);
             return float_compare(this->internal_queue_.size(), this->max_queue_size_) || float_compare(this->internal_queue_.size(), -this->max_queue_size_);
         }
+
+        /**
+         * @brief Object that computes the time average of arrivals and
+         * departures and the mean of the queue size.
+        */
+        MeanStats mean_stats_;
 
     protected:
         /**

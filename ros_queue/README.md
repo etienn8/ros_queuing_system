@@ -42,6 +42,7 @@ This is research code, expect that it changes often and any fitness for a partic
 - [ros_queue_msgs](https://github.com/etienn8/ros_queuing_system/tree/feat/readme_ros_queue_and_server/ros_queue_msgs)(ROS data structures for the queues interfaces),
 - [topic_tools](http://wiki.ros.org/topic_tools) (Contains the Shapeshifter class that allows to store ROS message types that are only know at runtime),
 -  [rostest](http://wiki.ros.org/rostest) (ROS test library that allow automated testing of the *lib_queue* and *ros_queue libraries*),
+- [ros_boosted_utilities](https://github.com/etienn8/ros_boosted_utilities) (Contains persistent ROS service clients to make the interfaces between the system faster.)
 - [std::deque](https://en.cppreference.com/w/cpp/container/deque)(Standard library double ended-queues),
 - std::utility (Standard library that permits move semantics),
 - std::mutex (Standard library to manage concurrency)
@@ -50,16 +51,18 @@ This is research code, expect that it changes often and any fitness for a partic
 	sudo rosdep install --from-paths src
 #### Building
 
-To build from source, clone the [rosparam_utils](https://github.com/etienn8/rosparam_utils) repo, clone the latest version from this repository into your catkin workspace and compile all the packages using
+To build from source, clone the [rosparam_utils](https://github.com/etienn8/rosparam_utils), clone the [ros_boosted_utilities](https://github.com/etienn8/ros_boosted_utilities) repo, clone the latest version from this repository into your catkin workspace and compile all the packages using
 
 	cd catkin_workspace/src
 	git clone https://github.com/etienn8/rosparam_utils.git
+	git clone https://github.com/etienn8/ros_boosted_utilities.git
 	git clone https://github.com/etienn8/ros_queuing_system.git
 	cd ../
 	rosdep install --from-paths . --ignore-src
 	catkin_make
 
 If you're using [catkin tools](https://catkin-tools.readthedocs.io/en/latest/installing.html), you could use `catkin build` command instead of `catkin_make`.
+
 ### Unit Tests
 
 With [catkin tools](https://catkin-tools.readthedocs.io/en/latest/installing.html), run the unit tests of all packages with

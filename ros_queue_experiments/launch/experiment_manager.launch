@@ -1,0 +1,3 @@
+<launch>
+    <node name="experiment_manager" pkg="ros_queue_experiments" type="experiment_manager.py"/>
+</launch>

@@ -1,0 +1,183 @@
+# Configuration of a  min drift-plus-penalty controller
+
+# Indicate the type of controller. Supported types: min_drift_plus_penalty, renewal_min_drift_plus_penalty
+controller_type: "$(arg controller_type)"
+
+# If set to true, the controller will start a new control loop once the last control loop is finished. If set to
+# false, the controler will wait to for a service call to start_control_loop. Default set to true
+is_periodic: true
+
+# Period between each controller optimization process. Only used for the min_drift_plus_penalty type of controller. Float value.
+time_step: 0.1
+# If set to false, the controller will find an optimal next action to take and then update the virtual queues based 
+# on that optimal solution. If set to true, the controller will update the virtual queues based on the current of 
+# state of the system then find an optimal next action. Default: set to false
+inverse_control_and_steps: $(arg inverse_control_and_steps)
+
+# If set to true, the controller will trigger or send changes to the queue server base on the flag inverse_control_and_steps.
+# If set to false, the controller will not send any changes to the specified queue_server_name. Its used if the user wants 
+# to implement another mecanism to change the virtual queues in queue server or to run multiple controller in parallel 
+# for the same queue server where only one of them is sending changes and not the others. Default: set to true.
+responsible_for_virtual_queue_changes: true
+
+# When true, a topic will be published name "controller_costs" that will output the cost of each action
+# and each internal metric of the actions. Default is set to false.
+measure_cost: true
+
+# Renewal timing parameters.
+# Minimum time for the renewal process. The controller will not start before that time even if the action is reached. 
+# The action reached is triggered by a message to a goal_reached topic. Only used if the controller is of type renewal_min_drift_plus_penalty
+# Seconds in float value.
+min_renewal_time: 0.0
+# Maximum time for the renewal process. The controller will start a new control step even if the action isn't reached. 
+# The action reached is triggered by a message to a goal_reached topic. Only used if the controller is of type renewal_min_drift_plus_penalty
+# Seconds in float value.
+max_renewal_time: 2.5
+
+# Name of the actionlib server to send the action to.
+action_server_name: "perturbation_node/disturbed_action_server"
+
+# Solution space service that provides a list of all available actions.
+solution_space_service_name: "auv_system_node/potential_action_set"
+
+# Name of the service to evaluate the expected renewal time for all actions.
+expected_renewal_time_service_name: "auv_system_node/renewal_time/expected_metric"
+
+# ====== Queue configurations. Indicate all the queues used in the controllers equation. ======
+# Most of the queues' information will be fetch automatically through the parameters of the indicated queue_server.
+# Name of the queue_server linked to the controller. Should be given in absolute path.
+queue_server_name: "$(arg server_name)"
+# List all the queues used from the queue server. The queue controller will try to stabilize all those queues. An arbitrary number of queues can be added.
+queue_list:
+    # The name of the queue. Should match a queue name from the queue_server
+    - TemperatureQueue:
+        # Weight in the cost function multplied with the size of the queue. 
+        # A higher value means the controller will try to stabilize it faster compared to the other queues.
+        # It could also be set as a normalization factor.       
+        - weight: 100.0
+
+        # Name of the service to evaluate the expected arrivals of the queue based. 
+        - expected_arrival_service_name: "auv_system_node/temperature/arrival/$(arg rate_or_change)/expected_metric"
+        # If set to false, the arrival service request will be empty and use the srv ros_queue_msgs/FloatRequest. Default value.
+        # If set to true, the arrival service request will use the services specified by the template of the controller in its cpp file. 
+        - arrival_action_dependent: true
+        # If set to true, the arrival will be multiplied by the expected renewal time. In renewal systems, it's mainly used
+        # when the metric needs to scale with time like a static time average goal. Only used for the renewal_min_drift_plus_penalty
+        # type of controller.
+        - arrival_renewal_dependent: false
+
+        # Name of the service to evaluate the expected departures of the queue based on the evaluated action.
+        - expected_departure_service_name: "auv_system_node/temperature/departure/$(arg rate_or_change)/expected_metric"
+        # If set to false, the arrival service request will be empty and use the srv ros_queue_msgs/FloatRequest. Default value.
+        # If set to true, the arrival service request will use the services specified by the template of the controller in its cpp file. 
+        - departure_action_dependent: true
+        # If set to true, the departures will be multiplied by the expected renewal time. In renewal systems, it's mainly used
+        # when the metric needs to scale with time like a static time average goal. Only used for the renewal_min_drift_plus_penalty
+        # type of controller.
+        - departure_renewal_dependent: $(arg is_target_renewal_dependent)
+
+    - LowTemperatureQueue:
+        # Weight in the cost function multplied with the size of the queue. 
+        # A higher value means the controller will try to stabilize it faster compared to the other queues.
+        # It could also be set as a normalization factor.       
+        - weight: 100.0
+
+        # Name of the service to evaluate the expected arrivals of the queue based. 
+        - expected_arrival_service_name: "auv_system_node/low_temperature/arrival/$(arg rate_or_change)/expected_metric"
+        # If set to false, the arrival service request will be empty and use the srv ros_queue_msgs/FloatRequest. Default value.
+        # If set to true, the arrival service request will use the services specified by the template of the controller in its cpp file. 
+        - arrival_action_dependent: true
+        # If set to true, the arrival will be multiplied by the expected renewal time. In renewal systems, it's mainly used
+        # when the metric needs to scale with time like a static time average goal. Only used for the renewal_min_drift_plus_penalty
+        # type of controller.
+        - arrival_renewal_dependent: $(arg is_target_renewal_dependent)
+
+        # Name of the service to evaluate the expected departures of the queue based on the evaluated action.
+        - expected_departure_service_name: "auv_system_node/low_temperature/departure/$(arg rate_or_change)/expected_metric"
+        # If set to false, the arrival service request will be empty and use the srv ros_queue_msgs/FloatRequest. Default value.
+        # If set to true, the arrival service request will use the services specified by the template of the controller in its cpp file. 
+        - departure_action_dependent: true
+        # If set to true, the departures will be multiplied by the expected renewal time. In renewal systems, it's mainly used
+        # when the metric needs to scale with time like a static time average goal. Only used for the renewal_min_drift_plus_penalty
+        # type of controller.
+        - departure_renewal_dependent: false
+
+    - LocalizationQueue:
+        # Weight in the cost function multplied with the size of the queue. 
+        # A higher value means the controller will try to stabilize it faster compared to the other queues.
+        # It could also be set as a normalization factor.       
+        - weight: 100.0
+
+        # Name of the service to evaluate the expected arrivals of the queue based. 
+        - expected_arrival_service_name: "auv_system_node/localization/arrival/$(arg rate_or_change)/expected_metric"
+        # If set to false, the arrival service request will be empty and use the srv ros_queue_msgs/FloatRequest. Default value.
+        # If set to true, the arrival service request will use the services specified by the template of the controller in its cpp file. 
+        - arrival_action_dependent: true
+        # If set to true, the arrival will be multiplied by the expected renewal time. In renewal systems, it's mainly used
+        # when the metric needs to scale with time like a static time average goal. Only used for the renewal_min_drift_plus_penalty
+        # type of controller.
+        - arrival_renewal_dependent: false
+
+        # Name of the service to evaluate the expected departures of the queue based on the evaluated action.
+        - expected_departure_service_name: "auv_system_node/localization/departure/$(arg rate_or_change)/expected_metric"
+        # If set to false, the arrival service request will be empty and use the srv ros_queue_msgs/FloatRequest. Default value.
+        # If set to true, the arrival service request will use the services specified by the template of the controller in its cpp file. 
+        - departure_action_dependent: true
+        # If set to true, the departures will be multiplied by the expected renewal time. In renewal systems, it's mainly used
+        # when the metric needs to scale with time like a static time average goal. Only used for the renewal_min_drift_plus_penalty
+        # type of controller.
+        - departure_renewal_dependent: $(arg is_target_renewal_dependent)
+
+    - TaskQueue:
+        # Weight in the cost function multplied with the size of the queue. 
+        # A higher value means the controller will try to stabilize it faster compared to the other queues.
+        # It could also be set as a normalization factor.       
+        - weight: 5.0
+
+        # Name of the service to evaluate the expected arrivals of the queue based. 
+        - expected_arrival_service_name: "auv_system_node/task/arrival/$(arg rate_or_change)/expected_metric"
+        # If set to false, the arrival service request will be empty and use the srv ros_queue_msgs/FloatRequest. Default value.
+        # If set to true, the arrival service request will use the services specified by the template of the controller in its cpp file. 
+        - arrival_action_dependent: true
+        # If set to true, the arrival will be multiplied by the expected renewal time. In renewal systems, it's mainly used
+        # when the metric needs to scale with time like a static time average goal. Only used for the renewal_min_drift_plus_penalty
+        # type of controller.
+        - arrival_renewal_dependent: false
+
+        # Name of the service to evaluate the expected departures of the queue based on the evaluated action.
+        - expected_departure_service_name: "auv_system_node/task/departure/$(arg rate_or_change)/expected_metric"
+        # If set to false, the arrival service request will be empty and use the srv ros_queue_msgs/FloatRequest. Default value.
+        # If set to true, the arrival service request will use the services specified by the template of the controller in its cpp file. 
+        - departure_action_dependent: true
+        # If set to true, the departures will be multiplied by the expected renewal time. In renewal systems, it's mainly used
+        # when the metric needs to scale with time like a static time average goal. Only used for the renewal_min_drift_plus_penalty
+        # type of controller.
+        - departure_renewal_dependent: false
+
+# ====== Variable (penalty) to minimize configurations.======
+# Name of the service to evaluate the penalty based on the current state and the potential action. 
+penalty_service_name:  "auv_system_node/penalty/expected_metric"
+# The V parameter that is multplied with the penalty (like a weight). When a high penalty metric also increases the queue size,
+# this parameter balances the tradeoff between a lower penalty or lower queue delays. A high V will prioritize the minimization
+# of the penalty while a low V will prioritize low queue sizes and delays.
+v_parameter: $(arg v_parameter)
+# If set to true, the controller will optimize the ratio of the time average penalty over the expected renewal frame duration.
+# If set to false, the controller will optimize the time average penalty.
+# Only used for the renewal_min_drift_plus_penalty type of controller.
+is_penalty_renewal_dependent: false
+
+# ====== Multi controller synchronization.======
+# Flag that indicate if this controller should wait for another controller to finish its optimization before sending
+# action and sending the virtual changes to a queue server. Also publish a topic called controller_started and another called optimization_done
+# Default is set to false.
+part_of_multicontroller_synchronization: true
+
+# Topic starts a control loop when called. A called to the topic start_control_loop is the same as calling this topic.
+# Mainly used to be connected on a control_loop_started topic of another controller in a multicontroller scenario.
+# It's not used if the parameter is_periodic is set to true. 
+# start_control_loop_sync_topic: ""
+
+# Topic of the controller that this controller depends on. It can connect to a optimization_done topic of another controoler.
+# It will not be called if part_of_multicontroller_synchronization is false. Leaving it empty or commenting it means the
+# controller is not dependent on another controller.
+dependent_on_controller_topic: "optimal_controller/optimization_done"

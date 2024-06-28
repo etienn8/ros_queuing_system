@@ -2,12 +2,29 @@
 
 # Indicate the type of controller. Supported types: min_drift_plus_penalty, renewal_min_drift_plus_penalty
 controller_type: "min_drift_plus_penalty"
-# Period between each controller optimization process. Only used for the min_drift_plus_penalty type of controller. Float value.
+
+# If set to true, the controller will start a new control loop once the last control loop is finished. If set to
+# false, the controler will wait to for a service call to start_control_loop or an empty topic on start_control_loop. 
+# Default set to true.
+is_periodic: true
+
+# Period between each controller optimization process. Only used for the min_drift_plus_penalty type of controller. 
+#  Not used if the parameter is_periodic is set to false. Float value.
 time_step: 0.1
 # If set to false, the controller will find an optimal next action to take and then update the virtual queues based 
 # on that optimal solution. If set to true, the controller will update the virtual queues based on the current of 
 # state of the system then find an optimal next action. Default: set to false
 inverse_control_and_steps: false
+
+# If set to true, the controller will trigger or send changes to the queue server base on the flag inverse_control_and_steps.
+# If set to false, the controller will not send any changes to the specified queue_server_name. Its used if the user wants 
+# to implement another mecanism to change the virtual queues in queue server or to run multiple controller in parallel 
+# for the same queue server where only one of them is sending changes and not the others. Default: set to true.
+responsible_for_virtual_queue_changes: true
+
+# When true, a topic will be published name "controller_costs" that will output the cost of each action
+# and each internal metric of the actions. Default is set to false.
+measure_cost: false
 
 # Renewal timing parameters.
 # Minimum time for the renewal process. The controller will not start before that time even if the action is reached. 
@@ -15,7 +32,8 @@ inverse_control_and_steps: false
 # Seconds in float value.
 min_renewal_time: 0.0
 # Maximum time for the renewal process. The controller will start a new control step even if the action isn't reached. 
-# The action reached is triggered by a message to a goal_reached topic. Only used if the controller is of type renewal_min_drift_plus_penalty
+# The action reached is triggered by a message to a goal_reached topic. Only used if the controller is of type renewal_min_drift_plus_penalty and
+# the parameter is_periodic is set to true. 
 # Seconds in float value.
 max_renewal_time: 2.0
 
@@ -72,3 +90,17 @@ v_parameter: 1.0
 # If set to false, the controller will optimize the time average penalty.
 # Only used for the renewal_min_drift_plus_penalty type of controller.
 is_penalty_renewal_dependent: false
+
+# ====== Multi controller synchronization.======
+# Flag that indicate if this controller should wait for another controller to finish its optimization before sending
+# action and sending the virtual changes to a queue server. Also publish a topic called controller_started and another called optimization_done
+# Default is set to false.
+part_of_multicontroller_synchronization: true
+# Topic starts a control loop when called. A called to the topic start_control_loop is the same as calling this topic.
+# Mainly used to be connected on a control_loop_started topic of another controller in a multicontroller scenario.
+# It's not used if the parameter is_periodic is set to true. 
+start_control_loop_sync_topic: ""
+# Topic of the controller that this controller depends on. It can connect to a optimization_done topic of another controoler.
+# It will not be called if part_of_multicontroller_synchronization is false. Leaving it empty means the
+# controller is not dependent on another controller.
+dependent_on_controller_topic: ""

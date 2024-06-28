@@ -52,8 +52,11 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
 add_message_files(
   FILES
+  ControllerActionCosts.msg
   ManualByteTransmitSize.msg
+  MetricCosts.msg
   PotentialTransmissionVectorSet.msg
+  QueueControllerTiming.msg
   QueueIntElement.msg
   QueueState.msg
   QueueTransmitTemplate.msg
@@ -63,6 +66,8 @@ add_message_files(
   QueueServerStats.msg
   States.msg
   TransmissionVector.msg
+  TransmissionVectorControllerCosts.msg
+  TransmissionVectorControllerCostsList.msg
   VirtualQueueChanges.msg
   VirtualQueueChangesList.msg
 )
@@ -73,10 +78,12 @@ add_service_files(
   ConversionTemplateService.srv
   ByteSizeRequest.srv
   FloatRequest.srv
+  GetQueueControllerTiming.srv
   QueueInfoFetch.srv
   MetricPredictions.srv
   MetricTransmissionVectorPredictions.srv
   QueueServerStateFetch.srv
+  QueueServerStatsFetch.srv
   PotentialTransmissionVectorSpaceFetch.srv
 )
 

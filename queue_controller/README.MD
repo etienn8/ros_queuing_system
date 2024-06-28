@@ -29,22 +29,24 @@ This is research code, expect that it changes often and any fitness for a partic
 - [message_runtime](http://wiki.ros.org/message_runtime) (ROS message dependencies package),
 - [actionlib_msgs](http://wiki.ros.org/actionlib_msgs) (Message definitions of the actionlib package used for the output of the controller),
 - [actionlib](http://wiki.ros.org/actionlib) (Interfaces that gives a result and feedback for an action. Used by the output of the controller),
+- [ros_boosted_utilities](https://github.com/etienn8/ros_boosted_utilities) (Contains persistent ROS service clients to make the interfaces between the system faster.)
 - [std_srvs](http://wiki.ros.org/std_srvs) (ROS standard service definitions), 
 - [std_msgs](http://wiki.ros.org/std_msgs) (ROS standard service definitions),
 - std::map (Standard library for C++ dictionnaries),
 - std::utility (Standard library that permits move semantics),
 - std::memory (Standard library for smart pointers),
-- std::chrono (Used for the the timing of the controller' steps),
+- std::chrono (Used for the timing of the controller' steps),
 - std::mutex (Library of mutexes to protect variable access from race condition),
 - std::vector
 
 	sudo rosdep install --from-paths src
 #### Building
 
-To build from source, clone the [rosparam_utils](https://github.com/etienn8/rosparam_utils) repo, clone the latest version from this repository into your catkin workspace and compile all the packages using
+To build from source, clone the [rosparam_utils](https://github.com/etienn8/rosparam_utils), clone the [ros_boosted_utilities](https://github.com/etienn8/ros_boosted_utilities) repo, clone the latest version from this repository into your catkin workspace and compile all the packages using
 
 	cd catkin_workspace/src
 	git clone https://github.com/etienn8/rosparam_utils.git
+	git clone https://github.com/etienn8/ros_boosted_utilities.git
 	git clone https://github.com/etienn8/ros_queuing_system.git
 	cd ../
 	rosdep install --from-paths . --ignore-src
@@ -69,7 +71,7 @@ Or get the last renewal time with:
 	 `rosservice call /<queue_controller_name>/get_last_renewal_time`
 
 ## Optimization formulation
-Let's start with an example to understand why the following optimization process is relevant and why queues are used to formulate the problem. Imagine a long run mission where a robot needs to explore an unknown communication-constrained environment as quick as possible and needs to return information to a base station as frequent as possible. Let's assume that the robot tries to optimize those two metrics at the same time. Thus, a formulation could be that it will penalize leaving the communication radius of the base station and it will penalize being far from new exploration frontiers. Finding the best action that optimize both metrics at each step might prevent the robot from leaving the base station's communication radius even though it has no new information to report. Therefore, optimizing this formulation at each time step might not lead to the quickest exploration overall compared to a method where the robot could leave the base station when it has no information to report. Instead of directly optimize this formulation at each time step, minimizing the the time average of exploration and the frequent return on the overall mission might be more accurately what's desired. For example, the robot might leave the communication range for a few time frames thus optimizing more the exploration, then returns to the base station to report the information and then cycles between those two behaviors like that. Thus, the robot is optimizing on average both metrics but, in the point of view of a time step, it chose one metric over the other. Event if its seems trivial to hardcode this two-metric optimization example by hand, the problem might have more metrics to follow on average. Thus, a general framework could be helpful. If the problem is cast well, that's where queue-stabilizing controllers might become interesting. Those controllers find, at each time step, the optimal action to follow all its time average constraints while optimizing a time average metric.
+Let's start with an example to understand why the following optimization process is relevant and why queues are used to formulate the problem. Imagine a long run mission where a robot needs to explore an unknown communication-constrained environment as quick as possible and needs to return information to a base station as frequent as possible. Let's assume that the robot tries to optimize those two metrics at the same time. Thus, a formulation could be that it will penalize leaving the communication radius of the base station and it will penalize being far from new exploration frontiers. Finding the best action that optimize both metrics at each step might prevent the robot from leaving the base station's communication radius even though it has no new information to report. Therefore, optimizing this formulation at each time step might not lead to the quickest exploration overall compared to a method where the robot could leave the base station when it has no information to report. Instead of directly optimize this formulation at each time step, minimizing the time average of exploration and the frequent return on the overall mission might be more accurately what's desired. For example, the robot might leave the communication range for a few time frames thus optimizing more the exploration, then returns to the base station to report the information and then cycles between those two behaviors like that. Thus, the robot is optimizing on average both metrics but, in the point of view of a time step, it chose one metric over the other. Event if its seems trivial to hardcode this two-metric optimization example by hand, the problem might have more metrics to follow on average. Thus, a general framework could be helpful. If the problem is cast well, that's where queue-stabilizing controllers might become interesting. Those controllers find, at each time step, the optimal action to follow all its time average constraints while optimizing a time average metric.
 
 The goal of queue_controller is to optimize the following formulation[1]:
 ```math
@@ -86,7 +88,7 @@ The greedy algorithm used at each time step to optimize the general problem abov
 \begin{aligned}Minimize:\quad & V\hat{y}_0(\alpha(t),\omega(t)) + \sum^{K}_{k=1}w_kQ_k(t)[\hat{a}_k(\alpha(t),\omega(t))-\hat{b}_k(\alpha(t),\omega(t))] + \sum^{L}_{l=1}w_lZ_{l}(t)\hat{y}_l(\alpha(t),\omega(t)) + \sum^{H}_{j=1}w_jH_{j}(t)\hat{e}_j(\alpha(t),\omega(t)) \\Subject\ to: \quad& \alpha(t) \in A_{\omega(t)}\end{aligned}
 ```
 
-where $`\omega(t)`$ represents the state of the system (considered as a random variable), $`\alpha(t)`$ represents a potential action in the set of all action $`A_{\omega(t)}`$ at time $`t`$, $`V`$ represents a parameter that prioritize the penalty over the queue stabilization the higher it is, $`w_k\textrm{, }w_j \textrm{ and } w_j`$ represents weights that prioritize queues between each other, $`Q_k(t)`$ represents the size of the real queue $`k`$ at time $`t`$, $`Z_l(t) \textrm{ and } H_j(t)`$ represents the size of the virtual queues $`j`$ and $`l`$ respectively at time $`t`$, $`\hat{a}_k`$ represents the number of incoming data in the real queue $`k`$, $`\hat{b}_k`$ represents the number of data that could be transmitted, $`\hat{y}_l`$ represents the changes (arrival minus departure) of the virtual queue $`l`$ and $`\hat{e}_j$ represents the changes (arrival minus departure) of the queue virtual queue $j$. The function $\hat{y}_0\textrm{, }\hat{a}_k\textrm{, }\hat{b}_k\textrm{, }\hat{y}_l\textrm{ and }\hat{e}_j`$ are all function evaluated at the current state $`\omega(t)`$ and potential action $`\alpha(t)`$. In other words, the controller will evaluate this cost function for each action in the action set based on predictions on what the penalty will be and how the queues will changes knowing the current state of the system. For the interested reader, the "memory" that allows each greedy controller steps to be aware of the average is embedded in the queue size that changes based.
+where $`\omega(t)`$ represents the state of the system (considered as a random variable), $`\alpha(t)`$ represents a potential action in the set of all action $`A_{\omega(t)}`$ at time $`t`$, $`V`$ represents a parameter that prioritize the penalty over the queue stabilization the higher it is, $`w_k\textrm{, }w_j \textrm{ and } w_j`$ represents weights that prioritize queues between each other, $`Q_k(t)`$ represents the size of the real queue $`k`$ at time $`t`$, $`Z_l(t) \textrm{ and } H_j(t)`$ represents the size of the virtual queues $`j`$ and $`l`$ respectively at time $`t`$, $`\hat{a}_k`$ represents the number of incoming data in the real queue $`k`$, $`\hat{b}_k`$ represents the number of data that could be transmitted, $`\hat{y}_l`$ represents the changes (arrival minus departure) of the virtual queue $`l`$ and $`\hat{e}_j$ represents the changes (arrival minus departure) of the queue virtual queue $j$. The function $\hat{y}_0\textrm{, }\hat{a}_k\textrm{, }\hat{b}_k\textrm{, }\hat{y}_l\textrm{ and }\hat{e}_j`$ are all function evaluated at the current state $`\omega(t)`$ and potential action $`\alpha(t)`$. In other words, the controller will evaluate this cost function for each action in the action set based on predictions on what the penalty will be and how the queues will changes knowing the current state of the system. For the interested reader, the "memory" that allows each greedy controller steps to be aware of the average is embedded in the queue size that changes over based on the control actions.
 
 Once the best action is found, the queues will be updated based on the arrivals and departures expected from the optimal action [1].  A configuration also allowed the system to update the queues at the beginning of the next time step instead. It allows the queues to be updated with the real change in the system, thus removing bias from a bad action execution and bad prediction models. A renewal version of the min drift-plus-penalty algorithm is also implemented [1]. That version takes into account that the time between the controller calls might not be constant. Thus the controller scales some specified penalty, arrivals and departures with the expected time it takes to perform the action to ensure a certain rate. The change in the formulation is shown in the configuration section below.
 ## System explanation
@@ -136,20 +138,30 @@ Five messages and services definition needs to be defined at compilation for the
 	---
 	# The feedback
 	```
+6.  The message used to log the internal cost of each controller metrics for a given action. Two fields should be defined: A variable named `action` with the type of the action type and a variable name `costs` of the type [ros_queue_msgs/ControllerActionCosts](https://github.com/etienn8/ros_queuing_system/tree/main/ros_queue_msgs/msg/ControllerActionCosts.msg). Add it in the [ros_queue_msgs/msg](https://github.com/etienn8/ros_queuing_system/tree/main/ros_queue_msgs/msg) directory. Following the same example, the content of `TransmissionVectorControllerCosts.msg` defined in [ros_queue_msgs/msg](https://github.com/etienn8/ros_queuing_system/tree/main/ros_queue_msgs/msg)is :
+	```
+	ros_queue_msgs/TransmissionVector action
+	ros_queue_msgs/ControllerActionCosts costs
+	```
+7.  The message of the list of all the internal costs for each action for a control steps. It should have a single field named `action_costs_list` that is an array of the message defined in step 6. Add it in the [ros_queue_msgs/msg](https://github.com/etienn8/ros_queuing_system/tree/main/ros_queue_msgs/msg) directory. Following the same example, the content of `TransmissionVectorControllerCosts.msg` defined in [ros_queue_msgs/msg](https://github.com/etienn8/ros_queuing_system/tree/main/ros_queue_msgs/msg)is :
+	```
+	ros_queue_msgs/TransmissionVectorControllerCosts[] action_costs_list
+	```
+
 Once all the new messages created, don't forget to include to the [CMakeList.txt](https://github.com/etienn8/ros_queuing_system/blob/main/ros_queue_msgs/CMakeLists.txt) of the ros_queue_msgs package to generate them.  Once done, build the catkin workspace.
 
 #### Create the new source files
 1. In the directory `queue_controller/include/queue_controller/action_configs/`, copy and paste the `transmission_vector_controller_config.hpp` file in the same directory.
 2. Renamed it with a relevant name linked to the new added action.
 3. Edit the content of the new file:
-	1. Replace all the `#include` of the old messages with the five new messages created above.
-	2. Change the type of the `typedef` (not the the name of the `typedef`) in the following manner (be careful to add the "Action" and "Goal" suffix at the end of the two last message definitions respectively):
+	1. Replace all the five first `#include` of the old messages with the first five new messages created above. The last include should be replaced by the message created at the step 7.
+	2. Change the type of the `typedef` (not the name of the `typedef`) in the following manner (be careful to add the "Action" and "Goal" suffix at the end of the two last message definitions respectively):
 	```
 	typedef ros_queue_msgs::<Name of the metric prediction message defined at the step 4. of "Create the messages"> METRIC_CONTROL_PREDICTION_SRV;
 	typedef ros_queue_msgs::<Name of the action message set defined at the step 2. of "Create the messages"> POTENTIAL_ACTION_SET_MSG;
 	typedef ros_queue_msgs::<Name of the action set fetch service defined at the step 3. of "Create the messages"> POTENTIAL_ACTION_SET_SRV;
 	typedef ros_queue_msgs::<Name of the action lib message defined at the step 5. of "Create the messages">Action ACTION_LIB_OUTPUT_TYPE;
-	typedef ros_queue_msgs::<Name of the action lib message defined at the step 5. of "Create the messages">Goal ACTION_LIB_OUTPUT_GOAL_TYPE;
+	typedef ros_queue_msgs::<Name of the action lib message defined at the step 7. of "Create the messages">Goal CONTROLLER_COSTS_LIST_TYPE;
 	```
 4. In the directory `queue_controller/src/` copy and paste the `transmission_vector_queue_controller_node.cpp` file in the same directory.
 5. Renamed it with a relevant name linked to the new added action.
@@ -172,8 +184,12 @@ Since most of the configuration is required (except when it's indicated that it 
 
 **min_drift-plus-penalty_template.yaml**: Its a template of all possible parameters of the queue_controller node. It's meant to be copied and adapted. It's generally included via a path in a launchfile.
 - `controller_type`(string): The type of controller that should be used. The two supported types are: `min_drift_plus_penalty` and `renewal_min_drift_plus_penalty`.
-- `time_step` (float): Period between each controller optimization process. Only used for the min_drift_plus_penalty type of controller.
+- `is_periodic`(bool): If set to true, the controller will indefinitely start a new control loop  after the current loop based on the timing of the controller type. If set to false, the controller will only execute a control loop whenever it received a service call to it's service `start_control_loop` or a empty msg on its `start_control_loop` topic.
+- `time_step` (float): Period between each controller optimization process. Only used for the min_drift_plus_penalty type of controller and if the parameter `is_periodic` is set to true.
+- `include_execution_time_in_period` (bool, default: false): If set to true, the controller will include it's executation time in the period specified by `time_step`. It will give a fixed frequency of 1/`time_step`. If set to false, the controller will wait for the time specified by `time_step` after it's done which represent the time given to perform the action. The frequency of the controller will not be 1/`time_step` since the controller execution time will add delay before the next execution.
 - `inverse_control_and_steps` (bool, default: false): If set to false, the controller will 1)find an optimal  action to take and then 2) update the virtual queues based on that optimal solution. If set to true, the controller will 1)update the virtual queues based on the current of state of the system and then 2)find an optimal next action. 
+- `responsible_for_virtual_queue_changes` (bool, default: true):  If set to true, the controller will trigger or send changes to the queue server base on the flag inverse_control_and_steps. If set to false, the controller will not send any changes to the specified queue_server_name. Its used if the user wants to implement another mecanism to change the virtual queues in queue server or to run multiple controller in parallel for the same queue server where only one of them is sending changes and not the others.
+- `measure_cost: false`(bool): When true, a topic will be published name "controller_costs" that will output the cost of each action and each internal metric of the actions at each controller step. Default is set to false.
 - `min_renewal_time`(float): Lower bound time for the renewal process. The controller will not start again before that time even if the action is reached. The action reached is triggered by a message to a goal_reached topic. Only used if the controller is of type `renewal_min_drift_plus_penalty`.
 - `max_renewal_time`(float): Upper bound time for the renewal process. The controller will start again at that time if the action is not reached. The action reached is triggered by a message to a goal_reached topic. Only used if the controller is of type `renewal_min_drift_plus_penalty`.
 - `action_server_name`(string): Name of the actionlib server to which the best action will be sent as a goal. That server as the responsibility to send back a goal reached for the renewal system if it reaches the action.
@@ -192,6 +208,11 @@ Since most of the configuration is required (except when it's indicated that it 
 - `penalty_service_name`(string): Name of the service for the controller to get all the penalties for all the given action in the action set in its request. The service definition should match the service definition of the `METRIC_CONTROL_PREDICTION_SRV` type in the controller node's cpp file
 - `v_parameter`(float): It's the weight that multiplies the penalty in the cost function. It specifies the trade-off between optimizing the variable and the delays (linked to the expected size of the queues). A higher value will bring the penalty closer to its optimal value at the expanse of increasing the expected queue sizes. It represents mathematically the parameter $V$ from the section "Optimization formulation".
 - `is_penalty_renewal_dependent`(bool): If set to true, the controller will optimize the ratio of the time average penalty over the expected renewal frame duration. If set to false, the controller will optimize the time average penalty.  It's used when the value to minimize is $\frac{\bar{v}_o}{\bar{T}}$ instead of $\bar{y}_0$. Only used if the controller is of type `renewal_min_drift_plus_penalty`.
+- `part_of_multicontroller_synchronization`(bool): Flag that indicates if this controller is part of a multi controller setup. It will send empty msgs on a topic `control_loop_started` at the begining of the control loop and a topic `optimization_done` after the optimization but before sending the best action and the manual changes to the queue server.
+- `start_control_loop_sync_topic` (string): If defined, if the parameter `is_periodic` is set to false and `part_of_multicontroller_synchronization` is true, it will add a new subscribe with the specified name that will start a new control loop when it receive an empty msg. This is in addition to the `start_control_loop` topic. The main application for this is to put the `<master_controller_name>/control_loop_started` of a master queue controller so both controller starts at the same time in a multi-controller system that needs to be synchronized.
+- `dependent_on_controller_topic` (string): Name of the topic that the controller will need to wait for before sending its command and changes .If defined and if `part_of_multicontroller_synchronization` is true, this controller will pause after its optimization and before to publish on `optimization_done`. A subscriber will be created that listens to the given topic name. When this subscriber is sent an empty msg, it will wake wake-up the controller allowing it to continue. If the message is received before the wait, the controller will simply continue. If this parameter is not defined or left empty, the controller will not wait to receive a message before continuing. This parameter is mainly used in a multi-controller setup where you specified the `<controller_to_depend_on_name>/optimization` of a controller that needs to have completed its optimization before the present controller can continue. A cascade setup could be used like in the following figure where a main controller needs to wait for all other controller before sendind its control value.
+![](.assets/queue_controller_synchronization_diagram_v2.png)
+
 ## Launch files
 * **queue_controller.launch:** Starts a queue_controller node based on a given configuration and action type.
      - **`queue_controller_name`**: Name of the queue controller that will be use as the node's name and the prefixes of all it's exposed services. Default: `queue_controller`.
@@ -227,17 +248,34 @@ For each queues:
 	 Service that evaluates how a queue will diminish for each given action in its request. The results should be returned in an array with a size equal to the number of actions and where the indexes of the departures match the indexes of their corresponding actions from the input's array. If the `departure_action_dependent` parameter is set to true in the config file for this queue, the request is empty and only one value is returned that will be used for all the actions during the optimization process. Usually the latter has no impact on the optimization process if it's not renewal dependent.
 * **`/<queue_server_name>/<queue_name>/getQueueInfo`** ([ros_queue_msgs/QueueInfoFetch](https://github.com/etienn8/ros_queuing_system/blob/main/ros_queue_msgs/srv/QueueInfoFetch.srv))
 	 Service that gets the meta information of the queue from the [queue_server](https://github.com/etienn8/ros_queuing_system/tree/main/queue_server) . Mainly it gets if the queue is virtual.
-#### Published Topics
-* **`renewal_time`** (std_msgs/Float32)
-	 Message that indicates the elapsed time between the start of the current controller call and the start of the previous controller call.
-* **`/<queue_server_name>/virtual_queue_manual_changes`** ([ros_queue_msgs/VirtualQueueChangesList](https://github.com/etienn8/ros_queuing_system/blob/main/ros_queue_msgs/msg/VirtualQueueChangesList.msg))
-	 Message containing an array of changes that need to be applied to the specified virtual queues. Those changes are based on the arrival and departure expected from the optimal action that was found. Only used if `inverse_control_and_steps` is set to false.
 #### Services
-* **`get_last_renewal_time`** ([ros_queue_msgs/FloatRequest](https://github.com/etienn8/ros_queuing_system/blob/main/ros_queue_msgs/srv/FloatRequest.srv))
-	Service that can be called to get the elapsed time between the start of the current controller call and the start of the previous one (last renewal time). For example, you can get the last renewal time from the console with:
+* **`get_last_renewal_time`** ([ros_queue_msgs/GetQueueControllerTiming](https://github.com/etienn8/ros_queuing_system/blob/main/ros_queue_msgs/srv/GetQueueControllerTiming.srv))
+	Service that can be called to get the elapsed time between the start of the current controller call and the start of the previous one (last renewal time) in seconds. It also gives the time it took to execute the control loop in seconds. For example, you can get the last renewal time from the console with:
 
 		rosservice call /<queue_controller_name>/get_last_renewal_time
+* **`start_control_loop`** (std_srvs/Empty)
+	Service that will start a control loop of the controller when called. It's only available if the parameter `is_periodic` is set to false. Note that for a renewable system, the controller will not wait for the renewal time of the action. For example, you can get start a control loop from the console with:
 
+		rosservice call /<queue_controller_name>/start_control_loop
+
+#### Published Topics
+* **`control_loop_started`** (std_msgs/Empty)
+	 Empty message that is published at the begining of the control loop or after the virtual queue change if the parameter `inverse_control_and_steps` is true. It's only published if the paramter `part_of_multicontroller_synchronization` is true. Mainly used for synchronizing muliple controllers together.
+* **`optimization_done`** (std_msgs/Empty)
+	 Empty message that is published after the optimization found the best command and before the sending command and virtual changes to the queue server. It's only published if the paramter `part_of_multicontroller_synchronization` is true. Mainly used for synchronizing muliple controllers together.
+* **`measure_cost`** [ros_queue_msgs/TransmissionVectorControllerCostsList](https://github.com/etienn8/ros_queuing_system/blob/main/ros_queue_msgs/msg/TransmissionVectorControllerCostsList.msg)
+	 Message that contains all the costs for each action and its metrics (penalty and queue). This message is sent at each end of the controller's loop. This topic isn't advertised if the `measure_cost` parameter is set to false.
+* **`renewal_time`** ([ros_queue_msgs/QueueControllerTiming](https://github.com/etienn8/ros_queuing_system/blob/main/ros_queue_msgs/msg/QueueControllerTiming.msg))
+	 Message that indicates the elapsed time between the start of the current controller call and the start of the previous controller loop and the time it took to execute the previous control loop in seconds.
+* **`/<queue_server_name>/virtual_queue_manual_changes`** ([ros_queue_msgs/VirtualQueueChangesList](https://github.com/etienn8/ros_queuing_system/blob/main/ros_queue_msgs/msg/VirtualQueueChangesList.msg))
+	 Message containing an array of changes that need to be applied to the specified virtual queues. Those changes are based on the arrival and departure expected from the optimal action that was found. Only used if `inverse_control_and_steps` is set to false.
+#### Subscribed Topics
+* **`start_control_loop`** (std_msgs/Empty)
+	When called, it will start a control loop asynchronously. It's only available if the parameter `is_periodic` is set to false.
+* **`<start_control_loop_sync_topic>`** (std_msgs/Empty)
+	When called, it will start a control loop asynchronously. It's only available if the parameter `is_periodic` is set to false and the parameter `part_of_multicontroller_synchronization` is set to true.
+* **`<dependent_on_controller_topic>`** (std_msgs/Empty)
+	Topic defined to indicate that the present controller should block its output until it receives an empty message on this topic. It's only used if `part_of_multicontroller_synchronization` is set to true. See the `Config files` section for more details.
 
 #### Parameters
 All the queue_server parameters are shown in the Config Files sections.

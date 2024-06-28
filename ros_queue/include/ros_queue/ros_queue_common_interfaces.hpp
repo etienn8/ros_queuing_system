@@ -19,15 +19,15 @@ class ROSQueueCommonInterfaces
          * @param info ros_queue_msgs::QueueInfo rvalue that contains meta data about the queue.
          * @param nh Its ros::NodeHandle used to create the services and make sure that a node handle exists during the life time of the ROSQueue.
         */
-        ROSQueueCommonInterfaces(ros::NodeHandle& nh, ros_queue_msgs::QueueInfo&& info): info_(std::move(info)), nh_(nh)
+        ROSQueueCommonInterfaces(ros::NodeHandle& nh, ros_queue_msgs::QueueInfo&& info): info_(std::move(info)), nhp_(nh), nh_(ros::NodeHandle())
         {
             if (!info_.queue_name.empty())
             {
                 string queue_size_service_name = info_.queue_name + "/getQueueSize";
                 string queue_info_service_name = info_.queue_name + "/getQueueInfo";
 
-                queue_size_service_ = nh_.advertiseService(queue_size_service_name, &ROSQueueCommonInterfaces::getSizeServiceCallback, this);
-                queue_info_service_ = nh_.advertiseService(queue_info_service_name, &ROSQueueCommonInterfaces::getQueueInfoCallback, this);
+                queue_size_service_ = nhp_.advertiseService(queue_size_service_name, &ROSQueueCommonInterfaces::getSizeServiceCallback, this);
+                queue_info_service_ = nhp_.advertiseService(queue_info_service_name, &ROSQueueCommonInterfaces::getQueueInfoCallback, this);
             }
             else 
             {
@@ -45,6 +45,11 @@ class ROSQueueCommonInterfaces
          * @brief ROS Node handle used for the service call and make sure that a node handle exist for the life time of the ROSQueue.
         */
         ros::NodeHandle nh_;
+
+        /**
+         * @brief Private ROS Node handle used to create the service calls for the predictions.
+        */
+        ros::NodeHandle nhp_;
 
         /**
          * @brief ROS service server to provide the state of the queue.
@@ -86,6 +91,4 @@ class ROSQueueCommonInterfaces
          * @return Size of the queue.
         */
         virtual float getSizeForService()=0;
-
-
 };

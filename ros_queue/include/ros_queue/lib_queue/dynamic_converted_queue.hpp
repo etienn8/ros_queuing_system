@@ -139,13 +139,17 @@ class DynamicConvertedQueue: public IDynamicQueue<deque<ElementWithConvertedSize
                 // Protect access to queue
                 lock_guard<mutex> lock(queue_manipulation_mutex_);
 
+                if (mean_stats_.should_compute_means_)
+                {
+                    mean_stats_.increaseDepartureMean(nb_departing_converted_size);
+                }
 
                 int total_departures = 0;
                 if (!this->internal_queue_.empty())
                 {
                      int front_element_size = static_cast<int>(this->internal_queue_.front().converted_size_);
 
-                    while(nb_departing_converted_size > front_element_size)
+                    while(nb_departing_converted_size >= front_element_size)
                     {
                         if(this->internal_queue_.empty())
                         {
@@ -165,7 +169,13 @@ class DynamicConvertedQueue: public IDynamicQueue<deque<ElementWithConvertedSize
 
                 if (mean_stats_.should_compute_means_)
                 {
-                    mean_stats_.increaseDepartureMean(total_departures);
+                    mean_stats_.increaseRealDepartureMean(total_departures);
+                    // If there's still elements in the queue and nb_departing_converted_size is not 0, 
+                    // it means that the next element is to big for the remaining data that could be transmitted.
+                    if (!this->internal_queue_.empty())
+                    {
+                        mean_stats_.increaseConvertedRemainingMean(nb_departing_converted_size);
+                    }
                 }
 
                 int total_arrivals = 0;
@@ -249,7 +259,8 @@ class DynamicConvertedQueue: public IDynamicQueue<deque<ElementWithConvertedSize
 
                 if (mean_stats_.should_compute_means_)
                 {
-                    mean_stats_.increaseDepartureMean(total_departures);
+                    mean_stats_.increaseDepartureMean(nb_departing_elements);
+                    mean_stats_.increaseRealDepartureMean(nb_departing_elements);
                 }
 
                 int total_arrivals = 0;
@@ -526,12 +537,17 @@ class DynamicConvertedQueue<TQueueElementType, void>: public IDynamicQueue<deque
                 // Protect access to queue
                 lock_guard<mutex> lock(queue_manipulation_mutex_);
 
-                int total_departure = 0;
+                if (mean_stats_.should_compute_means_)
+                {
+                    mean_stats_.increaseDepartureMean(nb_departing_converted_size);
+                }
+
+                int total_departures = 0;
                 if (!this->internal_queue_.empty())
                 {
                      int front_element_size = static_cast<int>(this->internal_queue_.front().converted_size_);
 
-                    while(nb_departing_converted_size > front_element_size)
+                    while(nb_departing_converted_size >= front_element_size)
                     {
                         if(this->internal_queue_.empty())
                         {
@@ -540,7 +556,7 @@ class DynamicConvertedQueue<TQueueElementType, void>: public IDynamicQueue<deque
                         
                         converted_queue_size_ -= front_element_size;
                         nb_departing_converted_size -= front_element_size;
-                        total_departure += front_element_size;
+                        total_departures += front_element_size;
 
                         queue_to_transmit.push_back(std::move(this->internal_queue_.front().element_));
                         this->internal_queue_.pop_front();
@@ -551,8 +567,13 @@ class DynamicConvertedQueue<TQueueElementType, void>: public IDynamicQueue<deque
 
                 if (mean_stats_.should_compute_means_)
                 {
-                    mean_stats_.increaseDepartureMean(total_departure);
-                    mean_stats_.increaseConvertedRemainingMean(nb_departing_converted_size);
+                    mean_stats_.increaseRealDepartureMean(total_departures);
+                    // If there's still elements in the queue and nb_departing_converted_size is not 0, 
+                    // it means that the next element is to big for the remaining data that could be transmitted.
+                    if (!this->internal_queue_.empty())
+                    {
+                        mean_stats_.increaseConvertedRemainingMean(nb_departing_converted_size);
+                    }
                 }
 
                 int total_arrivals = 0;
@@ -640,6 +661,7 @@ class DynamicConvertedQueue<TQueueElementType, void>: public IDynamicQueue<deque
                 if (mean_stats_.should_compute_means_)
                 {
                     mean_stats_.increaseDepartureMean(total_departures);
+                    mean_stats_.increaseRealDepartureMean(total_departures);
                 }
 
                 int total_arrivals = 0;

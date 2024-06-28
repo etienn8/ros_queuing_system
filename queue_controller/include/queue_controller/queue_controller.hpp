@@ -1,6 +1,7 @@
 #pragma once
 
 #include <chrono>
+#include <condition_variable>
 #include <future>
 #include <map>
 #include <memory>
@@ -15,19 +16,27 @@
 #include "controller_queue_struct.hpp"
 #include "queue_controller_utils.hpp"
 
+#include "ros_queue_msgs/ControllerActionCosts.h"
 #include "ros_queue_msgs/FloatRequest.h"
+#include "ros_queue_msgs/GetQueueControllerTiming.h"
+#include "ros_queue_msgs/MetricCosts.h"
+#include "ros_queue_msgs/QueueControllerTiming.h"
 #include "ros_queue_msgs/QueueInfoFetch.h"
 #include "ros_queue_msgs/QueueServerStateFetch.h"
 #include "ros_queue_msgs/VirtualQueueChangesList.h"
+#include "ros_queue_msgs/TransmissionVectorControllerCostsList.h"
 
 #include <actionlib/client/simple_action_client.h>
 
 #include "std_msgs/Float32.h"
+#include "std_msgs/Empty.h"
 #include "std_srvs/Empty.h"
 
 #include "rosparam_utils/xmlrpc_utils.hpp"
 #include "rosparam_utils/parameter_package_fetch_struct.hpp"
 #include "rosparam_utils/data_validation.hpp"
+
+#include "ros_boosted_utilities/persistent_service_client.hpp"
 
 #include "queue_server/queue_server_utils.hpp"
 
@@ -39,11 +48,17 @@ struct ActionTrait {
   using ActionType = typename TActionSetType::_action_set_type::value_type;
 };
 
-template<typename TMetricControlPredictionSrv, typename TPotentialActionSetMsg, typename TPotentialActionSetSrv, typename TActionLibOutputType, typename TActionLibOutputGoalType>
+template <typename TControllerCostListType>
+struct ActionCostTrait {
+  using ActionCostType = typename TControllerCostListType::_action_costs_list_type::value_type;
+};
+
+template<typename TMetricControlPredictionSrv, typename TPotentialActionSetMsg, typename TPotentialActionSetSrv, typename TActionLibOutputType, typename TActionLibOutputGoalType, typename TControllerCostListType>
 class QueueController
 {
     public:
         typedef typename ActionTrait<TPotentialActionSetMsg>::ActionType ActionType;
+        typedef typename ActionCostTrait<TControllerCostListType>::ActionCostType ActionCostType;
 
         enum ControllerType
         {
@@ -51,12 +66,12 @@ class QueueController
             RenewalDriftPlusPenalty
         };
 
-        QueueController(ros::NodeHandle& nh): nh_(nh), async_spinner_(1, &async_spinner_queue_), async_nh_("~")
+        QueueController(ros::NodeHandle& nh): nhp_(nh), nh_(ros::NodeHandle()), async_spinner_(1, &async_spinner_queue_), async_nhp_("~"), async_nh_(nh_)
         {
             bool can_create_controller = true;
 
             string controller_type_name;
-            if(nh.getParam("controller_type", controller_type_name))
+            if(nhp_.getParam("controller_type", controller_type_name))
             {
                 if(controller_type_name == "min_drift_plus_penalty")
                 {
@@ -78,45 +93,65 @@ class QueueController
                 ROS_ERROR_STREAM("Missing the controller type");
             }
 
+            if (nhp_.getParam("is_periodic",is_periodic_))
+            {
+                if(is_periodic_)
+                {
+                    ROS_INFO_STREAM("The controller will run periodically.");
+                }
+                else
+                {
+                    ROS_INFO_STREAM("The controller will be triggered by a service call.");
+                }
+            }
+            else
+            {
+                ROS_WARN_STREAM("Missing the is_periodic parameter. The controller will run periodically.");
+            }
+
             if(controller_type_ == ControllerType::DriftPlusPenalty)
             {
-                if(!nh.getParam("time_step", controller_time_step_))
+                if(is_periodic_ && !nhp_.getParam("time_step", controller_time_step_))
                 {
                     can_create_controller = false;
                     ROS_ERROR_STREAM("Missing the controller time step");
                 }
             }
 
+            // Configure the async spinner for the asynchronous fetch of the renewal time and synchronization callbacks
+            async_nhp_.setCallbackQueue(&async_spinner_queue_);
+            async_nh_.setCallbackQueue(&async_spinner_queue_);
+
             if(controller_type_ == ControllerType::RenewalDriftPlusPenalty)
             {
-                if(!nh.getParam("max_renewal_time", max_renewal_time_))
+                if(!nhp_.getParam("max_renewal_time", max_renewal_time_))
                 {
                     can_create_controller = false;
                     ROS_ERROR_STREAM("Missing the max_renewal_time");
                 }
 
-                if(!nh.getParam("min_renewal_time", min_renewal_time_))
+                if(!nhp_.getParam("min_renewal_time", min_renewal_time_))
                 {
                     can_create_controller = false;
                     ROS_ERROR_STREAM("Missing the min_renewal_time");
                 }
 
-                if(!nh.getParam("is_penalty_renewal_dependent", is_penalty_renewal_dependent_))
+                if(!nhp_.getParam("is_penalty_renewal_dependent", is_penalty_renewal_dependent_))
                 {
                     ROS_WARN_STREAM("Missing the flag is_penalty_renewal_dependent that indicates if the penalty is dependent on the renewal time. Will be set to false.");
                 }
 
-                renewal_time_pub_ = nh_.advertise<std_msgs::Float32>("renewal_time", 10);
+                renewal_time_pub_ = nhp_.advertise<ros_queue_msgs::QueueControllerTiming>("renewal_time", 10);
 
                 string expected_renewal_time_service_name;
-                if(!nh.getParam("expected_renewal_time_service_name", expected_renewal_time_service_name) || expected_renewal_time_service_name.empty())
+                if(!nhp_.getParam("expected_renewal_time_service_name", expected_renewal_time_service_name) || expected_renewal_time_service_name.empty())
                 {
                     can_create_controller = false;
                     ROS_ERROR_STREAM("Missing the expected_renewal_time_service_name.");
                 }
                 else
                 {
-                    renewal_service_client_ = nh_.serviceClient<TMetricControlPredictionSrv>(expected_renewal_time_service_name, true);
+                    renewal_service_client_ = PersistentServiceClient<TMetricControlPredictionSrv>(nh_, expected_renewal_time_service_name);
 
                     ROS_INFO_STREAM("Waiting for the expected renewal time service named :" << expected_renewal_time_service_name);
                     renewal_service_client_.waitForExistence();
@@ -124,20 +159,23 @@ class QueueController
 
                 // Start an asynchronous spinner to handle the last renewal time service in parallel to the controller.
                 ROS_INFO_STREAM("Creating the last renewal time service server.");
-                async_nh_.setCallbackQueue(&async_spinner_queue_);
-                last_renewal_time_service_server_ = async_nh_.advertiseService("get_last_renewal_time", &QueueController::lastRenewalTimeServiceCallback, this);
-                async_spinner_.start();
+                last_renewal_time_service_server_ = async_nhp_.advertiseService("get_last_renewal_time", &QueueController::lastRenewalTimeServiceCallback, this);
             }
 
-            if(!nh.getParam("inverse_control_and_steps", inversed_control_and_update_steps_))
+            if(!nhp_.getParam("inverse_control_and_steps", inversed_control_and_update_steps_))
             {
                 ROS_WARN_STREAM("Missing the flag inverse_control_and_steps that indicates if the control and update steps are inverted. Will be set to false.");
             }
 
-            string solution_space_service_name;
-            if(nh.getParam("solution_space_service_name", solution_space_service_name))
+            if(!nhp_.getParam("responsible_for_virtual_queue_changes", responsible_for_virtual_queue_changes_))
             {
-                solution_space_client_ = nh_.serviceClient<TPotentialActionSetSrv>(solution_space_service_name, true);
+                ROS_WARN_STREAM("Missing the flag responsible_for_virtual_queue_changes that indicates if the controller should trigger the changes of the virtual queues of the queue server. Will be set to true.");
+            }
+
+            string solution_space_service_name;
+            if(nhp_.getParam("solution_space_service_name", solution_space_service_name))
+            {
+                solution_space_client_ = PersistentServiceClient<TPotentialActionSetSrv>(nh_, solution_space_service_name); 
                 
                 ROS_INFO_STREAM("Waiting for the solution space client named :" << solution_space_service_name);
                 solution_space_client_.waitForExistence();
@@ -149,9 +187,9 @@ class QueueController
             }
 
             string penalty_service_name;
-            if(nh.getParam("penalty_service_name", penalty_service_name))
+            if(nhp_.getParam("penalty_service_name", penalty_service_name))
             {
-                penalty_service_client_ = nh_.serviceClient<TMetricControlPredictionSrv>(penalty_service_name, true);
+                penalty_service_client_ = PersistentServiceClient<TMetricControlPredictionSrv>(nh_, penalty_service_name); 
                 
                 ROS_INFO_STREAM("Waiting for the penalty space client named :" << penalty_service_name);
                 penalty_service_client_.waitForExistence();
@@ -162,7 +200,7 @@ class QueueController
                 ROS_ERROR_STREAM("Missing the penalty_service_name.");
             }
 
-            if(nh.getParam("v_parameter", v_parameter_))
+            if(nhp_.getParam("v_parameter", v_parameter_))
             {
                 if(v_parameter_< 0.0f)
                 {
@@ -175,7 +213,19 @@ class QueueController
                 ROS_ERROR_STREAM("Missing the v_parameter.");
             }
 
-            if(!nh.getParam("queue_server_name", queue_server_name_))
+            if(nhp_.getParam("measure_cost", measure_cost_))
+            {
+                if(measure_cost_)
+                {
+                    cost_publisher_ = nhp_.advertise<TControllerCostListType>("controller_costs", 10);
+                }
+            }
+            else
+            {
+                ROS_WARN_STREAM("Missing the measure_cost parameter. Will be set to false.");
+            }
+
+            if(!nhp_.getParam("queue_server_name", queue_server_name_))
             {
                 can_create_controller = false;
                 ROS_ERROR_STREAM("Missing the queue_server_name.");
@@ -191,7 +241,7 @@ class QueueController
             const xmlrpc_utils::ParameterPackageFetchStruct fetch_struct(options);
             
             vector<xmlrpc_utils::ParameterPackageFetchStruct> parsed_queue_configs= 
-                            xmlrpc_utils::fetchMatchingParametersFromList(nh_, ros::this_node::getName(),
+                            xmlrpc_utils::fetchMatchingParametersFromList(nhp_, ros::this_node::getName(),
                                                                         "queue_list", fetch_struct);
 
             // Does the queue server exist and transfer queue_configs in internal queue structs
@@ -201,42 +251,117 @@ class QueueController
             }
 
             string action_server_name;
-            if(!nh.getParam("action_server_name", action_server_name))
+            if(!nhp_.getParam("action_server_name", action_server_name))
             {
                 can_create_controller = false;
                 ROS_ERROR_STREAM("Missing the action_server_name.");
+            }
+
+            string dependent_on_controller_topic;
+            string start_control_loop_sync_topic;
+            if(nhp_.getParam("part_of_multicontroller_synchronization", part_of_multicontroller_synchronization_))
+            {
+                if (part_of_multicontroller_synchronization_)
+                {
+                    if(nhp_.getParam("dependent_on_controller_topic",dependent_on_controller_topic))
+                    {
+                        if (dependent_on_controller_topic.empty())
+                        {
+                            ROS_INFO_STREAM("Queue controller is not dependant on any topic to send its command. Since its dependent_on_controller_topic parameter is empty.");
+                        }
+                        else
+                        {
+                            ROS_INFO_STREAM("Queue controller is dependant on topic "<< dependent_on_controller_topic << " to send its command.");
+                            is_dependent_on_a_another_controller_ = true;
+                        }
+                    }
+                    else
+                    {
+                         ROS_INFO_STREAM("Queue controller is not dependant on any topic to send its command. Since the dependent_on_controller_topic parameter is not set.");
+                    }
+                    if(nhp_.getParam("start_control_loop_sync_topic", start_control_loop_sync_topic))
+                    {
+                        if (start_control_loop_sync_topic.empty())
+                        {
+                            ROS_INFO_STREAM("Queue controller doesn't have a user-defined topic to start its control loop.");
+                        }
+                        else
+                        {
+                            ROS_INFO_STREAM("Queue controller uses"<< start_control_loop_sync_topic << " to start its control loop.");
+                        }
+                    }
+                    else
+                    {
+                         ROS_INFO_STREAM("Queue controller doesn't have a user-defined topic to start its control loop. Since the start_control_loop_sync_topic parameter is not set.");
+                    }
+                }
+            }
+            else
+            {
+                ROS_WARN("The flag part_of_multicontroller_synchronization is not set. It will be set to false.");
             }
 
             // Intialize controller
             if (can_create_controller)
             {   
                 // Connect to queue_server for queue sizes
-                server_state_client_ = nh_.serviceClient<ros_queue_msgs::QueueServerStateFetch>("/" + queue_server_name_ + "/get_server_state", true);
+                server_state_client_ = PersistentServiceClient<ros_queue_msgs::QueueServerStateFetch>(nh_, queue_server_name_ + "/get_server_state");
 
                 ROS_INFO_STREAM("Waiting for the server service named :" << server_state_client_.getService());
                 server_state_client_.waitForExistence();
 
-                // Connect to queue_server for queue server udpates (depends on steps order)
-                if (!inversed_control_and_update_steps_)
-                {   
-                    manual_virtual_queue_changes_ = nh_.advertise<ros_queue_msgs::VirtualQueueChangesList>("/" + queue_server_name_ + "/virtual_queue_manual_changes", 1000);
-                }
-                else
+                if(responsible_for_virtual_queue_changes_)
                 {
-                    virtual_queues_trigger_ = nh_.serviceClient<std_srvs::Empty>("/" + queue_server_name_ + "/trigger_service", true);
-                    ROS_INFO_STREAM("Waiting for the server service named :" << virtual_queues_trigger_.getService());
-                    virtual_queues_trigger_.waitForExistence();
+                    // Connect to queue_server for queue server udpates (depends on steps order)
+                    if (!inversed_control_and_update_steps_)
+                    {   
+                        manual_virtual_queue_changes_ = nh_.advertise<ros_queue_msgs::VirtualQueueChangesList>(queue_server_name_ + "/virtual_queue_manual_changes", 1000);
+                    }
+                    else
+                    {
+                        virtual_queues_trigger_ = PersistentServiceClient<std_srvs::Empty>(nh_, queue_server_name_ + "/trigger_service"); 
+                        ROS_INFO_STREAM("Waiting for the server service named :" << virtual_queues_trigger_.getService());
+                        virtual_queues_trigger_.waitForExistence();
+                    }
                 }
 
                 // Create ouptut topic
                 best_action_client_ =  std::make_unique<actionlib::SimpleActionClient<TActionLibOutputType>>(action_server_name, true);   
 
+                if(!is_periodic_)
+                {
+                    start_control_loop_service_server_ = nhp_.advertiseService("start_control_loop", &QueueController::startControlLoopServiceCallback, this);
+                    start_control_loop_sub_ = nhp_.subscribe("start_control_loop", 1, &QueueController::startControlLoopCallback, this);
+                }
 
-                if(controller_type_ == ControllerType::RenewalDriftPlusPenalty)
+                if(part_of_multicontroller_synchronization_)
+                {
+                    if(is_dependent_on_a_another_controller_)
+                    {
+                        dependent_controller_finished_sub_ = async_nh_.subscribe(dependent_on_controller_topic, 1, &QueueController::dependentControllerFinishedCallback, this);
+                        
+                        while(dependent_controller_finished_sub_.getNumPublishers() == 0)
+                        {
+                            ROS_WARN_STREAM_THROTTLE(2, "Waiting for the dependent controller to be online. On topic "<< dependent_controller_finished_sub_.getTopic());
+                            ros::Duration(0.1).sleep();
+                        }
+                    }
+                    optimization_done_pub_ = nhp_.advertise<std_msgs::Empty>("optimization_done", 10);
+                    control_loop_started_pub_ = nhp_.advertise<std_msgs::Empty>("control_loop_started", 1, true);
+
+                    if(!is_periodic_ && !start_control_loop_sync_topic.empty())
+                    {
+                        start_control_loop_sync_sub_ = nh_.subscribe(start_control_loop_sync_topic, 1, &QueueController::startControlLoopCallback, this);
+                    }
+                }
+
+                if(controller_type_ == ControllerType::RenewalDriftPlusPenalty || 
+                  (part_of_multicontroller_synchronization_ && is_dependent_on_a_another_controller_))
                 {
                     async_spinner_.start();
-                } 
+                }
 
+                ROS_INFO("Queue Controller started");
                 is_initialized_ = true;
             }
         }
@@ -273,79 +398,106 @@ class QueueController
                 return;
             }
 
-            if (controller_type_ == ControllerType::DriftPlusPenalty)
+            if(is_periodic_)
             {
-                static ros::Rate loop_rate(1.0f/controller_time_step_);
-                while(ros::ok())
+                if (controller_type_ == ControllerType::DriftPlusPenalty)
                 {
-                    controllerCallback();
-                    ros::spinOnce();
-                    loop_rate.sleep();
-                }
-            }
-            else if (controller_type_ == ControllerType::RenewalDriftPlusPenalty)
-            {
-                while(ros::ok())
-                {
-                    if(!best_action_client_waited_)
+                   ros::Rate loop_rate(1.0f/controller_time_step_);
+                    while(ros::ok())
                     {
-                        if(!best_action_client_->waitForServer(ros::Duration(5.0)))
-                        {
-                            ROS_WARN_STREAM("The action server named wasn't found. Queue controller will be running with a perdiod of max_renewal_time ("<< max_renewal_time_ << "s) between each control step and will continue to try to connect to server.");
-                        }
-
-                        best_action_client_waited_ = true;
-                    }
-
-                    std_msgs::Float32 renewal_time_msg;
-                    // Access protection to the last_renewal_time_ variable
-                    {
-                        std::lock_guard<std::mutex> lock(last_renewal_time_mutex_);
-                        static bool first_renewal = true;
-                        if(first_renewal)
-                        {
-                            first_renewal = false;
-                            last_renewal_time_point = ros::Time::now();
-                        }
-
-                        // Compute the real elapsed time since the last renewal.
-                        last_renewal_time_ = (ros::Time::now() - last_renewal_time_point).toSec();
-                        
-                        renewal_time_msg.data = last_renewal_time_;
-                        ROS_DEBUG_STREAM("Time since last renewal: " << last_renewal_time_);
-                    }
-                    renewal_time_pub_.publish(renewal_time_msg);
-                    
-                    // Compute the controller
-                    controllerCallback();
-
-                    last_renewal_time_point = ros::Time::now();
-
-                    if(best_action_client_->isServerConnected())
-                    {
-                        // Wait for the best action to be reached or wait for the max_renewal_time
-                        bool finished_before_max_time =  best_action_client_->waitForResult(ros::Duration(max_renewal_time_));
-                        
-                        // We abandon the last goal if its still on going.
-                        if (!finished_before_max_time)
-                        {
-                            best_action_client_->cancelGoal();
-                        }
-
-                        double elapsed_time = (ros::Time::now() - last_renewal_time_point).toSec();
-
-                        // Wait for t_min is reached if the goal was reached before.
-                        if (elapsed_time < min_renewal_time_)
-                        {
-                            ros::Duration(min_renewal_time_ - elapsed_time).sleep();
-                        }
-                    }
-                    else
-                    {
-                        ros::Duration(max_renewal_time_).sleep();      
+                        controllerCallback();
+                        ros::spinOnce();
+                        loop_rate.sleep();
                     }
                 }
+                else if (controller_type_ == ControllerType::RenewalDriftPlusPenalty)
+                {
+                    while(ros::ok())
+                    {
+                        if(!best_action_client_waited_)
+                        {
+                            if(!best_action_client_->waitForServer(ros::Duration(5.0)))
+                            {
+                                ROS_WARN_STREAM("The action server named wasn't found. Queue controller will be running with a perdiod of max_renewal_time ("<< max_renewal_time_ << "s) between each control step and will continue to try to connect to server.");
+                            }
+
+                            best_action_client_waited_ = true;
+                        }
+
+                        // Start to measure how much time the controlle takes time to exectue
+                        ros::Time controller_start_time_point = ros::Time::now();
+
+                        ros_queue_msgs::QueueControllerTiming renewal_time_msg;
+                        // Access protection to the last_renewal_time_ variable
+                        {
+                            std::lock_guard<std::mutex> lock(last_renewal_time_mutex_);
+                            if(is_first_renewal_loop_)
+                            {
+                                is_first_renewal_loop_ = false;
+                                last_renewal_time_point = ros::Time::now();
+                                last_controller_execution_time_ = 0;
+                            }
+
+                            // Compute the real elapsed time since the last renewal.
+                            last_renewal_time_ = (ros::Time::now() - last_renewal_time_point).toSec();
+                            
+                            renewal_time_msg.renewal_time = last_renewal_time_;
+                            renewal_time_msg.execution_time = last_controller_execution_time_;
+                            ROS_DEBUG_STREAM("Time since last renewal: " << last_renewal_time_);
+                        }
+                        renewal_time_pub_.publish(renewal_time_msg);
+                        
+                        // Compute the controller
+                        controllerCallback();
+                        
+                        {
+                            // Measure how much time the controlle took to execute.
+                            std::lock_guard<std::mutex> lock(last_renewal_time_mutex_);
+                            last_controller_execution_time_ = (ros::Time::now() - controller_start_time_point).toSec();
+                        }
+
+                        last_renewal_time_point = ros::Time::now();
+
+                        if(best_action_client_->isServerConnected())
+                        {
+                            // Wait for the best action to be reached or wait for the max_renewal_time
+                            bool finished_before_max_time =  best_action_client_->waitForResult(ros::Duration(max_renewal_time_));
+                            
+                            // We abandon the last goal if its still on going.
+                            if (!finished_before_max_time)
+                            {
+                                best_action_client_->cancelGoal();
+                            }
+
+                            double elapsed_time = (ros::Time::now() - last_renewal_time_point).toSec();
+
+                            // Wait for t_min is reached if the goal was reached before.
+                            if (elapsed_time < min_renewal_time_)
+                            {
+                                ros::Duration(min_renewal_time_ - elapsed_time).sleep();
+                            }
+                        }
+                        else
+                        {
+                            ros::Duration(max_renewal_time_).sleep();      
+                        }
+                    }
+                }
             }
+            else
+            {
+                // If non periodic, a service is used to start a control loop.
+                ros::spin();
+            }
+        }
+
+        bool startControlLoopServiceCallback(std_srvs::Empty::Request& req, 
+                                             std_srvs::Empty::Response& res)
+        {
+            ROS_DEBUG_STREAM("Starting control loop from service call for the controller: " << ros::this_node::getName());
+
+            controllerCallback();
+            return true;
         }
 
     private:
@@ -354,18 +506,182 @@ class QueueController
         */
         bool is_initialized_ = false;
 
+        /**
+         * @brief Node handle with the namespace prefix of the namespace of the node. Mainly used for the declaration of services
+         * for user-defined services.
+        */
         ros::NodeHandle nh_;
+
+        /**
+         * @brief Private node handle with namespace prefixed with the namespace of the node and it's name. Mainly used for declaration 
+         * of topics and services provided for the node.
+        */
+        ros::NodeHandle nhp_;
         
         /**
-         * @brief Nodehandle that uses the async_spinner_queue_ as its callback queue. It's use as an interface
+         * @brief Pivate Nodehandle that uses the async_spinner_queue_ as its callback queue. It's use as an interface
+         * to create services from that should be manage in parallel with the main thread.
+        */
+        ros::NodeHandle async_nhp_;
+
+        /**
+         * @brief Pivate Nodehandle that uses the async_spinner_queue_ as its callback queue. It's use as an interface
          * to create services from that should be manage in parallel with the main thread.
         */
         ros::NodeHandle async_nh_;
+
+        // ===== Synchronization parameters ======
+
+        /**
+         * @brief Flag that indicates if the controller should run periodically or should be triggered by a service call.
+        */
+        bool is_periodic_ = true;
+
+        /** */
+        /**
+         * @brief ROS Service Server that launches a control loop if the flag is_periodic_ is set to false; 
+        */
+        ros::ServiceServer start_control_loop_service_server_;
+
+        /**
+         * @brief Flag that indicates if the queue controller is part of a multi-controller system
+         * that are synchronized between them.
+        */
+        bool part_of_multicontroller_synchronization_ = false;
+
+        /**
+         * @brief Flag that indicates if the controller should wait for another controller before continuing.
+        */
+        bool is_dependent_on_a_another_controller_ = false;
+
+        /**
+         * @brief ROS publisher that indicates the begining of the control loop. Mainly used by the director controller
+         * to send a control signal to all dependent controllers to start their control loops.
+        */
+        ros::Publisher control_loop_started_pub_;
+
+        /**
+         * @brief ROS Subscriber that when called, the controller will start a control loop. Similar to start_control_loop_service_server_.
+         * It will be used only if is_periodic_ is set to false.
+        */
+        ros::Subscriber start_control_loop_sub_;
+
+        /**
+         * @brief ROS Subscriber that when called, the controller will start a control loop. Its a duplication of the start_control_loop_sub_
+         * bu explicitely used for the synchronization and can be defined by the user.
+         * It will be used only if is_periodic_ is set to false.
+        */
+        ros::Subscriber start_control_loop_sync_sub_;
+
+        /**
+         * @brief Callback for the start_control_loop_sub_ that will start a control loop based on the reception of a empty topic.
+         * @param msg Empty message that indicates the start of the control loop.
+        */
+        void startControlLoopCallback(const std_msgs::Empty::ConstPtr& msg)
+        {
+            if (is_dependent_on_a_another_controller_)
+            {
+                std::lock_guard<std::mutex> lock(is_waiting_for_other_controller_mutex_access);
+                is_waiting_for_other_controller_ = true;
+            }
+
+            ROS_DEBUG_STREAM("Starting control loop from topic for the controller: " << ros::this_node::getName());
+            controllerCallback();
+        }
+
+        /**
+         * @brief Flag that indicates if the responder controller is waiting for another controller to finish before sending its action.
+        */
+        bool is_waiting_for_other_controller_ = false;
+
+        /**
+         * @brief ROS Subscriber that listens for dependent queue to finish and signal this controller when it happens.
+        */
+        ros::Subscriber dependent_controller_finished_sub_;
+
+        /**
+         * @brief ROS Publisher that sends a empty message to signal that this controller has finished and it's 
+         * dependent controller has signal it to continue. 
+        */
+        ros::Publisher optimization_done_pub_;
+
+        /**
+         * @brief Mutex that protects access to the is_waiting_for_other_controller_ variable.
+        */
+        std::mutex is_waiting_for_other_controller_mutex_access;
+
+        /**
+         * @brief Mutex used to signal and notify when a dependent controller finished.
+        */
+        std::mutex controller_synchronization_mutex_;
+
+        /**
+         * @brief Condition variable that verifies if a dependent controller finished its optimization.
+        */
+        std::condition_variable controller_synchronization_cv_;
+
+        /**
+         * @brief Starting method of the synchronization mechanimim called at the begening of the controller to 
+         * ppublish and emptry start message and set the is_waiting_for_other_controller_ flag to true if 
+         * the is_dependent_on_a_another_controller_ flag is true.
+        */
+        void startSynchronization()
+        {
+            std_msgs::Empty empty_msg;
+            control_loop_started_pub_.publish(empty_msg);
+
+            if(is_dependent_on_a_another_controller_)
+            {
+                std::lock_guard<std::mutex> lock(is_waiting_for_other_controller_mutex_access);
+                is_waiting_for_other_controller_ = true;
+            }
+        }
+
+        /**
+         * @brief Wait for the dependent controller to finish its optimization by waiting 
+         * for the is_waiting_for_other_controller_ flag to be set to false by the callback of the dependent_controller_finished_sub_.
+        */
+        void waitForSynchronization()
+        {
+            if(is_waiting_for_other_controller_)
+            {
+                ROS_DEBUG_STREAM("Waiting for dependent controller to finish its optimization. On topic "<< dependent_controller_finished_sub_.getTopic());
+                std::unique_lock<std::mutex> lock(controller_synchronization_mutex_);
+                while(is_waiting_for_other_controller_ && ros::ok())
+                {
+                    // This perdiodic wait_for() is used instead of wait() to allow the thread to detect if 
+                    // ROS has received a signal to shutdown. Otherwise, the thread would be blocked until a SIGTERM is called. 
+                    controller_synchronization_cv_.wait_for(lock, std::chrono::seconds(1), [this]{return (!this->is_waiting_for_other_controller_ || !ros::ok());});
+                }
+                ROS_DEBUG_STREAM("Finished waiting for dependent controller");
+            }
+        }
+
+        /**
+         * @brief Callback for the dependent_controller_finished_sub_ that will signal the controller that the controller
+         * it's depending from finish its optimation. Thus allowing this controller to continue to send its best action.
+         * @param msg Empty message that indicates the dependent controller finished its optimization.
+        */
+        void dependentControllerFinishedCallback(const std_msgs::Empty::ConstPtr& msg)
+        {
+            {
+                std::lock_guard<std::mutex> lock(controller_synchronization_mutex_);
+                is_waiting_for_other_controller_ = false;
+            }
+            controller_synchronization_cv_.notify_one();
+        }
+
+        // ===== Renewwal parameters ======
 
         /**
          * @brief Time at which the last renewal was done. Used by the renewal_min_drift_plus_penalty controller.
         */
         ros::Time last_renewal_time_point;
+
+        /**
+         * @brief Duration of the last execution of the controller
+        */
+        float last_controller_execution_time_;
 
         /**
          * @brief Last elapsed time between the last renewal and the current time in seconds. Used by the renewal_min_drift_plus_penalty controller
@@ -376,17 +692,22 @@ class QueueController
         /**
          * @brief ROS service client used to computed the expected time ot execute each given action.
         */
-       ros::ServiceClient renewal_service_client_;
+        PersistentServiceClient<TMetricControlPredictionSrv> renewal_service_client_;
 
         /**
          * @brief ROS topic publisher that periodically sends the last renewal time.
         */
-       ros::Publisher renewal_time_pub_;
+        ros::Publisher renewal_time_pub_;
+
+        /**
+         * @brief Flag used to know if the first control loop of the renewal controller has been done.
+        */
+        bool is_first_renewal_loop_ = true;
 
         /**
          * @brief ROS service client used to get the current states of the queues in the queue server.
         */
-        ros::ServiceClient server_state_client_;
+        PersistentServiceClient<ros_queue_msgs::QueueServerStateFetch> server_state_client_;
 
         /**
          * @brief ROS topic publisher use to send manual changes to the virtual queues of a queue server.
@@ -399,7 +720,7 @@ class QueueController
          * @brief ROS Service client that whenever it's called, the virtual queues in the queue server
          * will update based on the current system's state.
         */
-        ros::ServiceClient virtual_queues_trigger_;
+        PersistentServiceClient<std_srvs::Empty> virtual_queues_trigger_;
 
         /**
          * @brief Action lib client that sends the optimal action to a server.
@@ -412,11 +733,21 @@ class QueueController
         bool best_action_client_waited_ = false; 
 
         /**
+         * @brief Publisher that publishes the cost of each action and all its internal metrics.
+        */
+        ros::Publisher cost_publisher_;
+
+        /**
+         * @brief Flag that indicates if we should measure and publish the cost of the controller steps.
+        */
+        bool measure_cost_ = false;
+
+        /**
          * @brief Map of all the queues used by the queue_controller from a queue_server. The key
          * is the queue's name and the value is all the usefull parameters of the queue to evaluate and 
          * udpate the queues.
         */
-        map<string, std::unique_ptr<ControllerQueueStruct>> queue_list_;
+        map<string, std::unique_ptr<ControllerQueueStruct<TMetricControlPredictionSrv>>> queue_list_;
 
         /**
          * @brief Populate the internal queue_list_ based on the parsed_queue_configs. It will also verify
@@ -430,7 +761,7 @@ class QueueController
             // Create structure to parse the queue params from the queue server
             ROS_INFO_STREAM("Waiting for queue serve named " << queue_server_name_ << " to be online. Waiting at most 10 seconds.");
             
-            if (ros::service::waitForService("/"+queue_server_name_+"/get_server_state", ros::Duration(10)))
+            if (ros::service::waitForService(queue_server_name_+"/get_server_state", ros::Duration(10)))
             {
                 ROS_INFO_STREAM("Queue server found. Resuming queue controller initialization.");
 
@@ -442,7 +773,7 @@ class QueueController
 
                     if(ros::service::call(queue_server_name_+"/"+queue_name_temp+"/getQueueInfo", queue_info_srv))
                     {
-                        auto new_controller_struct = std::make_unique<ControllerQueueStruct>();
+                        auto new_controller_struct = std::make_unique<ControllerQueueStruct<TMetricControlPredictionSrv>>();
 
                         new_controller_struct->queue_name_ = queue_name_temp;
                         new_controller_struct->is_virtual_ = queue_info_srv.response.info.is_virtual;
@@ -484,7 +815,7 @@ class QueueController
                                 {
                                     new_controller_struct->is_arrival_action_dependent = true;
                                     new_controller_struct->expected_arrival_service_ = 
-                                                            nh_.serviceClient<TMetricControlPredictionSrv>(service_name_temp, true);
+                                                            PersistentServiceClient<TMetricControlPredictionSrv>(nh_, service_name_temp);
                                     ROS_INFO_STREAM("Waiting for the server service named :" << new_controller_struct->expected_arrival_service_.getService());
                                     new_controller_struct->expected_arrival_service_.waitForExistence();
                                 }
@@ -497,7 +828,7 @@ class QueueController
                                     }
                                     new_controller_struct->is_arrival_action_dependent = false;
                                     new_controller_struct->arrival_independent_from_action_service_ = 
-                                                            nh_.serviceClient<ros_queue_msgs::FloatRequest>(service_name_temp, true);
+                                                            PersistentServiceClient<ros_queue_msgs::FloatRequest>(nh_, service_name_temp);
                                     ROS_INFO_STREAM("Waiting for the server service named :" << new_controller_struct->arrival_independent_from_action_service_.getService());
                                     new_controller_struct->arrival_independent_from_action_service_.waitForExistence();
                                 }
@@ -532,7 +863,7 @@ class QueueController
                                 {
                                     new_controller_struct->is_departure_action_dependent= true;
                                     new_controller_struct->expected_departure_service_ = 
-                                                            nh_.serviceClient<TMetricControlPredictionSrv>(service_name_temp, true);
+                                                            PersistentServiceClient<TMetricControlPredictionSrv>(nh_, service_name_temp);
                                     ROS_INFO_STREAM("Waiting for the server service named :" << new_controller_struct->expected_departure_service_.getService());
                                     new_controller_struct->expected_departure_service_.waitForExistence();
                                 }
@@ -545,7 +876,7 @@ class QueueController
                                     }
                                     new_controller_struct->is_departure_action_dependent= false;
                                     new_controller_struct->departure_independent_from_action_service_ = 
-                                                            nh_.serviceClient<ros_queue_msgs::FloatRequest>(service_name_temp, true);
+                                                            PersistentServiceClient<ros_queue_msgs::FloatRequest>(nh_, service_name_temp);
                                     ROS_INFO_STREAM("Waiting for the server service named :" << new_controller_struct->expected_departure_service_.getService());
                                     new_controller_struct->expected_departure_service_.waitForExistence();
                                     
@@ -601,11 +932,12 @@ class QueueController
         /**
          * @brief Service callback that returns the last renewal time. Used with renewal system.
         */
-        bool lastRenewalTimeServiceCallback(ros_queue_msgs::FloatRequest::Request& req, 
-                                            ros_queue_msgs::FloatRequest::Response& res)
+        bool lastRenewalTimeServiceCallback(ros_queue_msgs::GetQueueControllerTiming::Request& req, 
+                                            ros_queue_msgs::GetQueueControllerTiming::Response& res)
         {
             std::lock_guard<std::mutex> lock(last_renewal_time_mutex_);
-            res.value = last_renewal_time_;
+            res.timing.renewal_time = last_renewal_time_;
+            res.timing.execution_time = last_controller_execution_time_;
             return true;
         }
 
@@ -633,11 +965,16 @@ class QueueController
             
             ROS_DEBUG_STREAM("Queue controller: Starting control loop of "<< ros::this_node::getName());
             
-            if (inversed_control_and_update_steps_)
+            if (inversed_control_and_update_steps_ && responsible_for_virtual_queue_changes_)
             {
                 updateVirtualQueuesBasedOnCurrentState();
             }
             time_cursor = queue_controller_utils::updateTimePointAndGetTimeDifferenceMS(time_cursor, virtual_queues_current_state_update_time_spent);
+
+            if(part_of_multicontroller_synchronization_)
+            {
+                startSynchronization();
+            }
 
             TPotentialActionSetMsg action_set =  getActionSet();
             time_cursor = queue_controller_utils::updateTimePointAndGetTimeDifferenceMS(time_cursor, action_set_time_spent);
@@ -662,10 +999,19 @@ class QueueController
 
                     time_cursor = queue_controller_utils::updateTimePointAndGetTimeDifferenceMS(time_cursor, compute_optimization_time_spent);
                 
+                    if(part_of_multicontroller_synchronization_)
+                    {
+                        if(is_dependent_on_a_another_controller_)
+                        {
+                            waitForSynchronization();
+                        }
+                        optimization_done_pub_.publish(std_msgs::Empty());
+                    }
+
                     sendBestCommand(best_action_parameters.action);
                     time_cursor = queue_controller_utils::updateTimePointAndGetTimeDifferenceMS(time_cursor, send_best_action_time_spent);
 
-                    if (!inversed_control_and_update_steps_)
+                    if (!inversed_control_and_update_steps_ && responsible_for_virtual_queue_changes_)
                     {
                         updateVirtualQueuesBasedOnBestAction(best_action_parameters);
                     }
@@ -723,8 +1069,6 @@ class QueueController
         TPotentialActionSetMsg getActionSet()
         {
             ROS_DEBUG("Calling action set service");
-
-            queue_controller_utils::check_persistent_service_connection<TPotentialActionSetSrv>(nh_, solution_space_client_);
             
             TPotentialActionSetSrv potential_set_srv;
             if(!solution_space_client_.call(potential_set_srv))
@@ -754,7 +1098,7 @@ class QueueController
         template<typename TSrvType>
         struct AsyncMetricFutureStruct
         {
-            std::shared_ptr<ros::ServiceClient> client_;
+            std::shared_ptr<PersistentServiceClient<TSrvType>> client_;
             TSrvType current_srv_msg_;
             bool current_call_succeeded_;
 
@@ -773,13 +1117,13 @@ class QueueController
          * if the parameter_type is arrival or departure.
         */
         void addServiceCallToActionFutureArray(std::vector<std::future<std::shared_ptr<AsyncMetricFutureStruct<TMetricControlPredictionSrv>>>>& future_array, 
-                            ros::ServiceClient& client,
+                            PersistentServiceClient<TMetricControlPredictionSrv>& client,
                             const TPotentialActionSetMsg& action_set_msg,
                             ParameterType parameter_type,
                             string queue_name = "")
         {
             auto temp_metric_control_future_struct = std::make_shared<AsyncMetricFutureStruct<TMetricControlPredictionSrv>>();
-            temp_metric_control_future_struct->client_ = std::make_shared<ros::ServiceClient>(client);
+            temp_metric_control_future_struct->client_ = std::make_shared<PersistentServiceClient<TMetricControlPredictionSrv>>(client);
             temp_metric_control_future_struct->current_srv_msg_.request.action_set = action_set_msg;
             temp_metric_control_future_struct->parameter_type_ = parameter_type;
 
@@ -811,13 +1155,13 @@ class QueueController
          * if the parameter_type is arrival or departure.
         */
         void addServiceCallToFloatFutureArray(std::vector<std::future<std::shared_ptr<AsyncMetricFutureStruct<ros_queue_msgs::FloatRequest>>>>& future_array, 
-                            ros::ServiceClient& client,
+                            PersistentServiceClient<ros_queue_msgs::FloatRequest>& client,
                             const TPotentialActionSetMsg& action_set_msg,
                             ParameterType parameter_type,
                             string queue_name = "")
         {
             auto temp_metric_control_future_struct = std::make_shared<AsyncMetricFutureStruct<ros_queue_msgs::FloatRequest>>();
-            temp_metric_control_future_struct->client_ = std::make_shared<ros::ServiceClient>(client);
+            temp_metric_control_future_struct->client_ = std::make_shared<PersistentServiceClient<ros_queue_msgs::FloatRequest>>(client);
             temp_metric_control_future_struct->parameter_type_ = parameter_type;
 
             if (parameter_type == ParameterType::Arrival || parameter_type == ParameterType::Departure)
@@ -869,13 +1213,11 @@ class QueueController
             std::vector<std::future<std::shared_ptr<AsyncMetricFutureStruct<ros_queue_msgs::FloatRequest>>>> float_request_future_array;
 
             // Penalty service
-            queue_controller_utils::check_persistent_service_connection<TMetricControlPredictionSrv>(nh_, penalty_service_client_);
             addServiceCallToActionFutureArray(metric_control_future_array, penalty_service_client_, action_set_msg, ParameterType::Penalty);
 
             if (controller_type_ == ControllerType::RenewalDriftPlusPenalty)
             {
                 // Expected time
-                queue_controller_utils::check_persistent_service_connection<TMetricControlPredictionSrv>(nh_, renewal_service_client_);
                 addServiceCallToActionFutureArray(metric_control_future_array, renewal_service_client_, action_set_msg, ParameterType::RenewalTime);
             }
 
@@ -887,24 +1229,20 @@ class QueueController
                 // Arrivals
                 if(queue_it->second->is_arrival_action_dependent)
                 {
-                    queue_controller_utils::check_persistent_service_connection<TMetricControlPredictionSrv>(nh_, queue_it->second->expected_arrival_service_);
                     addServiceCallToActionFutureArray(metric_control_future_array, queue_it->second->expected_arrival_service_, action_set_msg, ParameterType::Arrival, queue_name);
                 }
                 else
                 {
-                    queue_controller_utils::check_persistent_service_connection<ros_queue_msgs::FloatRequest>(nh_, queue_it->second->arrival_independent_from_action_service_);
                     addServiceCallToFloatFutureArray(float_request_future_array, queue_it->second->arrival_independent_from_action_service_, action_set_msg, ParameterType::Arrival, queue_name);
                 }
 
                 // Departures
                 if(queue_it->second->is_departure_action_dependent)
                 {
-                    queue_controller_utils::check_persistent_service_connection<TMetricControlPredictionSrv>(nh_, queue_it->second->expected_departure_service_);
                     addServiceCallToActionFutureArray(metric_control_future_array, queue_it->second->expected_departure_service_, action_set_msg, ParameterType::Departure, queue_name);
                 }
                 else
                 {
-                    queue_controller_utils::check_persistent_service_connection<ros_queue_msgs::FloatRequest>(nh_, queue_it->second->departure_independent_from_action_service_);
                     addServiceCallToFloatFutureArray(float_request_future_array, queue_it->second->departure_independent_from_action_service_, action_set_msg, ParameterType::Departure, queue_name);
                 }
             }
@@ -1094,17 +1432,48 @@ class QueueController
             auto best_action = action_parameters_list.begin();
 
             bool is_first_cost = true;
+            
+            TControllerCostListType action_costs_lists;
 
             for (auto action_parameters_it = action_parameters_list.begin(); action_parameters_it != action_parameters_list.end(); ++action_parameters_it)
             {
-                action_parameters_it->cost = v_parameter_*action_parameters_it->penalty;
+                ActionCostType action_named_action_costs;
+                ros_queue_msgs::ControllerActionCosts action_costs_msg;
+                
+                const float penalty_cost = v_parameter_*action_parameters_it->penalty;
+                action_parameters_it->cost = penalty_cost;
+                
+                if(measure_cost_)
+                {                  
+                    ros_queue_msgs::MetricCosts penalty_cost_msg;
+                    penalty_cost_msg.metric_name = "penalty";
+                    penalty_cost_msg.cost = penalty_cost;
+                    action_costs_msg.metric_costs.push_back(std::move(penalty_cost_msg));
+                }
                 
                 for(auto queue_it = action_parameters_it->queue_parameters.begin(); queue_it != action_parameters_it->queue_parameters.end(); ++queue_it)
                 {
                     const string& queue_name = queue_it->first;
-                    action_parameters_it->cost += queue_list_[queue_name]->weight_ * 
-                                                queue_it->second.current_size * 
-                                                (queue_it->second.expected_arrivals - queue_it->second.expected_departures);
+                    const float queue_cost = queue_list_[queue_name]->weight_ * 
+                                       queue_it->second.current_size * 
+                                       (queue_it->second.expected_arrivals - queue_it->second.expected_departures);
+                    action_parameters_it->cost += queue_cost;
+
+                    if(measure_cost_)
+                    {
+                        ros_queue_msgs::MetricCosts queue_cost_msg;
+                        queue_cost_msg.metric_name = queue_name;
+                        queue_cost_msg.cost = queue_cost;
+                        action_costs_msg.metric_costs.push_back(std::move(queue_cost_msg));
+                    }
+                }
+
+                if(measure_cost_)
+                {
+                    action_costs_msg.total_cost = action_parameters_it->cost;
+                    action_named_action_costs.action = action_parameters_it->action;
+                    action_named_action_costs.costs = action_costs_msg;
+                    action_costs_lists.action_costs_list.push_back(std::move(action_named_action_costs));
                 }
 
                 if (is_first_cost)
@@ -1116,6 +1485,15 @@ class QueueController
                 {
                     best_action = action_parameters_it;
                 }
+                else if(action_parameters_it->cost == best_action->cost)
+                {
+                    ROS_WARN("Queue controller: Two actions have the same cost. The first one will be selected.");
+                }
+            }
+            
+            if(measure_cost_)
+            {
+                cost_publisher_.publish(action_costs_lists);
             }
 
             return *best_action;
@@ -1132,11 +1510,26 @@ class QueueController
 
             bool is_first_cost = true;
 
+            TControllerCostListType action_costs_lists;
+
             for (auto action_parameters_it = action_parameters_list.begin(); action_parameters_it != action_parameters_list.end(); ++action_parameters_it)
             {
+                ActionCostType action_named_action_costs;
+                ros_queue_msgs::ControllerActionCosts action_costs_msg;
+
                 const double& expected_renewal_time = action_parameters_it->expected_renewal_time;
 
-                action_parameters_it->cost = v_parameter_*action_parameters_it->penalty;
+                float penalty_cost = v_parameter_*action_parameters_it->penalty;
+                action_parameters_it->cost = penalty_cost;
+
+                if(measure_cost_)
+                {                  
+                    ros_queue_msgs::MetricCosts penalty_cost_msg;
+                    penalty_cost_msg.metric_name = "penalty";
+                    penalty_cost_msg.cost = penalty_cost;
+                    action_costs_msg.metric_costs.push_back(std::move(penalty_cost_msg));
+                }
+
                 for(auto queue_it = action_parameters_it->queue_parameters.begin(); queue_it != action_parameters_it->queue_parameters.end(); ++queue_it)
                 {
                     const string& queue_name = queue_it->first;
@@ -1152,15 +1545,34 @@ class QueueController
                         queue_it->second.expected_departures = expected_renewal_time*queue_it->second.expected_departures;
                     }
 
-                    action_parameters_it->cost += queue_list_[queue_name]->weight_ * 
-                                                queue_it->second.current_size * 
-                                                (queue_it->second.expected_arrivals - queue_it->second.expected_departures);
+                    float queue_cost = queue_list_[queue_name]->weight_ * 
+                                       queue_it->second.current_size * 
+                                       (queue_it->second.expected_arrivals - queue_it->second.expected_departures);
+
+                    action_parameters_it->cost += queue_cost;
+
+                    if(measure_cost_)
+                    {
+                        ros_queue_msgs::MetricCosts queue_cost_msg;
+                        queue_cost_msg.metric_name = queue_name;
+                        queue_cost_msg.cost = queue_cost;
+                        action_costs_msg.metric_costs.push_back(std::move(queue_cost_msg));
+                    }
                 }
 
                 // TODO: Verify formulation
                 if (is_penalty_renewal_dependent_ && expected_renewal_time > 0.0f)
                 {
                     action_parameters_it->cost = action_parameters_it->cost/expected_renewal_time; 
+                }
+
+                if(measure_cost_)
+                {
+                    // Note here that the total cost is the cost per renewal time and not the sum of the costs.
+                    action_costs_msg.total_cost = action_parameters_it->cost;
+                    action_named_action_costs.action = action_parameters_it->action;
+                    action_named_action_costs.costs = action_costs_msg;
+                    action_costs_lists.action_costs_list.push_back(std::move(action_named_action_costs));
                 }
 
                 if (is_first_cost)
@@ -1172,6 +1584,11 @@ class QueueController
                 {
                     best_action = action_parameters_it;
                 }
+            }
+
+            if(measure_cost_)
+            {
+                cost_publisher_.publish(action_costs_lists);
             }
 
             return *best_action;
@@ -1198,8 +1615,6 @@ class QueueController
         */
         void updateVirtualQueuesBasedOnCurrentState()
         {
-            queue_controller_utils::check_persistent_service_connection<std_srvs::Empty>(nh_, virtual_queues_trigger_);
-
             std_srvs::Empty trigger;
             if(!virtual_queues_trigger_.call(trigger))
             {
@@ -1243,6 +1658,16 @@ class QueueController
         */
         bool inversed_control_and_update_steps_ = false;
         
+
+        /**
+         * @brief If set to true, the controller will trigger or send changes to the queue server base on the flag 
+         * inverse_control_and_steps. If set to false, the controller will not send any changes to the specified 
+         * queue_server_name. Its used if the user wants to implement another mecanism to change the virtual queues 
+         * in queue server or to run multiple controller in parallel  for the same queue server where only one of 
+         * them is sending changes and not the others. Default: set to true.
+        */
+        bool responsible_for_virtual_queue_changes_ = true;
+
         /**
          * @brief Indicate the controller types. It defines the type of optimization and the used metrics.
         */
@@ -1270,13 +1695,13 @@ class QueueController
          * @brief ROS service client that returns a set of possible actions that the controller will used
          * to compute its objetives metrics. The best solution will be a solution in this set.
         */
-        ros::ServiceClient solution_space_client_;
+        PersistentServiceClient<TPotentialActionSetSrv> solution_space_client_;
         
         /**
          * @brief Service client that evaluates the optimization variable (penalty) given the state of
          * the system and an evaluating solution;
         */
-        ros::ServiceClient penalty_service_client_;
+        PersistentServiceClient<TMetricControlPredictionSrv> penalty_service_client_;
 
         /**
          * @brief  The V parameter that is multplied with the penalty (like a weight). 

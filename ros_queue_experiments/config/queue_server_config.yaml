@@ -1,0 +1,70 @@
+# Template a of configurations for the queue server. See the queue_config.yaml to copy the configuration of queues.
+queue_server_name: "$(arg server_name)"
+
+# The frequency in loops/sec at which the queue sizes will be published and the real queue will be checked for transmission.
+server_spin_rate: 20.0 
+
+# When true, queues will publish a topic with their time average metrics (queue size, arrivals and departures).
+# Default is false.
+compute_statistics: true
+
+queue_list:
+  - TemperatureQueue: # Queue name
+      # Existing types of queues: 
+      # - real_queue: Queues that store ROS messages and its size is equal to sum of all its messages in bytes.
+      # - inequality_constraint_virtual_queue: Virtual queues that can't go below a 0 value.
+      # - equality_constraint_virtual_queue:  Virtual queues that can go below a 0 value.
+    - type_of_queue: "inequality_constraint_virtual_queue"
+
+      # A float value for virtual queues and value in bytes for real_queues. Don't forget to put a decimal, otherwise an error might occur.
+    - max_queue_size: 100000.0
+      
+      # === Services calls for virtual queues to evaluate the change in their size. Only used for virtual queues. ===
+    - arrival_evaluation_service_name: "auv_system_node/temperature/arrival/$(arg rate_or_change)/real_metric"
+    - departure_evaluation_service_name: "auv_system_node/temperature/departure/$(arg rate_or_change)/real_metric"
+
+  - LowTemperatureQueue: # Queue name
+      # Existing types of queues: 
+      # - real_queue: Queues that store ROS messages and its size is equal to sum of all its messages in bytes.
+      # - inequality_constraint_virtual_queue: Virtual queues that can't go below a 0 value.
+      # - equality_constraint_virtual_queue:  Virtual queues that can go below a 0 value.
+    - type_of_queue: "inequality_constraint_virtual_queue"
+
+      # A float value for virtual queues and value in bytes for real_queues. Don't forget to put a decimal, otherwise an error might occur.
+    - max_queue_size: 100000.0
+      
+      # === Services calls for virtual queues to evaluate the change in their size. Only used for virtual queues. ===
+    - arrival_evaluation_service_name: "auv_system_node/low_temperature/arrival/$(arg rate_or_change)/real_metric"
+    - departure_evaluation_service_name: "auv_system_node/low_temperature/departure/$(arg rate_or_change)/real_metric"  
+
+  - LocalizationQueue: # Queue name
+      # Existing types of queues: 
+      # - real_queue: Queues that store ROS messages and its size is equal to sum of all its messages in bytes.
+      # - inequality_constraint_virtual_queue: Virtual queues that can't go below a 0 value.
+      # - equality_constraint_virtual_queue:  Virtual queues that can go below a 0 value.
+    - type_of_queue: "inequality_constraint_virtual_queue"
+
+      # A float value for virtual queues and value in bytes for real_queues. Don't forget to put a decimal, otherwise an error might occur.
+    - max_queue_size: 100000.0
+      
+      # === Services calls for virtual queues to evaluate the change in their size. Only used for virtual queues. ===
+    - arrival_evaluation_service_name: "auv_system_node/localization/arrival/$(arg rate_or_change)/real_metric"
+    - departure_evaluation_service_name: "auv_system_node/localization/departure/$(arg rate_or_change)/real_metric"
+  
+  - TaskQueue: # Queue name
+      # Existing types of queues: 
+      # - real_queue: Queues that store ROS messages and its size is equal to sum of all its messages in bytes.
+      # - inequality_constraint_virtual_queue: Virtual queues that can't go below a 0 value.
+      # - equality_constraint_virtual_queue:  Virtual queues that can go below a 0 value.
+    - type_of_queue: "real_queue"
+      
+      # A float value for virtual queues and value in bytes for real_queues. Don't forget to put a decimal, otherwise an error might occur.
+    - max_queue_size: 6250000.0  # 50 mb
+      
+      # === Topic name from which data will be stored and on which to publish data. Only used for real queues. ===
+    - arrival_topic_name: "auv_system_node/incoming_tasks"
+    - tranmission_topic_name: "departing_tasks"
+
+    # === Service name that allows a real queue how much data in bytes it could transmit. Only used for real queues. ===
+    - transmission_evaluation_service_name: "auv_system_node/qos_transmission"
+

@@ -26,9 +26,9 @@
 using std::string;
 
 
-QueueServer::QueueServer(ros::NodeHandle& nh, float spin_rate): nh_(nh)
+QueueServer::QueueServer(ros::NodeHandle& nhp, float spin_rate): nhp_(nhp)
 {
-    if (nh_.getParam("queue_server_name", queue_server_name_))
+    if (nhp_.getParam("queue_server_name", queue_server_name_))
     {
         ROS_INFO_STREAM("Initializing queue server named "<< queue_server_name_);
     }
@@ -37,11 +37,13 @@ QueueServer::QueueServer(ros::NodeHandle& nh, float spin_rate): nh_(nh)
         ROS_INFO_STREAM("Queue server doesn't a name from the param queue_server_name. Queue serve will be initialized with an empty name.");
     }
 
-    if (nh_.getParam("compute_statistics", should_queues_compute_stats_))
+    if (nhp_.getParam("compute_statistics", should_queues_compute_stats_))
     {
         if(should_queues_compute_stats_)
         {
-            queue_server_stats_pub_ = nh_.advertise<ros_queue_msgs::QueueServerStats>("server_stats", 10);
+            queue_server_stats_pub_ = nhp_.advertise<ros_queue_msgs::QueueServerStats>("server_stats", 10);
+            queue_server_stats_service_ = nhp_.advertiseService("get_server_stats", 
+                                                                &QueueServer::serverStatsCallback, this);
         }
     }
     {
@@ -50,21 +52,21 @@ QueueServer::QueueServer(ros::NodeHandle& nh, float spin_rate): nh_(nh)
 
     loadQueueParametersAndCreateQueues();
 
-    queue_server_update_virtual_queues_service_ = nh_.advertiseService("trigger_service",
+    queue_server_update_virtual_queues_service_ = nhp_.advertiseService("trigger_service",
                                                                          &QueueServer::queueUpdateCallback, this);
-    queue_server_states_pub_ = nh_.advertise<ros_queue_msgs::QueueServerState>("server_state",10);
+    queue_server_states_pub_ = nhp_.advertise<ros_queue_msgs::QueueServerState>("server_state",10);
 
 
-    queue_server_states_service_ = nh_.advertiseService("get_server_state", 
+    queue_server_states_service_ = nhp_.advertiseService("get_server_state", 
                                                          &QueueServer::serverStateCallback, this);
 
-    virtual_queue_manual_changes_ = nh_.subscribe<ros_queue_msgs::VirtualQueueChangesList>("virtual_queue_manual_changes",
+    virtual_queue_manual_changes_ = nhp_.subscribe<ros_queue_msgs::VirtualQueueChangesList>("virtual_queue_manual_changes",
                                                                                             1000,
                                                                                             &QueueServer::virtualQueuesManualChangesCallback,
                                                                                             this);
     
     // Create the periodic caller of the serverSpin
-    spin_timer_ = nh_.createTimer(ros::Duration(1.0/spin_rate), &QueueServer::serverSpin, this);
+    spin_timer_ = nhp_.createTimer(ros::Duration(1.0/spin_rate), &QueueServer::serverSpin, this);
 }
 
 void QueueServer::loadQueueParametersAndCreateQueues()
@@ -72,7 +74,7 @@ void QueueServer::loadQueueParametersAndCreateQueues()
     // Initialization of queues based on a config file
     XmlRpc::XmlRpcValue queue_list;
 
-    if(nh_.getParam("queue_list", queue_list))
+    if(nhp_.getParam("queue_list", queue_list))
     {
         if(queue_list.getType() == XmlRpc::XmlRpcValue::TypeArray)
         {
@@ -221,7 +223,7 @@ void QueueServer::checkAndCreateQueue(QueueParamStruct& queue_param_struct)
                 std::unique_ptr<ROSByteConvertedQueue> new_queue = 
                     std::make_unique<ROSByteConvertedQueue>((int)queue_param_struct.max_queue_size_, 
                                                             std::move(info),
-                                                            nh_,
+                                                            nhp_,
                                                             (struct ROSByteConvertedQueue::InterfacesArgs)
                                                             {
                                                                 .arrival_topic_name = queue_param_struct.arrival_topic_name_,
@@ -254,7 +256,7 @@ void QueueServer::checkAndCreateQueue(QueueParamStruct& queue_param_struct)
 
             if (!is_a_parameter_missing)
             {
-                ROS_INFO_STREAM("Creating virtual real queue: " << queue_param_struct.queue_name_);
+                ROS_INFO_STREAM("Creating virtual queue: " << queue_param_struct.queue_name_);
                 ros_queue_msgs::QueueInfo info;
                 info.is_virtual = queue_server_utils::isQueueTypeVirtual(queue_param_struct.type_of_queue_);
                 info.queue_name = queue_param_struct.queue_name_;
@@ -263,13 +265,13 @@ void QueueServer::checkAndCreateQueue(QueueParamStruct& queue_param_struct)
                 std::unique_ptr<ROSInConVirtualQueue> new_queue = 
                     std::make_unique<ROSInConVirtualQueue>((int)queue_param_struct.max_queue_size_, 
                                                             std::move(info),
-                                                            nh_,
+                                                            nhp_,
                                                             (struct ROSInConVirtualQueue::InterfacesArgs)
                                                             {
                                                                 .arrival_evaluation_service_name = queue_param_struct.arrival_evaluation_service_name_,
                                                                 .departure_evaluation_service_name = queue_param_struct.departure_evaluation_service_name_
                                                             });
-
+                new_queue->mean_stats_.should_compute_means_ = should_queues_compute_stats_;
                 addInequalityConstraintVirtualQueue(std::move(new_queue));
             }
             else
@@ -293,7 +295,7 @@ void QueueServer::checkAndCreateQueue(QueueParamStruct& queue_param_struct)
 
             if (!is_a_parameter_missing)
             {
-                ROS_INFO_STREAM("Creating virtual real queue: " << queue_param_struct.queue_name_);
+                ROS_INFO_STREAM("Creating virtual queue: " << queue_param_struct.queue_name_);
                 ros_queue_msgs::QueueInfo info;
                 info.is_virtual = queue_server_utils::isQueueTypeVirtual(queue_param_struct.type_of_queue_);
                 info.queue_name = queue_param_struct.queue_name_;
@@ -302,13 +304,14 @@ void QueueServer::checkAndCreateQueue(QueueParamStruct& queue_param_struct)
                 std::unique_ptr<ROSEqConVirtualQueue> new_queue = 
                     std::make_unique<ROSEqConVirtualQueue>((int)queue_param_struct.max_queue_size_, 
                                                             std::move(info),
-                                                            nh_,
+                                                            nhp_,
                                                             (struct ROSEqConVirtualQueue::InterfacesArgs)
                                                             {
                                                                 .arrival_evaluation_service_name = queue_param_struct.arrival_evaluation_service_name_,
                                                                 .departure_evaluation_service_name = queue_param_struct.departure_evaluation_service_name_
                                                             });
-
+                                                            
+                new_queue->mean_stats_.should_compute_means_ = should_queues_compute_stats_;
                 addEqualityConstraintVirtualQueue(std::move(new_queue));
             }
             else
@@ -333,6 +336,12 @@ bool QueueServer::serverStateCallback(ros_queue_msgs::QueueServerStateFetch::Req
     appendQueueSizesToMsg(inequality_constraint_virtual_queues_, res.queue_server_state);
     appendQueueSizesToMsg(equality_constraint_virtual_queues_, res.queue_server_state);
 
+    return true;
+}
+
+bool QueueServer::serverStatsCallback(ros_queue_msgs::QueueServerStatsFetch::Request& req, ros_queue_msgs::QueueServerStatsFetch::Response& res)
+{
+    res.queue_stats = getCurrentServerStats();
     return true;
 }
 
@@ -379,12 +388,12 @@ void QueueServer::virtualQueuesManualChangesCallback(const ros_queue_msgs::Virtu
         if (in_it != inequality_constraint_virtual_queues_.end())
         {
             // If found, update the queue based on requested manual changes.
-            in_it->second->update(changes_it->arrival - changes_it->departure);
+            in_it->second->update(changes_it->arrival, changes_it->departure);
         }
         else if (eq_it != equality_constraint_virtual_queues_.end())
         {
             // If found, update the queue based on requested manual changes.
-            eq_it->second->update(changes_it->arrival - changes_it->departure);
+            eq_it->second->update(changes_it->arrival, changes_it->departure);
         }
     }
 }
@@ -402,7 +411,7 @@ void QueueServer::publishServerStates()
     queue_server_states_pub_.publish(server_state_msg);
 }
 
-void QueueServer::publishServerStats()
+ros_queue_msgs::QueueServerStats QueueServer::getCurrentServerStats()
 {
     ros_queue_msgs::QueueServerStats server_stats_msg;
 
@@ -414,16 +423,99 @@ void QueueServer::publishServerStats()
         {
             ros_queue_msgs::QueueStats queue_stats;
             queue_stats.queue_name = queue_it->first;
+
             queue_stats.arrival_mean = queue_it->second->mean_stats_.getArrivalMean();
+            queue_stats.arrival_time_average = queue_it->second->mean_stats_.getArrivalTimeAverage();
+            queue_stats.total_arrival = queue_it->second->mean_stats_.getArrivalTotal();
+            queue_stats.last_arrival = queue_it->second->mean_stats_.getLastArrival();
+
             queue_stats.departure_mean = queue_it->second->mean_stats_.getDepartureMean();
+            queue_stats.departure_time_average = queue_it->second->mean_stats_.getDepartureTimeAverage();
+            queue_stats.total_departure = queue_it->second->mean_stats_.getDepartureTotal();
+            queue_stats.last_departure = queue_it->second->mean_stats_.getLastDeparture();
+
+            queue_stats.real_departure_mean = queue_it->second->mean_stats_.getRealDepartureMean();
+            queue_stats.real_departure_time_average = queue_it->second->mean_stats_.getRealDepartureTimeAverage();
+            queue_stats.total_real_departure = queue_it->second->mean_stats_.getRealDepartureTotal();
+            queue_stats.last_real_departure = queue_it->second->mean_stats_.getLastRealDeparture();
+
             queue_stats.current_size = queue_it->second->getSize();
             queue_stats.size_mean = queue_it->second->mean_stats_.getSizeMean();
             queue_stats.converted_remaining_mean = queue_it->second->mean_stats_.getConvertedRemainingMean();
+            queue_stats.seconds_since_start =queue_it->second->mean_stats_.getSecondsSinceStart();
             
             server_stats_msg.queue_stats.push_back(std::move(queue_stats));
         }
     }
-    queue_server_stats_pub_.publish(server_stats_msg);
+
+    for (auto queue_it = inequality_constraint_virtual_queues_.begin(); queue_it != inequality_constraint_virtual_queues_.end(); ++queue_it)
+    {
+        if (queue_it->second->mean_stats_.should_compute_means_)
+        {
+            ros_queue_msgs::QueueStats queue_stats;
+            queue_stats.queue_name = queue_it->first;
+
+            queue_stats.arrival_mean = queue_it->second->mean_stats_.getArrivalMean();
+            queue_stats.arrival_time_average = queue_it->second->mean_stats_.getArrivalTimeAverage();
+            queue_stats.total_arrival = queue_it->second->mean_stats_.getArrivalTotal();
+            queue_stats.last_arrival = queue_it->second->mean_stats_.getLastArrival();
+
+            queue_stats.departure_mean = queue_it->second->mean_stats_.getDepartureMean();
+            queue_stats.departure_time_average = queue_it->second->mean_stats_.getDepartureTimeAverage();
+            queue_stats.total_departure = queue_it->second->mean_stats_.getDepartureTotal();
+            queue_stats.last_departure = queue_it->second->mean_stats_.getLastDeparture();
+
+            queue_stats.real_departure_mean = queue_it->second->mean_stats_.getRealDepartureMean();
+            queue_stats.real_departure_time_average = queue_it->second->mean_stats_.getRealDepartureTimeAverage();
+            queue_stats.total_real_departure = queue_it->second->mean_stats_.getRealDepartureTotal();
+            queue_stats.last_real_departure = queue_it->second->mean_stats_.getLastRealDeparture();
+
+            queue_stats.current_size = queue_it->second->getSize();
+            queue_stats.size_mean = queue_it->second->mean_stats_.getSizeMean();
+            queue_stats.change_mean = queue_it->second->mean_stats_.getChangeTimeAverage();
+            queue_stats.seconds_since_start =queue_it->second->mean_stats_.getSecondsSinceStart();
+
+            server_stats_msg.queue_stats.push_back(std::move(queue_stats));
+        }
+    }
+
+    for (auto queue_it = equality_constraint_virtual_queues_.begin(); queue_it != equality_constraint_virtual_queues_.end(); ++queue_it)
+    {
+        if (queue_it->second->mean_stats_.should_compute_means_)
+        {
+            ros_queue_msgs::QueueStats queue_stats;
+            queue_stats.queue_name = queue_it->first;
+
+            queue_stats.arrival_mean = queue_it->second->mean_stats_.getArrivalMean();
+            queue_stats.arrival_time_average = queue_it->second->mean_stats_.getArrivalTimeAverage();
+            queue_stats.total_arrival = queue_it->second->mean_stats_.getArrivalTotal();
+            queue_stats.last_arrival = queue_it->second->mean_stats_.getLastArrival();
+
+            queue_stats.departure_mean = queue_it->second->mean_stats_.getDepartureMean();
+            queue_stats.departure_time_average = queue_it->second->mean_stats_.getDepartureTimeAverage();
+            queue_stats.total_departure = queue_it->second->mean_stats_.getDepartureTotal();
+            queue_stats.last_departure = queue_it->second->mean_stats_.getLastDeparture();
+
+            queue_stats.real_departure_mean = queue_it->second->mean_stats_.getRealDepartureMean();
+            queue_stats.real_departure_time_average = queue_it->second->mean_stats_.getRealDepartureTimeAverage();
+            queue_stats.total_real_departure = queue_it->second->mean_stats_.getRealDepartureTotal();
+            queue_stats.last_real_departure = queue_it->second->mean_stats_.getLastRealDeparture();
+            
+            queue_stats.current_size = queue_it->second->getSize();
+            queue_stats.size_mean = queue_it->second->mean_stats_.getSizeMean();
+            queue_stats.change_mean = queue_it->second->mean_stats_.getChangeTimeAverage();
+            queue_stats.seconds_since_start =queue_it->second->mean_stats_.getSecondsSinceStart();
+            
+            server_stats_msg.queue_stats.push_back(std::move(queue_stats));
+        }
+    }
+    
+    return server_stats_msg;
+}
+
+void QueueServer::publishServerStats()
+{
+    queue_server_stats_pub_.publish(getCurrentServerStats());
 }
 
 void QueueServer::transmitRealQueues()

@@ -19,6 +19,8 @@
 #include "ros_queue_msgs/FloatRequest.h"
 #include "ros_queue_msgs/QueueInfo.h"
 
+#include "ros_boosted_utilities/persistent_service_client.hpp"
+
 
 using std::string;
 using std::invalid_argument;
@@ -83,10 +85,10 @@ class ROSByteConvertedQueue: public DynamicConvertedQueue<topic_tools::ShapeShif
             }
             else
             {  
-                transmission_evaluation_service_client_ = nh_.serviceClient<ros_queue_msgs::ByteSizeRequest>(interfaces.transmission_evaluation_service_name);
+                transmission_evaluation_service_client_ = PersistentServiceClient<ros_queue_msgs::ByteSizeRequest>(nh_, interfaces.transmission_evaluation_service_name);
             }
 
-            manual_transmit_subscriber_ = nh_.subscribe("nb_bytes_to_transmit", 10, &ROSByteConvertedQueue::manualTransmissionCallback, this);
+            manual_transmit_subscriber_ = nhp_.subscribe("nb_bytes_to_transmit", 10, &ROSByteConvertedQueue::manualTransmissionCallback, this);
         }
 
         /**
@@ -101,10 +103,11 @@ class ROSByteConvertedQueue: public DynamicConvertedQueue<topic_tools::ShapeShif
         }
 
         /**
-         * @brief Transmit the queue's data based on the quality of service (QoS). It calls specified by the 
-         * transmission_evaluation_service_name to evaluate how many bytes could be transmited. The queue than 
-         * transmit data until the sum of the size in bytes of the sent messages reach the number that could be sent.
-         * If the service wasn't initialized, the queue won't transmit.
+         * @brief Transmit the queue's data based on the quality of service (QoS). It calls the service specified by the 
+         * transmission_evaluation_service_name to evaluate how many bytes could be transmited. The first time the transmit
+         * is called, it will wait for the service to exist if they were not waited for. The queue than transmit data until 
+         * the sum of the size in bytes of the sent messages reach the number that could be sent. If the service wasn't initialized,
+         * the queue won't transmit.
         */
         void transmitBasedOnQoS()
         {
@@ -114,7 +117,12 @@ class ROSByteConvertedQueue: public DynamicConvertedQueue<topic_tools::ShapeShif
             {
                 ROS_WARN_STREAM_ONCE(info_.queue_name<<": Tried to be updated based on quality of service, but its transmission_evaluation_service_name is not initialized.");
             }
-            else if(transmission_evaluation_service_client_.waitForExistence(WAIT_DURATION_FOR_SERVICE_EXISTENCE))
+            else if (!transmission_service_waited_)
+            {
+                transmission_evaluation_service_client_.waitForExistence();
+                transmission_service_waited_ = true;
+            }
+            else
             {
                 if (transmission_evaluation_service_client_.call(byte_size_req))
                 {
@@ -133,10 +141,10 @@ class ROSByteConvertedQueue: public DynamicConvertedQueue<topic_tools::ShapeShif
                         this->updateInConvertedSize(std::move(empty_queue), nb_of_byte_to_transmit);
                     }
                 }
-            }
-            else
-            {
-                ROS_WARN_STREAM_THROTTLE(4, info_.queue_name<<": Tried to be updated based on quality of service, but its transmission_evaluation_service_ is not available.");
+                else
+                {
+                    ROS_WARN_STREAM_THROTTLE(4, info_.queue_name<<": Tried to be updated based on quality of service, but its transmission_evaluation_service_ is not available.");
+                }
             }
         }
 
@@ -266,7 +274,12 @@ class ROSByteConvertedQueue: public DynamicConvertedQueue<topic_tools::ShapeShif
         /**
          * @brief Service client to get how much bytes can be transmitted.
         */
-        ros::ServiceClient transmission_evaluation_service_client_;
+        PersistentServiceClient<ros_queue_msgs::ByteSizeRequest> transmission_evaluation_service_client_;
+
+        /**
+         * @brief Flag that indicated if the transmission service was waited for.
+        */
+        bool transmission_service_waited_ = false;
 
         /**
          * @brief ROS subscriber that receives message that that indicate a number of 

@@ -1,0 +1,52 @@
+<launch> 
+    <arg name="server_name" default="queue_server"/>
+    <arg name="queue_server_config_path" default="$(find ros_queue_experiments)/config/queue_server_config.yaml"/>
+
+    <arg name="queue_controller_name" default="queue_controller"/>
+    <arg name="queue_controller_type" default="transmission_vector_queue_controller_node"/>
+    <arg name="queue_controller_config_path" default="$(find ros_queue_experiments)/config/min_drift-plus-penalty.yaml"/>
+    <arg name="optimal_queue_controller_config_path" default="$(find ros_queue_experiments)/config/min_drift-plus-penalty_perfect_model.yaml"/>
+
+    <arg name="experiment_setup" default="perfect_model_and_setup"/>
+
+    <!-- Parameter for the controller setup-->
+    <arg name="controller_type"             default="min_drift_plus_penalty"/>
+    <arg name="is_target_renewal_dependent" default="false"/>
+    <arg name="inverse_control_and_steps"   default="false"/>
+    <arg name="rate_or_change"              default="rate"/>
+    <arg name="v_parameter"                 default="1000.0"/>
+
+    <!-- Start the AUV system. Propagates states and host metric services -->
+    <node name="auv_system_node" type="AUV_system_node" pkg="ros_queue_experiments" output="screen">
+        <rosparam file="$(find ros_queue_experiments)/config/experiment_setups/$(arg experiment_setup)/metric_config.yaml" command="load" subst_value="true"/>
+    </node>
+
+    <!-- Start the queue server  -->
+    <node name="$(arg server_name)" pkg="queue_server" type="queue_server_node" output="screen">
+        <rosparam file="$(arg queue_server_config_path)" command="load" subst_value="true"/>
+    </node>
+
+    <!-- Start the queue controller -->
+    <node name="$(arg queue_controller_name)" pkg="queue_controller" type="$(arg queue_controller_type)" output="screen">
+        <rosparam file="$(arg queue_controller_config_path)" command="load" subst_value="true"/>
+    </node>
+
+    <!-- Start the optimal queue controller for performance validation -->
+    <node name="optimal_controller" pkg="queue_controller" type="$(arg queue_controller_type)" output="screen">
+        <rosparam file="$(arg optimal_queue_controller_config_path)" command="load" subst_value="true"/>
+    </node>
+
+    <!-- Start the perturbation node action -->
+    <node name="perturbation_node" pkg="ros_queue_experiments" type="perturbation_action_node" output="screen">
+        <rosparam file="$(find ros_queue_experiments)/config/experiment_setups/$(arg experiment_setup)/perturbation_config.yaml" command="load" subst_value="true"/>
+    </node>
+
+    <!-- Start the perturbation node action -->
+    <node name="optimal_action_node" pkg="ros_queue_experiments" type="perturbation_action_node" output="screen">
+        <rosparam file="$(find ros_queue_experiments)/config/experiment_setups/$(arg experiment_setup)/perturbation_config.yaml" command="load" subst_value="true"/>
+        <param name="is_dummy"  type="bool" value="true"/>
+    </node>
+
+    <!-- Start the monitoring node -->
+    <node name="monitoring_node" pkg="ros_queue_experiments" type="performance_monitor_node" output="screen"/>
+</launch>

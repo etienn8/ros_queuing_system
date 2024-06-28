@@ -16,6 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
   ros_queue_msgs
   message_generation
   topic_tools
+  ros_boosted_utilities
 )
 
 ## System dependencies are found with CMake's conventions
@@ -105,7 +106,7 @@ generate_messages(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-  INCLUDE_DIRS include
+  INCLUDE_DIRS include ${ros_boosted_utilities_INCLUDE_DIRS}
   LIBRARIES ${QUEUE_LIB_NAME} ${ROSQUEUE_LIB_NAME}
   CATKIN_DEPENDS roscpp message_runtime topic_tools ros_queue_msgs
   #DEPENDS system_lib
@@ -127,6 +128,7 @@ include_directories(
    src/${QUEUE_LIB_NAME}/dynamic_queue.cpp
    src/${QUEUE_LIB_NAME}/dynamic_virtual_queue.cpp
    src/${QUEUE_LIB_NAME}/virtual_queue.cpp
+   src/${QUEUE_LIB_NAME}/mean_stats.cpp
   )
 
 add_library(${ROSQUEUE_LIB_NAME}
