@@ -78,10 +78,10 @@ penalty:
     - fromHighLocZone:
       - toTaskZone: 2.0
       - toHighLocZone: 0.0
-      - toColdZone: 1.0
+      - toColdZone: 2.0
     - fromColdZone:
       - toTaskZone: 2.0
-      - toHighLocZone: 1.0
+      - toHighLocZone: 2.0
       - toColdZone: 0.0
   - prediction_model:
     - fromTaskZone:
@@ -91,10 +91,10 @@ penalty:
     - fromHighLocZone:
       - toTaskZone: 2.0
       - toHighLocZone: 0.0
-      - toColdZone: 1.0
+      - toColdZone: 2.0
     - fromColdZone:
       - toTaskZone: 2.0
-      - toHighLocZone: 1.0
+      - toHighLocZone: 2.0
       - toColdZone: 0.0
 
 arrival_task_per_second: 8.0
