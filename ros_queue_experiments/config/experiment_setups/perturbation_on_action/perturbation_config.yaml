@@ -1,2 +1,2 @@
 pertubation_at_each_x_control_steps: 3 # If 0, no perturbation will be applied
-pertubation_type: "offset_next_step"   # "not_moving" or "offset_next_step"
+pertubation_type: "other_random"   # "not_moving", "offset_next_step" or "other_random"

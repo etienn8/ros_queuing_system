@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <mutex>
+#include <random>
 
 #include "ros/ros.h"
 #include "ros_boosted_utilities/persistent_service_client.hpp"
@@ -21,7 +22,8 @@ class DisturbedActionServer
         enum class PerturbationType
         {
             NotMoving =0,
-            OffsetPlusOne
+            OffsetPlusOne,
+            OtherRandom
         };
 
         /**
@@ -108,4 +110,9 @@ class DisturbedActionServer
          * If it's dummy, no services will be defined to send over a auv system
         */
         bool is_dummy_ = false;
+
+        /**
+         * @brief Random engine to generate random numbers.
+         */
+        std::default_random_engine random_engine_;
 };

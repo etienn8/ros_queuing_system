@@ -6,6 +6,8 @@
 #include "std_msgs/UInt8.h"
 
 #include <string>
+#include <time.h>
+#include <stdlib.h>
 
 DisturbedActionServer::DisturbedActionServer(ros::NodeHandle& nh): nhp_(nh), nh_(ros::NodeHandle()), action_server_(nhp_, "disturbed_action_server", false)
 {
@@ -39,6 +41,12 @@ DisturbedActionServer::DisturbedActionServer(ros::NodeHandle& nh): nhp_(nh), nh_
         else if (perturbation_type_param == "offset_next_step")
         {
             perturbation_type_ = PerturbationType::OffsetPlusOne;
+        }
+        else if (perturbation_type_param == "other_random")
+        {
+            perturbation_type_ = PerturbationType::OtherRandom;
+            /* Initialize the random seed for the rand() function globaly*/
+            srand(time(NULL));
         }
         else
         {
@@ -107,22 +115,58 @@ void DisturbedActionServer::commandReceivedCallback()
                 }
                 else if (perturbation_type_ == PerturbationType::OffsetPlusOne)
                 {
-                    for(int zone_index =0 ; zone_index < disturbed_action.transmission_vector.size(); zone_index++)
-                    {
-                        if (disturbed_action.transmission_vector[zone_index] == 1)
-                        {
-                            // If last zone, set it to the first zone
-                            if ((zone_index + 1) == disturbed_action.transmission_vector.size())
-                            {
-                                disturbed_action.transmission_vector[0] = 1;
-                            }
-                            else
-                            {
-                                disturbed_action.transmission_vector[zone_index + 1] = 1;
-                            }   
+                    AUVStates::Zones predisturbed_zone = AUVStates::getZoneFromTransmissionVector(disturbed_action);
 
-                            disturbed_action.transmission_vector[zone_index] = 0;
-                            break;
+                    if (predisturbed_zone == AUVStates::Zones::TaskZone)
+                    {
+                        disturbed_action = AUVStates::getTransmissionVectorFromZone(AUVStates::Zones::HighLocZone);
+                    }
+                    else if (predisturbed_zone == AUVStates::Zones::HighLocZone)
+                    {
+                        disturbed_action = AUVStates::getTransmissionVectorFromZone(AUVStates::Zones::ColdZone);
+                    }
+                    else if (predisturbed_zone == AUVStates::Zones::ColdZone)
+                    {
+                        disturbed_action = AUVStates::getTransmissionVectorFromZone(AUVStates::Zones::TaskZone);
+                    }
+                }
+                else if (perturbation_type_ == PerturbationType::OtherRandom)
+                {
+                    AUVStates::Zones predisturbed_zone = AUVStates::getZoneFromTransmissionVector(disturbed_action);
+                    // Add random perturbation
+                    int offset = static_cast<int>(rand()) % 2;
+
+                    if (predisturbed_zone == AUVStates::Zones::TaskZone)
+                    {
+                        if (offset ==1)
+                        {
+                            disturbed_action = AUVStates::getTransmissionVectorFromZone(AUVStates::Zones::HighLocZone);
+                        }
+                        else
+                        {
+                            disturbed_action = AUVStates::getTransmissionVectorFromZone(AUVStates::Zones::ColdZone);
+                        }
+                    }
+                    else if (predisturbed_zone == AUVStates::Zones::HighLocZone)
+                    {
+                        if (offset ==1)
+                        {
+                            disturbed_action = AUVStates::getTransmissionVectorFromZone(AUVStates::Zones::TaskZone);
+                        }
+                        else
+                        {
+                            disturbed_action = AUVStates::getTransmissionVectorFromZone(AUVStates::Zones::ColdZone);
+                        }
+                    }
+                    else if (predisturbed_zone == AUVStates::Zones::ColdZone)
+                    {
+                        if (offset ==1)
+                        {
+                            disturbed_action = AUVStates::getTransmissionVectorFromZone(AUVStates::Zones::TaskZone);
+                        }
+                        else
+                        {
+                            disturbed_action = AUVStates::getTransmissionVectorFromZone(AUVStates::Zones::HighLocZone);
                         }
                     }
                 }
