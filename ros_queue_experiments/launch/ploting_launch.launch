@@ -1,0 +1,8 @@
+
+<launch>
+    <arg name="controller_type" default="NoRew_NoInv"/>
+    <arg name="experiment_name" default="$(arg controller_type)"/>
+
+    <!-- Plot of the estimation error between the real continuous average and the queue server estimations for the temperature -->
+    <node pkg="rqt_plot" type="rqt_plot" name="EstimationErrorOfQueueServerVSReal_Temperature_$(arg experiment_name)" args="/$(arg controller_type)/monitoring_node/localization/real_continous_average_value /$(arg controller_type)/monitoring_node/localization/target_value /$(arg controller_type)/monitoring_node/temperature/real_continous_average_value /$(arg controller_type)/monitoring_node/temperature/target_value /$(arg controller_type)/monitoring_node/low_temperature/target_value /$(arg controller_type)/monitoring_node/penalty/real_average_value /$(arg controller_type)/monitoring_node/real_queue/queue_server_time_average_value /$(arg controller_type)/monitoring_node/real_queue/target_value"/>
+</launch>
