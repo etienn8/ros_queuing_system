@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import rospy
 
+import os
 import rosbag
 from datetime import datetime
 import csv
@@ -61,7 +62,7 @@ class SubExperiment3Analyser:
                     controller_end_struct.metric[metric_name].mean_value.values = [controller_performance_metric_dict[metric_name].real_average_value.values[-1]]
                     controller_end_struct.metric[metric_name].estimation_error.values = [controller_performance_metric_dict[metric_name].real_continuous_average_diff_with_server_mean.values[-1]]
                 else:
-                    controller_end_struct.metric[metric_name].target_error.values = [controller_performance_metric_dict[metric_name].real_continuous_average_diff_with_target.values[-1]]
+                    controller_end_struct.metric[metric_name].target_error.values = [controller_performance_metric_dict[metric_name].target_diff_with_real_continuous_average.values[-1]]
                     if controller_type == "Rew_NoInv" or controller_type == "Rew_Inv":
                         controller_end_struct.metric[metric_name].estimation_error.values = [controller_performance_metric_dict[metric_name].absolute_real_continuous_average_diff_with_server_time_average.values[-1]]
                     else:
@@ -84,14 +85,14 @@ class SubExperiment3Analyser:
                                     controller_performance_metrics[controller_type].localization.real_continous_average_value,
                                     controller_performance_metrics[controller_type].localization.target_value,
                                     controller_performance_metrics[controller_type].localization.absolute_real_continuous_average_diff_with_server_time_average,
-                                    controller_performance_metrics[controller_type].localization.real_continuous_average_diff_with_target,
+                                    controller_performance_metrics[controller_type].localization.target_diff_with_real_continuous_average,
                                     controller_performance_metrics[controller_type].temperature.time_stamps,
                                     controller_performance_metrics[controller_type].temperature.real_continous_average_value,
                                     controller_performance_metrics[controller_type].temperature.target_value,
                                     controller_performance_metrics[controller_type].temperature.absolute_real_continuous_average_diff_with_server_time_average,
-                                    controller_performance_metrics[controller_type].temperature.real_continuous_average_diff_with_target,
+                                    controller_performance_metrics[controller_type].temperature.target_diff_with_real_continuous_average,
                                     controller_performance_metrics[controller_type].low_temperature.target_value,
-                                    controller_performance_metrics[controller_type].low_temperature.real_continuous_average_diff_with_target,
+                                    controller_performance_metrics[controller_type].low_temperature.target_diff_with_real_continuous_average,
                                     controller_performance_metrics[controller_type].real_queue.time_stamps,
                                     controller_performance_metrics[controller_type].real_queue.queue_server_arrival_mean,
                                     controller_performance_metrics[controller_type].real_queue.target_value,
@@ -104,14 +105,14 @@ class SubExperiment3Analyser:
                 controller_performance_metrics[controller_type].localization.real_continous_average_value,
                 controller_performance_metrics[controller_type].localization.target_value,
                 controller_performance_metrics[controller_type].localization.absolute_real_continuous_average_diff_with_server_mean,
-                controller_performance_metrics[controller_type].localization.real_continuous_average_diff_with_target,
+                controller_performance_metrics[controller_type].localization.target_diff_with_real_continuous_average,
                 controller_performance_metrics[controller_type].temperature.time_stamps,
                 controller_performance_metrics[controller_type].temperature.real_continous_average_value,
                 controller_performance_metrics[controller_type].temperature.target_value,
                 controller_performance_metrics[controller_type].temperature.absolute_real_continuous_average_diff_with_server_mean,
-                controller_performance_metrics[controller_type].temperature.real_continuous_average_diff_with_target,
+                controller_performance_metrics[controller_type].temperature.target_diff_with_real_continuous_average,
                 controller_performance_metrics[controller_type].low_temperature.target_value,
-                controller_performance_metrics[controller_type].low_temperature.real_continuous_average_diff_with_target,
+                controller_performance_metrics[controller_type].low_temperature.target_diff_with_real_continuous_average,
                 controller_performance_metrics[controller_type].real_queue.time_stamps,
                 controller_performance_metrics[controller_type].real_queue.queue_server_arrival_mean,
                 controller_performance_metrics[controller_type].real_queue.target_value,
@@ -123,65 +124,74 @@ class SubExperiment3Analyser:
         common_experiment_utils.createCSV(series_to_record, csv_filename)
 
         if generate_plots:
+            # Create output figures director        
+            figure_directory = common_experiment_utils.RESULT_DIRECTORY_PATH + self.bag_name
+            if os.path.exists(figure_directory) == False:
+                os.mkdir(figure_directory)
+
+
             # ==== Create plots ====
             fig1, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
-            ax1.set_title("Estimation error between the real metric mean and the queue server mean for the localization metric for all controllers over time with " + self.setup_name)
+            #ax1.set_title("Estimation error between the real metric mean and the queue server mean for the localization metric for all controllers over time with " + self.setup_name)
             for controller_type in common_experiment_utils.controller_type_list:
                 metric_performance_struct = controller_performance_metrics[controller_type].localization
                 if controller_type == "Rew_NoInv" or controller_type == "Rew_Inv":
                     ax1.plot(metric_performance_struct.time_stamps.values, 
                             metric_performance_struct.absolute_real_continuous_average_diff_with_server_time_average.values, 
-                            label=controller_type)
+                            label=common_experiment_utils.controllerTypePaperConversion(controller_type))
                 else:
                     ax1.plot(metric_performance_struct.time_stamps.values, 
                             metric_performance_struct.absolute_real_continuous_average_diff_with_server_mean.values, 
-                            label=controller_type)
+                            label=common_experiment_utils.controllerTypePaperConversion(controller_type))
         
-            ax1.set_ylabel("Localization estimation error (m)")
+            ax1.set_ylabel("Estimation error (cm)")
             ax1.grid(True)
             ax1.legend()
 
-            ax2.set_title("Error between the real metric mean and the target value for the localization metric for all controllers over time with " + self.setup_name)
+            #ax2.set_title("Error between the real metric mean and the target value for the localization metric for all controllers over time with " + self.setup_name)
             for controller_type in common_experiment_utils.controller_type_list:
                 metric_performance_struct = controller_performance_metrics[controller_type].localization
                 ax2.plot(metric_performance_struct.time_stamps.values, 
-                        metric_performance_struct.real_continuous_average_diff_with_target.values, 
-                        label=controller_type)
+                        metric_performance_struct.target_diff_with_real_continuous_average.values, 
+                        label=common_experiment_utils.controllerTypePaperConversion(controller_type))
             
-            ax2.set_ylabel("Localization error (m)")
+            ax2.set_ylabel("Command error (cm)")
             ax2.grid(True)
-            ax2.legend()
+            #ax2.legend()
             ax2.set_xlabel("Time (s)")
+
+            fig1.savefig(figure_directory+"/localization_error.pdf", format="pdf", bbox_inches='tight')
 
 
             fig2, (ax3, ax4) = plt.subplots(2, 1, sharex=True)
-            ax3.set_title("Estimation error between the real metric mean and the queue server mean for the temperature metric for all controllers over time with " + self.setup_name)
+            #ax3.set_title("Estimation error between the real metric mean and the queue server mean for the temperature metric for all controllers over time with " + self.setup_name)
             for controller_type in common_experiment_utils.controller_type_list:
                 metric_performance_struct = controller_performance_metrics[controller_type].temperature
                 if controller_type == "Rew_NoInv" or controller_type == "Rew_Inv":
                     ax3.plot(metric_performance_struct.time_stamps.values, 
                             metric_performance_struct.absolute_real_continuous_average_diff_with_server_time_average.values, 
-                            label=controller_type)
+                            label=common_experiment_utils.controllerTypePaperConversion(controller_type))
                 else:
                     ax3.plot(metric_performance_struct.time_stamps.values, 
                             metric_performance_struct.absolute_real_continuous_average_diff_with_server_mean.values, 
-                            label=controller_type)
+                            label=common_experiment_utils.controllerTypePaperConversion(controller_type))
         
-            ax3.set_ylabel("Temperature estimation error (°C)")
+            ax3.set_ylabel("Estimation error (°C)")
             ax3.grid(True)
             ax3.legend()
 
-            ax4.set_title("Error between the real metric mean and the target value for the temperature metric for all controllers over time with " + self.setup_name)
+            #ax4.set_title("Error between the real metric mean and the target value for the temperature metric for all controllers over time with " + self.setup_name)
             for controller_type in common_experiment_utils.controller_type_list:
                 metric_performance_struct = controller_performance_metrics[controller_type].temperature
                 ax4.plot(metric_performance_struct.time_stamps.values, 
-                        metric_performance_struct.real_continuous_average_diff_with_target.values, 
-                        label=controller_type)
+                        metric_performance_struct.target_diff_with_real_continuous_average.values, 
+                        label=common_experiment_utils.controllerTypePaperConversion(controller_type))
             
-            ax4.set_ylabel("Temperature error (°C)")
+            ax4.set_ylabel("Command error (°C)")
             ax4.grid(True)
-            ax4.legend()
+            #ax4.legend()
             ax4.set_xlabel("Time (s)")
+            fig2.savefig(figure_directory+"/temperature_error.pdf", format="pdf", bbox_inches='tight')
 
     def prefixToBagName(self, prefix):
         self.bag_name = prefix + self.bag_name
@@ -212,7 +222,7 @@ class Experiment3Analyser:
         # ======= Create output CSV =======
 
         # Create variable names
-        nb_lines = 8 * 4 # 8 fields per controller and there are 4 controllers 
+        nb_lines = 6 * 4 # 8 fields per controller and there are 4 controllers 
         controller_name_spacers = common_experiment_utils.Series()
         controller_name_spacers.variable_name = "Controller type"
         metric_name_spacers = common_experiment_utils.Series()
@@ -229,40 +239,38 @@ class Experiment3Analyser:
         for index in range(nb_lines):
             if index == 0:
                 controller_name_spacers.values.append("NoRew_NoInv")
-            elif index == 8:
+            elif index == 6:
                 controller_name_spacers.values.append("NoRew_Inv")
-            elif index == 16:
+            elif index == 12:
                 controller_name_spacers.values.append("Rew_NoInv")
-            elif index == 24:
+            elif index == 18:
                 controller_name_spacers.values.append("Rew_Inv")
             else:
                 controller_name_spacers.values.append("")
 
-            metric_index = index % 8
+            metric_index = index % 6
             if metric_index == 0:
                 metric_name_spacers.values.append("Localization")
-                error_type_spaces.values.append("Estimation error (m)")
+                error_type_spaces.values.append("Estimation error (cm)")
             elif metric_index == 1:
                 metric_name_spacers.values.append("")
-                error_type_spaces.values.append("Target error (m)")
+                error_type_spaces.values.append("Target error (cm)")
             elif metric_index == 2:
                 metric_name_spacers.values.append("Temperature")
                 error_type_spaces.values.append("Estimation error (°C)")
             elif metric_index == 3:
                 metric_name_spacers.values.append("")
                 error_type_spaces.values.append("Target error (°C)")
+#            elif metric_index == 4:
+#                metric_name_spacers.values.append("Low Temperature")
+#                error_type_spaces.values.append("Target error (°C)")
             elif metric_index == 4:
-                metric_name_spacers.values.append("Low Temperature")
-                error_type_spaces.values.append("Target error (°C)")
-            elif metric_index == 5:
                 metric_name_spacers.values.append("Real Queue")
                 error_type_spaces.values.append("Departure-arrival diff (Task/s)")
-            elif metric_index == 6:
+            elif metric_index == 5:
                 metric_name_spacers.values.append("Penalty")
-                error_type_spaces.values.append("Penalty estimation error (J)")
-            elif metric_index == 7:
-                metric_name_spacers.values.append("")
                 error_type_spaces.values.append("Penalty mean (J)")
+                #error_type_spaces.values.append("Penalty estimation error (J)")
             else:
                 metric_name_spacers.values.append("")
 
@@ -275,14 +283,14 @@ class Experiment3Analyser:
             for controller_type in common_experiment_utils.controller_type_list:
                 controller_end_metrics = self.multi_setup_end_values.multi_controller_end_struct[setup_name].controller_end_metrics[controller_type]
                 
-                setup_series[setup_name].values.append(controller_end_metrics.metric["localization"].estimation_error.values[0])
-                setup_series[setup_name].values.append(controller_end_metrics.metric["localization"].target_error.values[0])
-                setup_series[setup_name].values.append(controller_end_metrics.metric["temperature"].estimation_error.values[0])
-                setup_series[setup_name].values.append(controller_end_metrics.metric["temperature"].target_error.values[0])
-                setup_series[setup_name].values.append(controller_end_metrics.metric["low_temperature"].target_error.values[0])
-                setup_series[setup_name].values.append(controller_end_metrics.metric["real_queue"].target_error.values[0])
-                setup_series[setup_name].values.append(controller_end_metrics.metric["penalty"].estimation_error.values[0])
-                setup_series[setup_name].values.append(controller_end_metrics.metric["penalty"].mean_value.values[0])
+                setup_series[setup_name].values.append(round(controller_end_metrics.metric["localization"].estimation_error.values[0],3))
+                setup_series[setup_name].values.append(round(controller_end_metrics.metric["localization"].target_error.values[0],3))
+                setup_series[setup_name].values.append(round(controller_end_metrics.metric["temperature"].estimation_error.values[0],3))
+                setup_series[setup_name].values.append(round(controller_end_metrics.metric["temperature"].target_error.values[0],3))
+                #setup_series[setup_name].values.append(round(controller_end_metrics.metric["low_temperature"].target_error.values[0],3))
+                setup_series[setup_name].values.append(round(controller_end_metrics.metric["real_queue"].target_error.values[0],3))
+                #setup_series[setup_name].values.append(round(controller_end_metrics.metric["penalty"].estimation_error.values[0],3))
+                setup_series[setup_name].values.append(round(controller_end_metrics.metric["penalty"].mean_value.values[0],3))
             series_to_record.append(setup_series[setup_name])
 
   
