@@ -26,6 +26,12 @@ class DisturbedActionServer
             OtherRandom
         };
 
+        enum class TriggerType
+        {
+            Random = 0,
+            FixedSteps
+        };
+
         /**
          * @brief ROS node handle to manage the servers.
          */
@@ -84,6 +90,16 @@ class DisturbedActionServer
          * @brief Type of perturbation.
         */
         PerturbationType perturbation_type_ = PerturbationType::NotMoving;
+
+        /**
+         * @brief Policy used for triggering the perturbation.
+         */
+        TriggerType trigger_type_ = TriggerType::Random;
+
+        /**
+         * @brief Probability of triggering a perturbation. Only used when  trigger_type_ = TriggerType::Random
+         */
+        double perturbation_probability_ = 0.0;
         
         /**
          * @brief Service client to get the current AUV states

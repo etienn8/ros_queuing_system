@@ -11,6 +11,27 @@
 
 DisturbedActionServer::DisturbedActionServer(ros::NodeHandle& nh): nhp_(nh), nh_(ros::NodeHandle()), action_server_(nhp_, "disturbed_action_server", false)
 {
+    std::string trigger_type_param;
+    if(nhp_.getParam("trigger_type",trigger_type_param))
+    {
+        if (trigger_type_param == "random")
+        {
+            trigger_type_ = TriggerType::Random;
+        }
+        else if (trigger_type_param == "fixed_steps")
+        {
+            trigger_type_ = TriggerType::FixedSteps;
+        }
+        else
+        {
+            ROS_ERROR("Trigger type not recognized. No perturbations will be applied. Supported types: random, fixed_steps.");
+        }
+    }
+    if (!nhp_.getParam("perturbation_probability", perturbation_probability_))
+    {
+        ROS_ERROR("Perturbation probability not set. No perturbations will be applied.");
+    }
+
     if(nhp_.getParam("pertubation_at_each_x_control_steps", perturbation_at_each_x_control_steps_))
     {
         if (perturbation_at_each_x_control_steps_ > 0)
@@ -45,8 +66,6 @@ DisturbedActionServer::DisturbedActionServer(ros::NodeHandle& nh): nhp_(nh), nh_
         else if (perturbation_type_param == "other_random")
         {
             perturbation_type_ = PerturbationType::OtherRandom;
-            /* Initialize the random seed for the rand() function globaly*/
-            srand(time(NULL));
         }
         else
         {
@@ -76,6 +95,9 @@ DisturbedActionServer::DisturbedActionServer(ros::NodeHandle& nh): nhp_(nh), nh_
         send_sucess_timer_.stop();
     }
 
+    /* Initialize the random seed for the rand() function globaly*/
+    srand(time(NULL));
+
     action_server_.registerGoalCallback(boost::bind(&DisturbedActionServer::commandReceivedCallback, this));
     action_server_.registerPreemptCallback(boost::bind(&DisturbedActionServer::preemptActionCallback, this));
     action_server_.start();
@@ -103,11 +125,17 @@ void DisturbedActionServer::commandReceivedCallback()
     // Add perturbations to the action
     if (!is_dummy_)
     {
+        float random_probability_ = static_cast<float>(rand())/static_cast<float>(RAND_MAX);
+
         ros_queue_experiments::GetRealAUVStates states_srv;
         if(auv_state_client_.call(states_srv))
         {
-            if ((perturbation_at_each_x_control_steps_ != 0) &&
+            if (((trigger_type_ == TriggerType::FixedSteps) &&
+                (perturbation_at_each_x_control_steps_ != 0) &&
                 (steps_since_last_perturbation_ == perturbation_at_each_x_control_steps_-1))
+                ||
+                ((trigger_type_ == TriggerType::Random) &&
+                (random_probability_ <= perturbation_probability_)))
             {
                 if (perturbation_type_ == PerturbationType::NotMoving)
                 {
