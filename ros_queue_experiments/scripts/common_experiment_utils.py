@@ -21,6 +21,16 @@ class ActionType(Enum):
     HIGH_LOCALIZATION_ZONE = 1,
     LOW_TEMPERATURE_ZONE = 2
 
+def controllerTypePaperConversion(controller_type: str):
+    if controller_type == "NoRew_NoInv":
+        return "NoRe_OL"
+    elif controller_type == "NoRew_Inv":
+        return "NoRe_CL"
+    elif controller_type == "Rew_NoInv":
+        return "Re_OL"
+    elif controller_type == "Rew_Inv":
+        return "Re_CL"
+
 controller_type_list = ["NoRew_NoInv", "NoRew_Inv", "Rew_NoInv", "Rew_Inv"]
 metric_type_list = ["localization", "temperature", "low_temperature", "real_queue", "penalty"]
 # experimental_setup_list = ["perfect_model_and_setup",
@@ -107,6 +117,9 @@ class MetricPerformanceStruct:
         self.real_continuous_average_diff_with_target = Series()
         self.real_continuous_average_diff_with_target.variable_name = metric_name + "_real_continuous_average_diff_with_target"
 
+        self.target_diff_with_real_continuous_average = Series()
+        self.target_diff_with_real_continuous_average.variable_name = metric_name + "_target_diff_with_real_continuous_average"
+
         self.real_continuous_average_diff_with_server_mean = Series()
         self.real_continuous_average_diff_with_server_mean.variable_name = metric_name + "_real_continuous_average_diff_with_server_mean"
         
@@ -150,6 +163,7 @@ class AllMetricPerformanceStruct:
             metric.real_continuous_average_diff_with_server_time_average.values.append(msg.real_continuous_average_diff_with_server_time_average)
         metric.absolute_real_continuous_average_diff_with_server_mean.values = [abs(value) for value in metric.real_continuous_average_diff_with_server_mean.values]
         metric.absolute_real_continuous_average_diff_with_server_time_average.values = [abs(value) for value in metric.real_continuous_average_diff_with_server_time_average.values]
+        metric.target_diff_with_real_continuous_average.values = [-diff for diff in metric.real_continuous_average_diff_with_target.values]
 
 class ActionPerformanceSeries:
     def __init__(self):
