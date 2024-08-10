@@ -23,21 +23,30 @@ temp:
       - decrease: 15.0     # Celcius Degree per second
 
 localization_target: 10.0
+localization_process_noise: 20.0        # cm
+localization_a_dynamic: -1.0  
 localization:
   - real_model:
     - TaskZone:
       - loc_uncertainty: 15.0      # cm
+      - sensor_var: 2.0            # cm
     - HighLocZone:
       - loc_uncertainty: 1.0      # cm
+      - sensor_var: 2.0            # cm
     - ColdZone:
       - loc_uncertainty: 12.0      # cm
+      - sensor_var: 2.0            # cm
   - prediction_model:
     - TaskZone:
       - loc_uncertainty: 15.0      # cm
+      - sensor_var: 2.0            # cm
     - HighLocZone:
       - loc_uncertainty: 1.0      # cm
+      - sensor_var: 2.0            # cm
     - ColdZone:
       - loc_uncertainty: 12.0      # cm
+      - sensor_var: 2.0            # cm
+
 
 # The renewal time is the time of exploiting a zone. The difference between the real model and 
 # is due to timing errors in the system.

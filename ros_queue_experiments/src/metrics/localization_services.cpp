@@ -15,6 +15,16 @@ LocalizationServices::LocalizationServices(ros::NodeHandle& nh, std::string metr
         ROS_ERROR("Localization target is not set");
     }
 
+    if(!nh_.getParam("localization_process_noise", process_noise_))
+    {
+        ROS_ERROR("Localization noise variance not set");
+    }
+
+    if(!nh_.getParam("a_dynamic_", a_dynamic_))
+    {
+        ROS_ERROR("A matrice value of localization is not set");
+    }
+
     if(nh_.getParam("localization", localization_config))
     {
         for(int model_index =0; model_index < localization_config.size(); ++model_index)
@@ -65,12 +75,22 @@ LocalizationServices::LocalizationServices(ros::NodeHandle& nh, std::string metr
                             real_localization_uncertainties_[zone_from_config] = static_cast<float>(static_cast<double>(value_param->second));
                         }
                     }
+                    else if (value_name == "sensor_var")
+                    {
+                        if(model_it->first == "prediction_model")
+                        {
+                            predicted_localization_sensor_variance_[zone_from_config] = static_cast<float>(static_cast<double>(value_param->second));
+                        }
+                        else if(model_it->first == "real_model")
+                        {
+                            real_localization_sensor_variance_[zone_from_config] = static_cast<float>(static_cast<double>(value_param->second));
+                        }
+                    }
                 }
             }
         }
     }
 }
-
 
 // Change services
 bool LocalizationServices::realArrivalMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 

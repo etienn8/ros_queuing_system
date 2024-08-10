@@ -54,5 +54,12 @@ class LocalizationServices: public DualMetricServices
         std::map<AUVStates::Zones, float> predicted_localization_uncertainties_;
         std::map<AUVStates::Zones, float> real_localization_uncertainties_;
 
+        std::map<AUVStates::Zones, float> predicted_localization_sensor_variance_;
+        std::map<AUVStates::Zones, float> real_localization_sensor_variance_;
+
+        float process_noise_ = 0.0;
+
+        float a_dynamic_ = 0.0;
+
         float localization_target_ = 0.0f;
 };
