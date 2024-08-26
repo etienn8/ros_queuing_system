@@ -46,7 +46,7 @@ localization:
     - TaskZone:
       - loc_uncertainty: 10.5     # cm
     - HighLocZone:
-      - loc_uncertainty: 1.0     # cm 
+      - loc_uncertainty: 1.4     # cm 
     - ColdZone:
       - loc_uncertainty: 8.4      # cm
 

@@ -1,4 +1,4 @@
 trigger_type: "fixed_steps" # "random" or "fixed_steps"
 pertubation_at_each_x_control_steps: 3 # If 0, no perturbation will be applied. Only used by trigger_type = "fixed_steps"
 perturbation_probability: 0.4 # Percentage of chance that triggers the perturbation types. Value between 0.0 and 1.0. Only used by trigger_type = "random"
-pertubation_type: "other_random"   # "not_moving", "offset_next_step" or "other_random"
+pertubation_type: "offset_next_step"   # "not_moving", "offset_next_step" or "other_random"
