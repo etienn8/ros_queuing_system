@@ -1,27 +1,37 @@
+temp_model_type: "differential" # "linear" of "differential"
+# Differential equation parameters
+temp_time_constant: 3.0
+# Target parameters
 temp_target: 40.0
 low_temp_target: 0.0
+# State dependent parameters
 temp:
   - real_model:
     - TaskZone:
       - increase: 5.0      # Celcius Degree per second
       - decrease: 0.0      # Celcius Degree per second
+      - Tout: 60.0         # Celcius Degree
     - HighLocZone:
       - increase: 5.0      # Celcius Degree per second
       - decrease: 4.0      # Celcius Degree per second
+      - Tout: 45.0         # Celcius Degree
     - ColdZone:
       - increase: 5.0      # Celcius Degree per second
       - decrease: 15.0     # Celcius Degree per second
+      - Tout: 5.0         # Celcius Degree
   - prediction_model:
     - TaskZone:
       - increase: 5.0      # Celcius Degree per second
       - decrease: 0.0      # Celcius Degree per second
+      - Tout: 60.0         # Celcius Degree
     - HighLocZone:
       - increase: 5.0      # Celcius Degree per second
       - decrease: 4.0      # Celcius Degree per second
+      - Tout: 45.0         # Celcius Degree
     - ColdZone:
       - increase: 5.0      # Celcius Degree per second
       - decrease: 15.0     # Celcius Degree per second
-
+      - Tout: 5.0         # Celcius Degree
 localization_target: 10.0
 localization:
   - real_model:

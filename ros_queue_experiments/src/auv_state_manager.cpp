@@ -40,11 +40,17 @@ ros_queue_experiments::AuvStates AUVStateManager::getCurrentStates()
         
         const double elapsed_time_since_last_transition = (ros::Time::now() - last_transition_time_).toSec();
 
-        float temperature_rate = auv_system_->temperature_services_->getRealArrival(current_zone) - auv_system_->temperature_services_->getRealDeparture(current_zone);
-        current_states.temperature_integral += current_states.temperature*elapsed_time_since_last_transition +
-                                               0.5*temperature_rate*elapsed_time_since_last_transition*elapsed_time_since_last_transition;
-
-        current_states.temperature += temperature_rate * elapsed_time_since_last_transition;
+        current_states.last_transition_time = last_transition_time_;
+        current_states.temperature_last_end_frame = states_at_last_transition_.temperature;
+        current_states.temperature_integral_since_last_transition = 
+                                    auv_system_->temperature_services_->computeRealTimeIntegralNewTemperature(current_zone, 
+                                                                                                              current_states.temperature_last_end_frame, 
+                                                                                                              elapsed_time_since_last_transition);
+        current_states.temperature_integral += current_states.temperature_integral_since_last_transition;
+        
+        current_states.temperature = auv_system_->temperature_services_->computeRealNewTemperature(current_zone, 
+                                                                                                   current_states.temperature, 
+                                                                                                   elapsed_time_since_last_transition);
 
         double renewal_time =  auv_system_->expected_time_services_->getRealRenewalTimeWithStateTransition(last_zone, current_zone);
         current_states.transition_completion = (elapsed_time_since_last_transition / renewal_time);

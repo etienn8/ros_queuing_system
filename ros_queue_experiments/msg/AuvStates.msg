@@ -3,8 +3,12 @@ ros_queue_msgs/TransmissionVector current_zone
 ros_queue_msgs/TransmissionVector last_zone
 ros_queue_msgs/TransmissionVector zone_selected_by_controller
 
+time last_transition_time
+
 float32 temperature
 float32 temperature_integral
+float32 temperature_integral_since_last_transition
+float32 temperature_last_end_frame
 
 float32 localization
 float32 localization_integral

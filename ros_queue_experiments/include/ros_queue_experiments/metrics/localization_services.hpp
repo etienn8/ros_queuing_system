@@ -62,4 +62,10 @@ class LocalizationServices: public DualMetricServices
         float a_dynamic_ = 0.0;
 
         float localization_target_ = 0.0f;
+
+        ros::Time last_arrival_change_service_call_time_;
+        bool is_first_arrival_change_call_ = true;
+        
+        ros::Time last_departure_change_service_call_time_;
+        bool is_first_departure_change_call_ = true;
 };

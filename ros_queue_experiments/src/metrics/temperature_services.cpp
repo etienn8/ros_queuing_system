@@ -10,9 +10,32 @@ TemperatureServices::TemperatureServices(ros::NodeHandle& nh, std::string metric
 {
     XmlRpc::XmlRpcValue temperature_config;
 
+    string temp_model_type_string;
+    if(nh_.getParam("temp_model_type", temp_model_type_string))
+    {
+        if(temp_model_type_string == "linear")
+        {
+            temperature_model_ = TemperatureModel::Linear;
+        }
+        else if (temp_model_type_string == "differential")
+        {
+            temperature_model_ = TemperatureModel::Differential;
+        }
+        else
+        {
+            ROS_ERROR("Invalid temperature model type.");
+        }
+    }
+
     if(!nh_.getParam("temp_target", temp_target_))
     {
         ROS_ERROR("Missing temp_target parameter.");
+    }
+
+    if((temperature_model_ == TemperatureModel::Differential) &&
+      (!nh_.getParam("temp_time_constant", time_constant_)))
+    {
+        ROS_ERROR("Missing temp_time_constant parameter.");
     }
 
     if(nh_.getParam("temp", temperature_config))
@@ -63,6 +86,10 @@ TemperatureServices::TemperatureServices(ros::NodeHandle& nh, std::string metric
                         {
                             expected_departures_[zone_from_config] = static_cast<float>(static_cast<double>(value_param->second));
                         }
+                        else if (value_name =="Tout")
+                        {
+                            expected_final_temperatures_[zone_from_config] = static_cast<float>(static_cast<double>(value_param->second));
+                        }
                     }
                     if(model_it->first == "real_model")
                     {
@@ -74,11 +101,20 @@ TemperatureServices::TemperatureServices(ros::NodeHandle& nh, std::string metric
                         {
                             real_expected_departures_[zone_from_config] = static_cast<float>(static_cast<double>(value_param->second));
                         }
+                        else if (value_name == "Tout")
+                        {
+                            real_final_temperatures_[zone_from_config] = static_cast<float>(static_cast<double>(value_param->second));
+                        }
                     }
                 }
             }
         }
     }
+}
+
+TemperatureServices::TemperatureModel TemperatureServices::getTemperatureModel() const
+{
+    return temperature_model_;
 }
 
 float TemperatureServices::getRealArrival(AUVStates::Zones zone)
@@ -91,43 +127,89 @@ float TemperatureServices::getRealDeparture(AUVStates::Zones zone)
     return real_expected_departures_[zone];
 }
 
+float TemperatureServices::computeRealNewTemperature(AUVStates::Zones zone, float initial_temperature, float time)
+{
+    if(temperature_model_ == TemperatureModel::Linear)
+    {
+        return initial_temperature + (real_expected_arrivals_[zone] - real_expected_departures_[zone])*time;
+    }
+    else if(temperature_model_ == TemperatureModel::Differential)
+    {
+        return real_final_temperatures_[zone] - (real_final_temperatures_[zone] - initial_temperature)*std::exp(-time/time_constant_);
+    }
+}
+
+float TemperatureServices::computeExpecteNewTemperature(AUVStates::Zones zone, float initial_temperature, float time)
+{
+    if(temperature_model_ == TemperatureModel::Linear)
+    {
+        return initial_temperature + (expected_arrivals_[zone] - expected_departures_[zone])*time;
+    }
+    else if(temperature_model_ == TemperatureModel::Differential)
+    {
+        return expected_final_temperatures_[zone] - (expected_final_temperatures_[zone] - initial_temperature)*std::exp(-time/time_constant_);
+    }
+}
+
+float TemperatureServices::computeRealTimeIntegralNewTemperature(AUVStates::Zones zone, float initial_temperature, float time)
+{
+    if(temperature_model_ == TemperatureModel::Linear)
+    {
+        return initial_temperature*time + 0.5*(real_expected_arrivals_[zone] - real_expected_departures_[zone])*time*time;
+    }
+    else if(temperature_model_ == TemperatureModel::Differential)
+    {
+        return real_final_temperatures_[zone]*time + time_constant_*(real_final_temperatures_[zone] - initial_temperature)*(std::exp(-time/time_constant_)-1); 
+    }
+}
+
+float TemperatureServices::computeExpectedTimeIntegralNewTemperature(AUVStates::Zones zone, float initial_temperature, float time)
+{
+    if(temperature_model_ == TemperatureModel::Linear)
+    {
+        return initial_temperature*time + 0.5*(expected_arrivals_[zone] - expected_departures_[zone])*time*time;
+    }
+    else if(temperature_model_ == TemperatureModel::Differential)
+    {
+        return expected_final_temperatures_[zone]*time + time_constant_*(expected_final_temperatures_[zone] - initial_temperature)*(std::exp(-time/time_constant_)-1);
+    }
+}
+
 // Change service
 bool TemperatureServices::TempRealArrivalMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
                                                     ros_queue_msgs::FloatRequest::Response& res)
 {
-    ros_queue_msgs::GetQueueControllerTiming last_renewal_msg;
+    ros_queue_experiments::AuvStates current_states = getCurrentStates();
+    // Compute the time since the last action
+    const ros::Time current_time = ros::Time::now();
+    float time_since_last_action = (current_time - current_states.last_transition_time).toSec();
+    // Compute the time between the last action and the last virtual queue update which represents the controller execution time.
+    float elapsed_controller_time = (current_states.last_transition_time - last_arrival_change_service_call_time_).toSec();
 
-    if(real_renewal_service_.call(last_renewal_msg))
+    if(is_first_arrival_change_call_)
     {
-        ros_queue_experiments::AuvStates current_states = getCurrentStates();
-        /* We truly want the temperature at the end of the last state but the current temperature
-           should be a good approximation since the error will be the temp_rate*(~2*service_call_time) */
-        float current_temperature = current_states.temperature;
-        
-        AUVStates::Zones current_zone = AUVStates::getZoneFromTransmissionVector(current_states.current_zone);
-        float current_zone_temp_rate = this->real_expected_arrivals_[current_zone] - this->real_expected_departures_[current_zone]; 
-
-        float last_renewal_time = last_renewal_msg.response.timing.renewal_time;
-        
-        /* Return the equivalent queue change which is the integral of the temperature over time. 
-           Since, only the end temperature is avaiblable, the integral is done from that point.*/
-        float temperature_at_start_of_frame = current_temperature - current_zone_temp_rate*last_renewal_time;
-        res.value = temperature_at_start_of_frame*last_renewal_time + 0.5*current_zone_temp_rate*last_renewal_time*last_renewal_time;
-
-        /* To capture all the changes that happened since the last change to the virtual queues, it is necessary to 
-           add the change that happened during the last controller execution. */
-        AUVStates::Zones last_zone = AUVStates::getZoneFromTransmissionVector(current_states.last_zone);
-        float last_zone_temp_rate = this->real_expected_arrivals_[last_zone] - this->real_expected_departures_[last_zone]; 
-        
-        float controller_execution_time = last_renewal_msg.response.timing.execution_time;
-        res.value += temperature_at_start_of_frame*controller_execution_time - 0.5*last_zone_temp_rate*controller_execution_time*controller_execution_time;
+        time_since_last_action = 0.0;
+        elapsed_controller_time = 0.0;
+        is_first_arrival_change_call_ = false;
     }
-    else
-    {
-        ROS_ERROR_STREAM("Temperature service couldn't call the last renewal service: "<<real_renewal_service_.getService());
-        return false;
-    }
+    // Current zone that is being used since the last action
+    const AUVStates::Zones current_zone = AUVStates::getZoneFromTransmissionVector(current_states.current_zone);
+    // Zone in which the robot was during the computation of the last controller execution
+    const AUVStates::Zones last_zone = AUVStates::getZoneFromTransmissionVector(current_states.last_zone);
 
+    // Compute the integral of temperature that happend during the last controller execution
+    const float integral_temperature_controller = computeRealTimeIntegralNewTemperature(last_zone, temperature_at_last_change_call_, elapsed_controller_time);
+    
+    // Compute the integral of temperature that happened since the last action
+    const float temperature_at_start_of_frame = current_states.temperature_last_end_frame;
+    const float integral_temperature_action = computeRealTimeIntegralNewTemperature(current_zone, temperature_at_start_of_frame, time_since_last_action);
+
+    res.value = integral_temperature_controller + integral_temperature_action;
+    
+    /* Update the internal parameters for next call */
+    // The current temperature is the temperature at the beginning of the controller execution.
+    temperature_at_last_change_call_ = current_states.temperature;
+    last_arrival_change_service_call_time_ = current_time;
     return true;
 }
 
@@ -149,10 +231,7 @@ bool TemperatureServices::TempRealArrivalPredictionMetricCallback(ros_queue_msgs
              * Assume that the temperature of the trajectory is the same as the end zone. Thus we 
              * integrate the temperature over time. integrated_temperature = temp_init*time + 0.5*(a-b)*time^2
              */
-            float temperature_diff = real_expected_arrivals_[zone] - real_expected_departures_[zone];
-            float integrated_temperature = current_states.temperature*predicted_renewal_time + 0.5*temperature_diff*predicted_renewal_time*predicted_renewal_time;
-
-            res.predictions.push_back(integrated_temperature);
+            res.predictions.push_back(computeRealTimeIntegralNewTemperature(zone, current_states.temperature, predicted_renewal_time));
         }
 
         return true;
@@ -176,10 +255,9 @@ bool TemperatureServices::TempExpectedArrivalMetricCallback(ros_queue_msgs::Metr
             
             /**
              * Assume that the temperature of the trajectory is the same as the end zone. Thus we 
-             * integrate the temperature over time. integrated_temperature = temp_init*time + 0.5*(a-b)*time^2
+             * integrate the temperature over time.
              */
-            float temperature_diff = expected_arrivals_[zone] - expected_departures_[zone];
-            float integrated_temperature = current_states.temperature*predicted_renewal_time + 0.5*temperature_diff*predicted_renewal_time*predicted_renewal_time;
+            float integrated_temperature = computeExpectedTimeIntegralNewTemperature(zone, current_states.temperature, predicted_renewal_time);
 
             res.predictions.push_back(integrated_temperature);
         }
@@ -192,21 +270,17 @@ bool TemperatureServices::TempExpectedArrivalMetricCallback(ros_queue_msgs::Metr
 bool TemperatureServices::TempRealDepartureMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
                                                       ros_queue_msgs::FloatRequest::Response& res)
 {
-    ros_queue_msgs::GetQueueControllerTiming last_renewal_msg;
+    const ros::Time current_time = ros::Time::now();
+    float time_since_last_change = (current_time-last_departure_change_service_call_time_).toSec();
+    if (is_first_departure_change_call_)
+    {
+        time_since_last_change = 0.0;
+        is_first_departure_change_call_ = false;
+    }
 
-    if(real_renewal_service_.call(last_renewal_msg))
-    {
-        float last_renewal_time = last_renewal_msg.response.timing.renewal_time;
-        float last_controller_execution_time = last_renewal_msg.response.timing.execution_time;
-    
-        // Integral of the target over the last renewal time and controller execution time
-        res.value = this->temp_target_*(last_renewal_time + last_controller_execution_time);
-    }
-    else
-    {
-        ROS_ERROR_STREAM("Temperature service couldn't call the last renewal service: "<<real_renewal_service_.getService());
-        return false;
-    }
+    // Integral of the target over the last renewal time and controller execution time
+    res.value = this->temp_target_*(time_since_last_change);
+    last_departure_change_service_call_time_ = current_time;
 
     return true;
 }
@@ -260,16 +334,8 @@ bool TemperatureServices::TempExpectedArrivalRateMetricCallback(ros_queue_msgs::
 
             float predicted_renewal_time = renewal_time_services_->getPredictedRenewalTimeWithTransitionFromCurrentState(zone);
             
-            /**
-             * Assume that the temperature of the trajectory is the same as the end zone. Thus we 
-             * integrate the change over time as if the change was static over the action.
-             * It thus gives the temperature at the end of the action.
-             */ 
-            
-            float temperature_change = predicted_renewal_time*(expected_arrivals_[zone] - expected_departures_[zone]);
-            float predicted_temperature = current_states.temperature + temperature_change;
-
-            res.predictions.push_back(predicted_temperature);
+            // Integrate the signal to get the change in the queue
+            res.predictions.push_back(computeExpecteNewTemperature(zone, current_states.temperature, predicted_renewal_time));
         }
 
         return true;

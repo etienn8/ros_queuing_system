@@ -96,32 +96,31 @@ LocalizationServices::LocalizationServices(ros::NodeHandle& nh, std::string metr
 bool LocalizationServices::realArrivalMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
                                                      ros_queue_msgs::FloatRequest::Response& res)
 {
-    ros_queue_msgs::GetQueueControllerTiming last_renewal_msg;
+    ros_queue_experiments::AuvStates current_states = getCurrentStates();
+    const AUVStates::Zones current_zone = AUVStates::getZoneFromTransmissionVector(current_states.current_zone);
+    const AUVStates::Zones last_zone = AUVStates::getZoneFromTransmissionVector(current_states.last_zone);
 
-    if(real_renewal_service_.call(last_renewal_msg))
+    const ros::Time current_time = ros::Time::now();
+    float time_since_last_action = (current_time - current_states.last_transition_time).toSec();
+    // Compute the time between the last action and the last virtual queue update which represents the controller execution time.
+    float elapsed_controller_time = (current_states.last_transition_time - last_arrival_change_service_call_time_).toSec();
+
+    if(is_first_arrival_change_call_)
     {
-        ros_queue_experiments::AuvStates current_states = getCurrentStates();
-        AUVStates::Zones current_zone = AUVStates::getZoneFromTransmissionVector(current_states.current_zone);
-        float localization_rate = getRealLocalizationUncertainty(current_zone); 
-
-        float last_renewal_time = last_renewal_msg.response.timing.renewal_time;
-        
-        // Return the change as the integral of the rate of the localization 
-        res.value = last_renewal_time*localization_rate;
-
-        // Add the change that happened during the controller execution 
-        AUVStates::Zones last_zone = AUVStates::getZoneFromTransmissionVector(current_states.last_zone);
-        float last_zone_localization_rate = getRealLocalizationUncertainty(last_zone);
-        
-        float last_controller_execution_time = last_renewal_msg.response.timing.execution_time;
-        res.value += last_zone_localization_rate*last_controller_execution_time;
-    }
-    else
-    {
-        ROS_ERROR_STREAM("Localization service couldn't call the last renewal service: "<<real_renewal_service_.getService());
-        return false;
+        time_since_last_action = 0.0;
+        elapsed_controller_time = 0.0;
+        is_first_arrival_change_call_ = false;
     }
 
+    // Return the change as the integral of the rate of the localization 
+    float localization_rate = getRealLocalizationUncertainty(current_zone); 
+    res.value = time_since_last_action*localization_rate;
+
+    // Add the change that happened during the controller execution 
+    float last_zone_localization_rate = getRealLocalizationUncertainty(last_zone);
+    
+    res.value += last_zone_localization_rate*elapsed_controller_time;
+    last_arrival_change_service_call_time_ = current_time;
     return true;
 }
 
@@ -168,23 +167,19 @@ bool LocalizationServices::expectedArrivalMetricCallback(ros_queue_msgs::MetricT
  bool LocalizationServices::realDepartureMetricCallback(ros_queue_msgs::FloatRequest::Request& req, 
                                                         ros_queue_msgs::FloatRequest::Response& res)
 {
-    ros_queue_msgs::GetQueueControllerTiming last_renewal_msg;
-
-    if(real_renewal_service_.call(last_renewal_msg))
+    const ros::Time current_time = ros::Time::now();
+    float time_since_last_change = (current_time - last_departure_change_service_call_time_).toSec();
+    
+    if (is_first_departure_change_call_)
     {
-        float localization_target_rate_last_state = this->localization_target_; 
+        time_since_last_change = 0.0;
+        is_first_departure_change_call_ = false;
+    }
 
-        float last_renewal_time = last_renewal_msg.response.timing.renewal_time;
-        float last_controller_execution_time = last_renewal_msg.response.timing.execution_time;
-        
-        // Return the change as the integral of the rate of the localization 
-        res.value = localization_target_rate_last_state*(last_renewal_time + last_controller_execution_time);
-    }
-    else
-    {
-        ROS_ERROR_STREAM("Localization service couldn't call the last renewal service: "<<real_renewal_service_.getService());
-        return false;
-    }
+    // Return the change as the integral of the rate of the localization 
+    res.value = this->localization_target_*time_since_last_change;
+
+    last_departure_change_service_call_time_ = current_time;
 
     return true;
 }
