@@ -1,0 +1,25 @@
+Controller type;Metric type;;perfect_model_and_setup;perturbation_on_action;bad_prediction_model;variable_time_action_setup;time_uncertainties;all_faults_without_penalty;all_faults_with_penalty
+NoRew_NoInv;Localization;Estimation error (cm);0.001;1.873;3.982;0.002;0.0;2.525;3.029
+;;Target error (cm);0.309;-1.715;-3.294;0.399;0.352;-1.726;-1.257
+;Temperature;Estimation error (°C);0.017;2.216;0.024;2.228;0.033;1.995;2.82
+;;Target error (°C);4.312;1.492;11.158;3.004;4.243;2.588;5.9
+;Real Queue;Departure-arrival diff (Task/s);0.104;14.999;10.849;0.032;0.056;10.147;5.1
+;Penalty;Penalty mean (J);0.519;0.729;0.122;0.895;0.53;1.275;0.68
+NoRew_Inv;Localization;Estimation error (cm);0.006;0.008;0.007;0.01;0.004;0.0;0.008
+;;Target error (cm);1.169;0.918;0.854;1.398;1.277;0.706;0.831
+;Temperature;Estimation error (°C);0.029;0.028;0.016;0.029;0.032;0.036;0.027
+;;Target error (°C);1.674;0.73;2.925;0.859;1.348;0.288;1.771
+;Real Queue;Departure-arrival diff (Task/s);0.108;0.088;0.096;0.044;0.08;0.156;0.1
+;Penalty;Penalty mean (J);0.322;1.029;0.264;0.332;0.324;1.351;0.71
+Rew_NoInv;Localization;Estimation error (cm);0.218;0.729;4.269;0.182;4.933;9.167;8.493
+;;Target error (cm);-0.026;0.894;-3.72;0.001;0.528;-2.326;-1.787
+;Temperature;Estimation error (°C);0.757;0.692;0.565;0.634;21.069;29.552;26.017
+;;Target error (°C);2.563;2.05;3.531;0.908;3.42;-3.167;-1.667
+;Real Queue;Departure-arrival diff (Task/s);5.896;1.583;25.057;8.29;1.502;27.187;22.046
+;Penalty;Penalty mean (J);0.76;1.191;0.57;0.916;0.69;1.332;0.967
+Rew_Inv;Localization;Estimation error (cm);0.031;0.03;0.024;0.023;0.021;0.024;0.024
+;;Target error (cm);0.009;-0.035;-0.042;-0.013;0.071;-0.002;-0.022
+;Temperature;Estimation error (°C);0.063;0.059;0.045;0.043;0.038;0.043;0.044
+;;Target error (°C);2.22;4.084;2.127;0.83;1.074;-0.13;0.128
+;Real Queue;Departure-arrival diff (Task/s);6.435;3.732;6.86;8.596;7.675;10.04;9.787
+;Penalty;Penalty mean (J);0.776;1.369;0.757;0.921;0.555;1.138;1.001
