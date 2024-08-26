@@ -23,13 +23,13 @@ class ActionType(Enum):
 
 def controllerTypePaperConversion(controller_type: str):
     if controller_type == "NoRew_NoInv":
-        return "NoRe_OL"
+        return "MDPP_OL"
     elif controller_type == "NoRew_Inv":
-        return "NoRe_CL"
+        return "MDPP_CL"
     elif controller_type == "Rew_NoInv":
-        return "Re_OL"
+        return "R-MDPP_OL"
     elif controller_type == "Rew_Inv":
-        return "Re_CL"
+        return "R-MDPP_CL"
 
 controller_type_list = ["NoRew_NoInv", "NoRew_Inv", "Rew_NoInv", "Rew_Inv"]
 metric_type_list = ["localization", "temperature", "low_temperature", "real_queue", "penalty"]
