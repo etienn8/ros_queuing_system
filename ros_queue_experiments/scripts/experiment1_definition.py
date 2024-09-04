@@ -13,22 +13,24 @@ from ros_queue_experiments.msg import MetricPerformance
 import common_experiment_utils
 
 class Experiment1Analyser:
-    def __init__(self):
+    def __init__(self, controller_type: str):
         time_now = datetime.now()
         string_time_now = time_now.strftime("%Y-%m-%d_%H-%M-%S")
         self.bag_name = "experiment1_" + string_time_now
+        self.controller_type = controller_type
+        self.controller_prefix = "/"+self.controller_type+"/"
 
         self.topics_to_record = [
-            "/NoRew_NoInv/queue_server/server_stats",
-            "/NoRew_NoInv/auv_system_node/auv_state",
-            "/NoRew_NoInv/monitoring_node/localization",
-            "/NoRew_NoInv/monitoring_node/real_queue",
-            "/NoRew_NoInv/monitoring_node/temperature",
-            "/NoRew_NoInv/monitoring_node/low_temperature",
-            "/NoRew_NoInv/monitoring_node/penalty",
-            "/NoRew_NoInv/queue_controller/optimization_done",
-            "/NoRew_NoInv/queue_controller/control_loop_started",
-            "/NoRew_NoInv/perturbation_node/action_performance"]
+            self.controller_prefix+"queue_server/server_stats",
+            self.controller_prefix+"auv_system_node/auv_state",
+            self.controller_prefix+"monitoring_node/localization",
+            self.controller_prefix+"monitoring_node/real_queue",
+            self.controller_prefix+"monitoring_node/temperature",
+            self.controller_prefix+"monitoring_node/low_temperature",
+            self.controller_prefix+"monitoring_node/penalty",
+            self.controller_prefix+"queue_controller/optimization_done",
+            self.controller_prefix+"queue_controller/control_loop_started",
+            self.controller_prefix+"perturbation_node/action_performance"]
 
     def generateOutput(self, time_init, bag_name, base_init_time_on_first_value=False):
         bag = rosbag.Bag(common_experiment_utils.BAG_DIRECTORY_PATH + bag_name + ".bag")
@@ -36,7 +38,7 @@ class Experiment1Analyser:
         # Get init time if not set
         init_time_set = False
 
-        for topic, msg, t in bag.read_messages(topics=["/NoRew_NoInv/queue_server/server_stats"]):
+        for topic, msg, t in bag.read_messages(topics=[self.controller_prefix+"queue_server/server_stats"]):
             if (not init_time_set) and base_init_time_on_first_value:
                 time_init = t.to_sec()
                 init_time_set = True
@@ -44,12 +46,12 @@ class Experiment1Analyser:
 
         # Get action performances
         action_performances = common_experiment_utils.ActionPerformanceSeries()
-        action_performances.populateWithBag(bag, "/NoRew_NoInv/", time_init)
+        action_performances.populateWithBag(bag, self.controller_prefix, time_init)
 
         # Get queue server end values
         queue_server_arrival_departures_end_values = common_experiment_utils.QueueEndValues()
         
-        for topic, msg, t in bag.read_messages(topics=["/NoRew_NoInv/monitoring_node/penalty"]):
+        for topic, msg, t in bag.read_messages(topics=[self.controller_prefix+"monitoring_node/penalty"]):
             queue_server_arrival_departures_end_values.penalty.values.append(msg.queue_server_time_average_value)
 
         queue_server_arrival_departures_end_values.localization_arrival.values.append(action_performances.synchronized_queue_stats.localization_stats.time_average_arrival.values[-1])
@@ -64,7 +66,7 @@ class Experiment1Analyser:
 
         # Get performance metrics 
         all_metric_performance_structs = common_experiment_utils.AllMetricPerformanceStruct()
-        all_metric_performance_structs.populateWithBag(bag, "/NoRew_NoInv/", time_init)
+        all_metric_performance_structs.populateWithBag(bag, self.controller_prefix+"", time_init)
         
         # Create output CSV
         separator_second_graph = common_experiment_utils.Series()
@@ -72,7 +74,7 @@ class Experiment1Analyser:
         separator_end_values_table = common_experiment_utils.Series()
         separator_end_values_table.variable_name = "end_values_table"
 
-        csv_filename = common_experiment_utils.RESULT_DIRECTORY_PATH + self.bag_name + ".csv"
+        csv_filename = common_experiment_utils.RESULT_DIRECTORY_PATH + self.bag_name + "_"+ self.controller_type + ".csv"
         series_to_record = [all_metric_performance_structs.localization.time_stamps,
                             all_metric_performance_structs.localization.real_continous_average_value,
                             all_metric_performance_structs.localization.target_value,
