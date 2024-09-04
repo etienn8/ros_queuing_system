@@ -25,6 +25,7 @@
 #include "ros_queue_msgs/QueueServerStateFetch.h"
 #include "ros_queue_msgs/VirtualQueueChangesList.h"
 #include "ros_queue_msgs/TransmissionVectorControllerCostsList.h"
+#include "ros_queue_msgs/TimeoutReached.h"
 
 #include <actionlib/client/simple_action_client.h>
 
@@ -160,6 +161,8 @@ class QueueController
                 // Start an asynchronous spinner to handle the last renewal time service in parallel to the controller.
                 ROS_INFO_STREAM("Creating the last renewal time service server.");
                 last_renewal_time_service_server_ = async_nhp_.advertiseService("get_last_renewal_time", &QueueController::lastRenewalTimeServiceCallback, this);
+            
+                timeout_reached_pub_ = nhp_.advertise<ros_queue_msgs::TimeoutReached>("timeout_reached", 10);
             }
 
             if(!nhp_.getParam("inverse_control_and_steps", inversed_control_and_update_steps_))
@@ -463,13 +466,18 @@ class QueueController
                             // Wait for the best action to be reached or wait for the max_renewal_time
                             bool finished_before_max_time =  best_action_client_->waitForResult(ros::Duration(max_renewal_time_));
                             
+                            double elapsed_time = (ros::Time::now() - last_renewal_time_point).toSec();
+                            
                             // We abandon the last goal if its still on going.
                             if (!finished_before_max_time)
                             {
                                 best_action_client_->cancelGoal();
+
+                                ros_queue_msgs::TimeoutReached timeout_msg;
+                                timeout_msg.time_waited = elapsed_time;
+                                timeout_reached_pub_.publish(timeout_msg);
                             }
 
-                            double elapsed_time = (ros::Time::now() - last_renewal_time_point).toSec();
 
                             // Wait for t_min is reached if the goal was reached before.
                             if (elapsed_time < min_renewal_time_)
@@ -698,6 +706,11 @@ class QueueController
          * @brief ROS topic publisher that periodically sends the last renewal time.
         */
         ros::Publisher renewal_time_pub_;
+
+        /**
+         * @brief ROS topic publisher indicating if a timeout was reached.
+         */
+        ros::Publisher timeout_reached_pub_;
 
         /**
          * @brief Flag used to know if the first control loop of the renewal controller has been done.

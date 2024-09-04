@@ -65,6 +65,7 @@ add_message_files(
   QueueStats.msg
   QueueServerStats.msg
   States.msg
+  TimeoutReached.msg
   TransmissionVector.msg
   TransmissionVectorControllerCosts.msg
   TransmissionVectorControllerCostsList.msg

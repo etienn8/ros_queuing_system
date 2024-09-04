@@ -16,6 +16,7 @@ class SubExperiment3Analyser:
         self.setup_name = setup_name
         self.sub_topics_to_record = [
             "queue_controller/control_loop_started",
+            "queue_controller/timeout_reached",
             "monitoring_node/localization",
             "monitoring_node/real_queue",
             "monitoring_node/temperature",
