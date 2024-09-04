@@ -85,6 +85,27 @@ class QueueServerStatsStruct:
         self.real_queue_stats.time_average_arrival.variable_name = "real_queue_time_average_arrival"
         self.real_queue_stats.time_average_departure.variable_name = "real_queue_time_average_departure"
 
+    def populateWithBag(self, bag: rosbag.Bag, server_prefix: str, time_init: rospy.Time):
+        for topic, msg, t in bag.read_messages(topics=[server_prefix + "queue_server/server_stats"]):
+            self.time_stamps.values.append(t.to_sec() - time_init)
+            for queue_stats in msg.queue_stats:
+                if queue_stats.queue_name == "LocalizationQueue":
+                    self.localization_stats.queue_size.values.append(queue_stats.current_size)
+                    self.localization_stats.time_average_arrival.values.append(queue_stats.arrival_time_average)
+                    self.localization_stats.time_average_departure.values.append(queue_stats.departure_time_average)
+                elif queue_stats.queue_name == "TemperatureQueue":
+                    self.temperature_stats.queue_size.values.append(queue_stats.current_size)
+                    self.temperature_stats.time_average_arrival.values.append(queue_stats.arrival_time_average)
+                    self.temperature_stats.time_average_departure.values.append(queue_stats.departure_time_average)
+                elif queue_stats.queue_name == "LowTemperatureQueue":
+                    self.low_temperature_stats.queue_size.values.append(queue_stats.current_size)
+                    self.low_temperature_stats.time_average_arrival.values.append(queue_stats.arrival_time_average)
+                    self.low_temperature_stats.time_average_departure.values.append(queue_stats.departure_time_average)
+                elif queue_stats.queue_name == "TaskQueue":
+                    self.real_queue_stats.queue_size.values.append(queue_stats.current_size)
+                    self.real_queue_stats.time_average_arrival.values.append(queue_stats.arrival_time_average)
+                    self.real_queue_stats.time_average_departure.values.append(queue_stats.departure_time_average)
+
 class MetricPerformanceStruct:
     def __init__(self, metric_name: str = ""):
         self.time_stamps = Series()
@@ -239,6 +260,19 @@ class QueueEndValues:
 
         self.penalty = Series()
         self.penalty.variable_name = "end_penalty"
+    
+    def populateWithServerStatsStruct(self, server_stats_struct:QueueServerStatsStruct):
+        self.localization_arrival.values.append(server_stats_struct.localization_stats.time_average_arrival.values[-1])
+        self.localization_departure.values.append(server_stats_struct.localization_stats.time_average_departure.values[-1])
+
+        self.temperature_arrival.values.append(server_stats_struct.temperature_stats.time_average_arrival.values[-1])
+        self.temperature_departure.values.append(server_stats_struct.temperature_stats.time_average_departure.values[-1])
+
+        self.low_temperature_arrival.values.append(server_stats_struct.low_temperature_stats.time_average_arrival.values[-1])
+        self.low_temperature_departure.values.append(server_stats_struct.low_temperature_stats.time_average_departure.values[-1])
+
+        self.real_queue_arrival.values.append(server_stats_struct.real_queue_stats.time_average_arrival.values[-1])
+        self.real_queue_departure.values.append(server_stats_struct.real_queue_stats.time_average_departure.values[-1])
 
 class EndMetricStruct:
     def __init__(self, metric_name: str = ""):

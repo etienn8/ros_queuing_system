@@ -21,7 +21,8 @@ class SubExperiment3Analyser:
             "monitoring_node/real_queue",
             "monitoring_node/temperature",
             "monitoring_node/low_temperature",
-            "monitoring_node/penalty"]
+            "monitoring_node/penalty",
+            "queue_server/server_stats"]
 
         self.topics_to_record = []
         for controller_type in common_experiment_utils.controller_type_list:
@@ -69,6 +70,16 @@ class SubExperiment3Analyser:
                     else:
                         controller_end_struct.metric[metric_name].estimation_error.values = [controller_performance_metric_dict[metric_name].absolute_real_continuous_average_diff_with_server_mean.values[-1]]
 
+        queue_server_end_values_structs = {"NoRew_NoInv": common_experiment_utils.QueueEndValues(),
+                                            "NoRew_Inv": common_experiment_utils.QueueEndValues(),
+                                            "Rew_NoInv": common_experiment_utils.QueueEndValues(),
+                                            "Rew_Inv": common_experiment_utils.QueueEndValues()}
+        for controller_type in common_experiment_utils.controller_type_list:
+            queue_server_stats_struct = common_experiment_utils.QueueServerStatsStruct()
+            queue_server_stats_struct.populateWithBag(bag, "/"+controller_type+"/", time_init)
+            queue_server_end_values_structs[controller_type].populateWithServerStatsStruct(queue_server_stats_struct)
+
+
         # Create output CSV
         separator_second_graph = common_experiment_utils.Series()
         separator_second_graph.variable_name = "controller_sacrifices_one_queue"
@@ -99,7 +110,13 @@ class SubExperiment3Analyser:
                                     controller_performance_metrics[controller_type].real_queue.target_value,
                                     controller_performance_metrics[controller_type].real_queue.absolute_real_continuous_average_diff_with_server_mean,
                                     controller_performance_metrics[controller_type].penalty.time_stamps,
-                                    controller_performance_metrics[controller_type].penalty.real_time_average_value]
+                                    controller_performance_metrics[controller_type].penalty.real_time_average_value,
+                                    queue_server_end_values_structs[controller_type].localization_arrival,
+                                    queue_server_end_values_structs[controller_type].localization_departure,
+                                    queue_server_end_values_structs[controller_type].temperature_arrival,
+                                    queue_server_end_values_structs[controller_type].temperature_departure,
+                                    queue_server_end_values_structs[controller_type].real_queue_arrival,
+                                    queue_server_end_values_structs[controller_type].real_queue_departure]
             else:
                 [controller_separator,
                 controller_performance_metrics[controller_type].localization.time_stamps,
@@ -119,8 +136,13 @@ class SubExperiment3Analyser:
                 controller_performance_metrics[controller_type].real_queue.target_value,
                 controller_performance_metrics[controller_type].real_queue.absolute_real_continuous_average_diff_with_server_mean,
                 controller_performance_metrics[controller_type].penalty.time_stamps,
-                controller_performance_metrics[controller_type].penalty.real_time_average_value]
-                
+                controller_performance_metrics[controller_type].penalty.real_time_average_value,
+                queue_server_end_values_structs[controller_type].localization_arrival,
+                queue_server_end_values_structs[controller_type].localization_departure,
+                queue_server_end_values_structs[controller_type].temperature_arrival,
+                queue_server_end_values_structs[controller_type].temperature_departure,
+                queue_server_end_values_structs[controller_type].real_queue_arrival,
+                queue_server_end_values_structs[controller_type].real_queue_departure]
         
         common_experiment_utils.createCSV(series_to_record, csv_filename)
 

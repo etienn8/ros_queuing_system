@@ -2,7 +2,7 @@
     <!-- Potential setup: all_faults_with_penalty, all_faults_without_penalty, 
         bad_prediction_model, perfect_model_and_setup, perturbation_on_action, 
         time_uncertainties, variable_time_action_setup  -->
-    <arg name="experiment_setup" default="perfect_model_and_setup"/>
+    <arg name="experiment_setup" default="all_faults_without_penalty"/>
     <arg name="v_parameter" default="15000.0"/>
 
     <!-- Start an experiment with a renewal controller and no step inversion -->
