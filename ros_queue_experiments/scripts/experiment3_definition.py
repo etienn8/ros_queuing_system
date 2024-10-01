@@ -77,6 +77,9 @@ class SubExperiment3Analyser:
         for controller_type in common_experiment_utils.controller_type_list:
             queue_server_stats_struct = common_experiment_utils.QueueServerStatsStruct()
             queue_server_stats_struct.populateWithBag(bag, "/"+controller_type+"/", time_init)
+            # If using old bag, the queue server stats might not be recorded
+            if len(queue_server_stats_struct.time_stamps.values) == 0:
+                break
             queue_server_end_values_structs[controller_type].populateWithServerStatsStruct(queue_server_stats_struct)
 
 
@@ -167,7 +170,7 @@ class SubExperiment3Analyser:
                             metric_performance_struct.absolute_real_continuous_average_diff_with_server_mean.values, 
                             label=common_experiment_utils.controllerTypePaperConversion(controller_type))
         
-            ax1.set_ylabel("Estimation error (cm)")
+            ax1.set_ylabel(r"$e_{est~loc}$ (cm)")
             ax1.grid(True)
             ax1.legend()
 
@@ -178,7 +181,7 @@ class SubExperiment3Analyser:
                         metric_performance_struct.target_diff_with_real_continuous_average.values, 
                         label=common_experiment_utils.controllerTypePaperConversion(controller_type))
             
-            ax2.set_ylabel("Command error (cm)")
+            ax2.set_ylabel(r"$e_{com~loc}$ (cm)")
             ax2.grid(True)
             #ax2.legend()
             ax2.set_xlabel("Time (s)")
@@ -199,7 +202,7 @@ class SubExperiment3Analyser:
                             metric_performance_struct.absolute_real_continuous_average_diff_with_server_mean.values, 
                             label=common_experiment_utils.controllerTypePaperConversion(controller_type))
         
-            ax3.set_ylabel("Estimation error (°C)")
+            ax3.set_ylabel(r"$e_{est~temp}$ (°C)")
             ax3.grid(True)
             ax3.legend()
 
@@ -210,7 +213,7 @@ class SubExperiment3Analyser:
                         metric_performance_struct.target_diff_with_real_continuous_average.values, 
                         label=common_experiment_utils.controllerTypePaperConversion(controller_type))
             
-            ax4.set_ylabel("Command error (°C)")
+            ax4.set_ylabel(r"$e_{com~temp}$ (°C)")
             ax4.grid(True)
             #ax4.legend()
             ax4.set_xlabel("Time (s)")

@@ -20,6 +20,7 @@ import scienceplots
 # Using the formating from https://github.com/garrettj403/SciencePlots to follow IEEE requirements
 plt.style.use('science')
 plt.style.use(['science', 'ieee'])
+plt.rcParams['text.usetex'] = True
 
 if __name__ == "__main__":
     # Start the launch file
